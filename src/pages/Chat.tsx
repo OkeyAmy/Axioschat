@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import { useAccount } from "wagmi";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { ResizablePanelGroup, ResizablePanel } from "@/components/ui/resizable";
+import { cn } from "@/lib/utils";
 
 const Chat = () => {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
@@ -35,7 +35,6 @@ const Chat = () => {
     const initialQuestion = searchParams.get("question");
     if (initialQuestion && isConnected) {
       handleSubmit(undefined, initialQuestion);
-      // Clear the query parameter
       navigate("/chat", { replace: true });
     }
   }, [searchParams, isConnected]);
@@ -46,7 +45,6 @@ const Chat = () => {
     }
   }, [messages]);
 
-  // Handler to track sidebar collapsing
   useEffect(() => {
     const handleChatHistoryCollapse = (mutation: MutationRecord) => {
       if (mutation.target && (mutation.target as HTMLElement).classList.contains('w-14')) {
@@ -64,7 +62,6 @@ const Chat = () => {
       }
     };
 
-    // Set up observers
     const chatHistoryObserver = new MutationObserver((mutations) => {
       mutations.forEach(handleChatHistoryCollapse);
     });
@@ -73,13 +70,11 @@ const Chat = () => {
       mutations.forEach(handlePromptsPanelCollapse);
     });
 
-    // Observe the chat history panel
     const chatHistoryPanel = document.querySelector('[data-sidebar="chat-history"]');
     if (chatHistoryPanel) {
       chatHistoryObserver.observe(chatHistoryPanel, { attributes: true, attributeFilter: ['class'] });
     }
 
-    // Observe the prompts panel
     const promptsPanel = document.querySelector('[data-sidebar="prompts-panel"]');
     if (promptsPanel) {
       promptsPanelObserver.observe(promptsPanel, { attributes: true, attributeFilter: ['class'] });
@@ -103,7 +98,6 @@ const Chat = () => {
 
     try {
       if (isLocalAI) {
-        // Call Ollama endpoint
         try {
           const response = await fetch(localAIEndpoint, {
             method: 'POST',
@@ -111,7 +105,7 @@ const Chat = () => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'llama3.1',
+              model: 'llama3.2:latest',
               prompt: userMessage,
               stream: false
             }),
@@ -147,7 +141,6 @@ const Chat = () => {
           ]);
         }
       } else {
-        // Simulate response
         setTimeout(() => {
           setMessages(prev => [
             ...prev, 
@@ -180,7 +173,6 @@ const Chat = () => {
 
   const handleSelectChat = (chatId: number, chatMessages: Array<{ role: string; content: string }>) => {
     setActiveChat(chatId);
-    // Cast the roles to "user" | "assistant" to match our state type
     const typedMessages = chatMessages.map(msg => ({
       role: msg.role as "user" | "assistant",
       content: msg.content
@@ -221,7 +213,7 @@ const Chat = () => {
       title: isLocalAI ? "Using Cloud AI" : "Using Local AI",
       description: isLocalAI 
         ? "Switched to cloud-based AI responses" 
-        : "Switched to local Ollama with llama3.1. Make sure Ollama is running on port 11434.",
+        : "Switched to local Ollama with llama3.2:latest. Make sure Ollama is running on port 11434.",
     });
   };
 
