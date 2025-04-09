@@ -3,17 +3,12 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Wallet } from "lucide-react";
+import { useAccount, useConnect } from 'wagmi';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 const WalletRequired = () => {
-  // Get the web3 context from the window (in a real app, you would use React Context)
-  const getWeb3Context = () => {
-    // @ts-ignore
-    return window.web3Context || { connectWallet: () => {}, checkIfWalletIsInstalled: () => false, isLoading: false };
-  };
-
-  const { connectWallet, checkIfWalletIsInstalled, isLoading } = getWeb3Context();
-  const walletInstalled = checkIfWalletIsInstalled();
-
+  const { isConnected } = useAccount();
+  
   return (
     <Card className="w-full max-w-md mx-auto border shadow-md">
       <CardHeader className="text-center">
@@ -27,31 +22,39 @@ const WalletRequired = () => {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground text-center mb-4">
-          {walletInstalled 
-            ? "Click the button below to connect your wallet and get started."
-            : "You need to install a Web3 wallet like MetaMask to continue."}
+          Click the button below to connect your wallet and get started.
         </p>
       </CardContent>
       <CardFooter className="flex justify-center">
-        {walletInstalled ? (
-          <Button onClick={connectWallet} disabled={isLoading} className="gap-2">
-            {isLoading ? "Connecting..." : "Connect Wallet"}
-            <Wallet size={16} />
-          </Button>
-        ) : (
-          <div className="space-y-4 w-full">
-            <Button
-              onClick={() => window.open("https://metamask.io/download/", "_blank", "noopener noreferrer")}
-              className="w-full"
-            >
-              Install MetaMask
-            </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              We support multiple wallet types including WalletConnect.
-              <br />Once installed, refresh the page to connect.
-            </p>
-          </div>
-        )}
+        <ConnectButton.Custom>
+          {({ account, chain, openConnectModal, mounted }) => {
+            return (
+              <div className="flex flex-col items-center">
+                {(() => {
+                  if (!mounted) {
+                    return (
+                      <Button disabled>
+                        <Wallet className="mr-2" size={16} />
+                        Loading...
+                      </Button>
+                    )
+                  }
+                  
+                  if (account && chain) {
+                    return null; // User is already connected, should never reach here
+                  }
+                  
+                  return (
+                    <Button onClick={openConnectModal} className="gap-2">
+                      <Wallet size={16} />
+                      Connect Wallet
+                    </Button>
+                  );
+                })()}
+              </div>
+            );
+          }}
+        </ConnectButton.Custom>
       </CardFooter>
     </Card>
   );

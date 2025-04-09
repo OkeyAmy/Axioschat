@@ -8,6 +8,7 @@ import {
   getDefaultWallets,
   darkTheme,
   lightTheme,
+  connectorsForWallets
 } from "@rainbow-me/rainbowkit"
 import { 
   http, 
@@ -22,6 +23,12 @@ import {
   base,
   zora
 } from "wagmi/chains"
+import { 
+  coinbaseWallet,
+  injectedWallet,
+  metaMaskWallet,
+  walletConnectWallet
+} from '@rainbow-me/rainbowkit/wallets';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useTheme } from "@/components/ThemeProvider"
 import "@rainbow-me/rainbowkit/styles.css"
@@ -30,9 +37,30 @@ interface RainbowKitWrapperProps {
   children: React.ReactNode
 }
 
+// Chain config
+const chains = [mainnet, polygon, optimism, arbitrum, base, zora];
+
+// Wallets config
+const projectId = 'YOUR_WALLETCONNECT_PROJECT_ID'; // You can replace with your WalletConnect Project ID
+
+const connectors = connectorsForWallets([
+  {
+    groupName: 'Recommended',
+    wallets: [
+      injectedWallet({ chains }),
+      metaMaskWallet({ projectId, chains }),
+      walletConnectWallet({ projectId, chains }),
+      coinbaseWallet({ 
+        appName: 'NovachatV2',
+        chains 
+      }),
+    ],
+  },
+]);
+
 // Create wagmi config
 const config = createConfig({
-  chains: [mainnet, polygon, optimism, arbitrum, base, zora],
+  chains,
   transports: {
     [mainnet.id]: http(),
     [polygon.id]: http(),
@@ -41,6 +69,7 @@ const config = createConfig({
     [base.id]: http(),
     [zora.id]: http(),
   },
+  connectors
 })
 
 // Create query client
@@ -60,7 +89,7 @@ export const RainbowKitProvider: React.FC<RainbowKitWrapperProps> = ({ children 
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RKProvider theme={theme === "dark" ? darkTheme() : lightTheme()} modalSize="compact">
+        <RKProvider theme={theme === "dark" ? darkTheme() : lightTheme()}>
           {children}
         </RKProvider>
       </QueryClientProvider>
