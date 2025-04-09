@@ -1,6 +1,7 @@
 
 import { useState } from "react";
-import { useAccount, useBalance, useConnect, useDisconnect, useNetwork, useSwitchNetwork } from "wagmi";
+import { useAccount, useBalance, useConnect, useDisconnect } from "wagmi";
+import { useConfig, useSwitchChain } from "wagmi";
 import { mainnet, sepolia, base, polygon } from "wagmi/chains";
 import { parseEther } from "viem";
 import Header from "@/components/Header";
@@ -12,21 +13,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
-import { ArrowUpDown, RefreshCw, Wallet, Zap, Settings, DollarSign, Share2, Key, Lock, FileCode } from "lucide-react";
+import { ArrowUpDown, RefreshCw, Wallet, Zap, Settings, DollarSign, Share2, Key, Lock, FileCode, Repeat, ArrowLeftRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import WalletRequired from "@/components/WalletRequired";
 import { cn } from "@/lib/utils";
 
 const Functions = () => {
   const { address, isConnected } = useAccount();
-  const { chain } = useNetwork();
-  const { chains, switchNetwork } = useSwitchNetwork();
+  const config = useConfig();
+  const { chains, switchChain } = useSwitchChain();
   const { disconnect } = useDisconnect();
+  const [currentChain, setCurrentChain] = useState<number | undefined>(mainnet.id);
 
   const [transferAmount, setTransferAmount] = useState("");
   const [transferAddress, setTransferAddress] = useState("");
   const [selectedFunction, setSelectedFunction] = useState("balance");
   const [transactionHash, setTransactionHash] = useState("");
+  const [swapAmount, setSwapAmount] = useState("");
+  const [fromToken, setFromToken] = useState("eth");
+  const [toToken, setToToken] = useState("usdc");
 
   // Balance query
   const { data: balanceData, isLoading: balanceLoading, refetch: refetchBalance } = useBalance({
@@ -60,10 +65,38 @@ const Functions = () => {
     }
   };
 
+  const handleSwap = async () => {
+    try {
+      toast({
+        title: "Swap Initiated",
+        description: `Preparing to swap ${swapAmount} ${fromToken.toUpperCase()} to ${toToken.toUpperCase()}`,
+      });
+      
+      // Simulate swap success (in a real app, this would call Uniswap SDK)
+      setTimeout(() => {
+        const fakeHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+        setTransactionHash(fakeHash);
+        
+        toast({
+          title: "Swap Executed",
+          description: `Successfully swapped ${swapAmount} ${fromToken.toUpperCase()} to ${toToken.toUpperCase()}`,
+        });
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Failed to execute swap. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleNetworkSwitch = (networkId: string) => {
     const chainId = parseInt(networkId);
-    if (switchNetwork) {
-      switchNetwork(chainId);
+    setCurrentChain(chainId);
+    if (switchChain) {
+      switchChain({ chainId });
     }
   };
 
@@ -117,6 +150,10 @@ const Functions = () => {
                   <ArrowUpDown className="h-4 w-4" />
                   <span>Transactions</span>
                 </TabsTrigger>
+                <TabsTrigger value="dex" className="flex items-center gap-2">
+                  <ArrowLeftRight className="h-4 w-4" />
+                  <span>DEX</span>
+                </TabsTrigger>
                 <TabsTrigger value="contracts" className="flex items-center gap-2">
                   <FileCode className="h-4 w-4" />
                   <span>Contracts</span>
@@ -147,7 +184,7 @@ const Functions = () => {
                       <div className="space-y-2">
                         <Label>Network</Label>
                         <Select 
-                          defaultValue={chain?.id.toString()} 
+                          defaultValue={currentChain?.toString()} 
                           onValueChange={handleNetworkSwitch}
                         >
                           <SelectTrigger>
@@ -248,12 +285,12 @@ const Functions = () => {
                         <div className="flex items-center gap-2 text-sm">
                           <div className={cn(
                             "w-3 h-3 rounded-full", 
-                            chain?.id === mainnet.id ? "bg-green-500" :
-                            chain?.id === sepolia.id ? "bg-blue-500" :
-                            chain?.id === base.id ? "bg-blue-600" :
-                            chain?.id === polygon.id ? "bg-purple-500" : "bg-gray-500"
+                            currentChain === mainnet.id ? "bg-green-500" :
+                            currentChain === sepolia.id ? "bg-blue-500" :
+                            currentChain === base.id ? "bg-blue-600" :
+                            currentChain === polygon.id ? "bg-purple-500" : "bg-gray-500"
                           )} />
-                          <span>{chain?.name || "Unknown"}</span>
+                          <span>{chains.find(c => c.id === currentChain)?.name || "Unknown"}</span>
                         </div>
                       </div>
                       
@@ -263,10 +300,10 @@ const Functions = () => {
                           {chains.map((chainOption) => (
                             <Button 
                               key={chainOption.id}
-                              variant={chain?.id === chainOption.id ? "default" : "outline"}
+                              variant={currentChain === chainOption.id ? "default" : "outline"}
                               size="sm"
-                              className={chain?.id === chainOption.id ? "bg-primary" : ""}
-                              onClick={() => switchNetwork?.(chainOption.id)}
+                              className={currentChain === chainOption.id ? "bg-primary" : ""}
+                              onClick={() => handleNetworkSwitch(chainOption.id.toString())}
                             >
                               {chainOption.name}
                             </Button>
@@ -294,6 +331,141 @@ const Functions = () => {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+              
+              <TabsContent value="dex" className="min-h-[400px]">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <FunctionCard 
+                    title="Uniswap Token Swap" 
+                    description="Swap tokens using Uniswap protocol" 
+                    icon={Repeat}
+                  >
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>From</Label>
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            type="number" 
+                            placeholder="0.0" 
+                            value={swapAmount} 
+                            onChange={(e) => setSwapAmount(e.target.value)} 
+                          />
+                          <Select 
+                            defaultValue={fromToken}
+                            onValueChange={setFromToken}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue placeholder="Token" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="eth">ETH</SelectItem>
+                              <SelectItem value="usdc">USDC</SelectItem>
+                              <SelectItem value="dai">DAI</SelectItem>
+                              <SelectItem value="usdt">USDT</SelectItem>
+                              <SelectItem value="wbtc">WBTC</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-center my-2">
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          const temp = fromToken;
+                          setFromToken(toToken);
+                          setToToken(temp);
+                        }}>
+                          <ArrowUpDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>To</Label>
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            type="number" 
+                            placeholder="0.0" 
+                            value={swapAmount ? (Number(swapAmount) * 1500).toString() : ""} 
+                            disabled 
+                          />
+                          <Select 
+                            defaultValue={toToken}
+                            onValueChange={setToToken}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue placeholder="Token" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="eth">ETH</SelectItem>
+                              <SelectItem value="usdc">USDC</SelectItem>
+                              <SelectItem value="dai">DAI</SelectItem>
+                              <SelectItem value="usdt">USDT</SelectItem>
+                              <SelectItem value="wbtc">WBTC</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-muted p-3 rounded-md text-sm text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>Exchange Rate:</span>
+                          <span>1 {fromToken.toUpperCase()} ≈ 1500 {toToken.toUpperCase()}</span>
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          <span>Slippage Tolerance:</span>
+                          <span>0.5%</span>
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        className="w-full bg-primary hover:bg-primary/90"
+                        disabled={!swapAmount || fromToken === toToken}
+                        onClick={handleSwap}
+                      >
+                        Swap Tokens
+                      </Button>
+                    </div>
+                  </FunctionCard>
+                  
+                  <FunctionCard 
+                    title="Liquidity Pools" 
+                    description="Provide or remove liquidity from Uniswap pools" 
+                    icon={Share2}
+                  >
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <h3 className="font-medium">Active Liquidity Positions</h3>
+                        <div className="bg-muted/50 p-4 rounded-md text-center">
+                          <p className="text-muted-foreground">You have no active liquidity positions</p>
+                          <Button variant="outline" size="sm" className="mt-2">
+                            Create New Position
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h3 className="font-medium">Popular Liquidity Pools</h3>
+                        <div className="grid gap-2">
+                          {[
+                            { pair: "ETH/USDC", apr: "4.2%", tvl: "$1.2B" },
+                            { pair: "ETH/DAI", apr: "3.8%", tvl: "$890M" },
+                            { pair: "WBTC/ETH", apr: "5.1%", tvl: "$620M" }
+                          ].map((pool) => (
+                            <div key={pool.pair} className="flex items-center justify-between p-3 bg-background border rounded-md">
+                              <div>
+                                <p className="font-medium">{pool.pair}</p>
+                                <p className="text-xs text-muted-foreground">TVL: {pool.tvl}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-primary font-medium">{pool.apr} APR</p>
+                                <Button variant="outline" size="sm" className="mt-1">Add</Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </FunctionCard>
+                </div>
               </TabsContent>
               
               <TabsContent value="contracts" className="min-h-[400px]">

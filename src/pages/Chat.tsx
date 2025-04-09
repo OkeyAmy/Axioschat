@@ -1,429 +1,286 @@
 
-import { useState, useEffect, useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, Sparkles, Settings, Cloud, Server } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
+// Import the necessary utilities and components
+import { useState, useRef, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
-import WalletRequired from "@/components/WalletRequired";
-import ChatHistory from "@/components/ChatHistory";
 import SuggestedPromptsPanel from "@/components/SuggestedPromptsPanel";
-import { useAccount } from "wagmi";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAccount } from "wagmi";
+import WalletRequired from "@/components/WalletRequired";
+import { ArrowRight, Send, Bot, Sparkles, Settings, MessageSquare, RotateCcw, X } from "lucide-react";
+
+// Define the message type to avoid TypeScript errors
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  id: string;
+};
 
 const Chat = () => {
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string; id: string }>>([]);
+  const { isConnected } = useAccount();
+  const [loading, setLoading] = useState(false);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeChat, setActiveChat] = useState<number | null>(null);
-  const [isLocalAI, setIsLocalAI] = useState(false);
-  const [localAIEndpoint, setLocalAIEndpoint] = useState("http://localhost:11434/api/generate");
-  const [cloudAIEndpoint, setCloudAIEndpoint] = useState("");
-  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
-  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
-  const [showEndpointSettings, setShowEndpointSettings] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [useLocalAI, setUseLocalAI] = useState(true);
   
-  const { address, isConnected } = useAccount();
+  // State for custom endpoints
+  const [localEndpoint, setLocalEndpoint] = useState("http://localhost:11434");
+  const [cloudEndpoint, setCloudEndpoint] = useState("https://api.openai.com/v1");
+  const [showEndpointSettings, setShowEndpointSettings] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const initialQuestion = searchParams.get("question");
-    if (initialQuestion && isConnected) {
-      handleSubmit(undefined, initialQuestion);
-      navigate("/chat", { replace: true });
-    }
-  }, [searchParams, isConnected]);
-
+  
+  // Scroll to the bottom when messages update
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      // Prioritize the chat content on smaller screens
-      if (window.innerWidth < 1024) {
-        setLeftPanelCollapsed(true);
-        setRightPanelCollapsed(true);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    // Run once on mount
-    handleResize();
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    const handleChatHistoryCollapse = (mutation: MutationRecord) => {
-      if (mutation.target && (mutation.target as HTMLElement).classList.contains('w-14')) {
-        setLeftPanelCollapsed(true);
-      } else {
-        setLeftPanelCollapsed(false);
-      }
-    };
-
-    const handlePromptsPanelCollapse = (mutation: MutationRecord) => {
-      if (mutation.target && (mutation.target as HTMLElement).classList.contains('w-14')) {
-        setRightPanelCollapsed(true);
-      } else {
-        setRightPanelCollapsed(false);
-      }
-    };
-
-    const chatHistoryObserver = new MutationObserver((mutations) => {
-      mutations.forEach(handleChatHistoryCollapse);
-    });
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
     
-    const promptsPanelObserver = new MutationObserver((mutations) => {
-      mutations.forEach(handlePromptsPanelCollapse);
-    });
-
-    const chatHistoryPanel = document.querySelector('[data-sidebar="chat-history"]');
-    if (chatHistoryPanel) {
-      chatHistoryObserver.observe(chatHistoryPanel, { attributes: true, attributeFilter: ['class'] });
-    }
-
-    const promptsPanel = document.querySelector('[data-sidebar="prompts-panel"]');
-    if (promptsPanel) {
-      promptsPanelObserver.observe(promptsPanel, { attributes: true, attributeFilter: ['class'] });
-    }
-
-    return () => {
-      chatHistoryObserver.disconnect();
-      promptsPanelObserver.disconnect();
+    // Create a new user message
+    const userMessage: Message = {
+      role: "user",
+      content: input,
+      id: Date.now().toString(),
     };
-  }, []);
-
-  // Generate a unique ID for each message to prevent animation re-triggers
-  const generateMessageId = () => `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-  const handleSubmit = async (e?: React.FormEvent, predefinedInput?: string) => {
-    if (e) e.preventDefault();
     
-    const userMessage = predefinedInput || input.trim();
-    if (!userMessage || isLoading) return;
-    
-    // Create a new messages array with the new user message
-    const newMessages = [...messages, { role: "user", content: userMessage, id: generateMessageId() }];
-    setMessages(newMessages);
+    // Add user message to state
+    setMessages(prevMessages => [...prevMessages, userMessage]);
     setInput("");
-    setIsLoading(true);
-
+    setLoading(true);
+    
     try {
-      if (isLocalAI) {
-        try {
-          const response = await fetch(localAIEndpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'llama3.2:latest',
-              prompt: userMessage,
-              stream: false
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Error connecting to Ollama: ${response.status}`);
-          }
-
-          const data = await response.json();
-          
-          setMessages(prev => [
-            ...prev, 
-            { 
-              role: "assistant", 
-              content: data.response || "Sorry, I couldn't generate a response.",
-              id: generateMessageId()
-            }
-          ]);
-        } catch (error) {
-          console.error("Ollama error:", error);
-          toast({
-            title: "Local AI Error",
-            description: "Failed to connect to Ollama. Make sure it's running locally on port 11434.",
-            variant: "destructive",
-          });
-          
-          setMessages(prev => [
-            ...prev, 
-            { 
-              role: "assistant", 
-              content: "Error connecting to local AI. Please check that Ollama is running on port 11434.",
-              id: generateMessageId()
-            }
-          ]);
-        }
-      } else {
-        setTimeout(() => {
-          setMessages(prev => [
-            ...prev, 
-            { 
-              role: "assistant", 
-              content: `This is a simulated response to: "${userMessage}". In a complete implementation, this would come from the Flock Web3 Agent Model.`,
-              id: generateMessageId()
-            }
-          ]);
-        }, 1000);
-      }
+      // Simulate AI response
+      setTimeout(() => {
+        const aiMessage: Message = {
+          role: "assistant",
+          content: `This is a simulated response to: "${userMessage.content}" using ${useLocalAI ? "Llama 3.2 (Local)" : "GPT-4 (Cloud)"}`,
+          id: Date.now().toString(),
+        };
+        
+        setMessages(prevMessages => [...prevMessages, aiMessage]);
+        setLoading(false);
+        
+        toast({
+          title: "Response received",
+          description: "The AI has responded to your message.",
+        });
+      }, 1500);
     } catch (error) {
+      console.error("Error getting response:", error);
+      setLoading(false);
       toast({
         title: "Error",
-        description: "Failed to get a response. Please try again.",
+        description: "Failed to get a response from the AI.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleSelectQuestion = (question: string) => {
+  // Handle suggested question
+  const handleSuggestedQuestion = (question: string) => {
     setInput(question);
+    // Optional: Auto-submit the question
+    // handleSubmit({ preventDefault: () => {} } as React.FormEvent);
   };
-
-  const handleNewChat = () => {
+  
+  // Clear chat history
+  const clearChat = () => {
     setMessages([]);
-    setActiveChat(null);
-  };
-
-  const handleSelectChat = (chatId: number, chatMessages: Array<{ role: string; content: string }>) => {
-    setActiveChat(chatId);
-    const typedMessages = chatMessages.map(msg => ({
-      role: msg.role as "user" | "assistant",
-      content: msg.content,
-      id: generateMessageId()
-    }));
-    setMessages(typedMessages);
-    
     toast({
-      title: "Chat Loaded",
-      description: `Loaded chat #${chatId}`,
-    });
-  };
-
-  const MessageItem = ({ message, index }: { message: { role: "user" | "assistant"; content: string; id: string }, index: number }) => (
-    <div 
-      key={message.id}
-      className={`flex gap-3 ${message.role === "assistant" ? "bg-accent/10 p-4 rounded-md" : "py-4"} animate-in fade-in-50 slide-in-from-bottom-5`}
-      style={{ animationDelay: `${index * 50}ms` }}
-    >
-      <div className="flex-shrink-0 pt-1">
-        {message.role === "assistant" ? (
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-            <Sparkles size={18} className="text-primary" />
-          </div>
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center">
-            <User size={18} />
-          </div>
-        )}
-      </div>
-      <div className="flex-1">
-        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-      </div>
-    </div>
-  );
-
-  const toggleLocalAI = (value: number[]) => {
-    const newValue = value[0] === 100;
-    setIsLocalAI(newValue);
-    toast({
-      title: newValue ? "Using Local AI" : "Using Cloud AI",
-      description: newValue 
-        ? "Switched to local Ollama with llama3.2:latest. Make sure Ollama is running on port 11434." 
-        : "Switched to cloud-based AI responses",
+      title: "Chat cleared",
+      description: "All chat messages have been removed.",
     });
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8">
+      
+      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col">
         {!isConnected ? (
-          <WalletRequired />
+          <div className="flex-1 flex items-center justify-center">
+            <WalletRequired />
+          </div>
         ) : (
-          <div ref={chatContainerRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-14rem)] overflow-hidden">
-            <div className="lg:col-span-3 md:block hidden h-full" data-sidebar="chat-history">
-              <ChatHistory 
-                onSelectChat={handleSelectChat}
-                onNewChat={handleNewChat}
-                activeChat={activeChat}
-              />
-            </div>
-            
-            <div className={cn(
-              "transition-all duration-300 h-full",
-              leftPanelCollapsed && rightPanelCollapsed ? "lg:col-span-12" : 
-              (leftPanelCollapsed || rightPanelCollapsed) ? "lg:col-span-9" : "lg:col-span-6"
-            )}>
-              <Card className="w-full h-full border shadow-md flex flex-col bg-card/80 backdrop-blur-sm animate-in fade-in-50 overflow-hidden">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-lg">
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
-                        <Sparkles size={20} className="text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-                          NovachatV2 Web3 Assistant
-                        </CardTitle>
-                        {address && (
-                          <CardDescription className="mt-1 flex items-center">
-                            <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                            Connected: {address.substring(0, 6)}...{address.substring(address.length - 4)}
-                          </CardDescription>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Popover open={showEndpointSettings} onOpenChange={setShowEndpointSettings}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost" 
-                          size="icon" 
-                          className="ml-auto transition-colors hover:bg-secondary/20"
-                          title="AI Settings"
-                        >
-                          <Settings size={18} className="text-muted-foreground" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80 p-4">
-                        <div className="space-y-4">
-                          <h3 className="font-medium">AI Model Settings</h3>
-                          
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <div className="flex items-center">
-                                <Cloud size={14} className="mr-2 text-blue-500" />
-                                <span className="text-sm">Cloud</span>
-                              </div>
-                              <div className="flex items-center">
-                                <span className="text-sm">Local</span>
-                                <Server size={14} className="ml-2 text-green-500" />
-                              </div>
-                            </div>
-                            <Slider 
-                              defaultValue={[isLocalAI ? 100 : 0]} 
-                              max={100} 
-                              step={100}
-                              onValueChange={toggleLocalAI}
-                              className="my-2"
-                            />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Local AI Endpoint</label>
-                            <Input 
-                              value={localAIEndpoint}
-                              onChange={(e) => setLocalAIEndpoint(e.target.value)}
-                              placeholder="http://localhost:11434/api/generate"
-                            />
-                            <p className="text-xs text-muted-foreground">Default port for Ollama is 11434</p>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Cloud AI Endpoint (Optional)</label>
-                            <Input 
-                              value={cloudAIEndpoint}
-                              onChange={(e) => setCloudAIEndpoint(e.target.value)}
-                              placeholder="https://api.example.com/ai"
-                            />
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    
-                    {isLocalAI && (
-                      <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 animate-in slide-in-from-right-4">
-                        Local AI: llama3.2
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-hidden p-0">
-                  <ScrollArea 
-                    ref={scrollAreaRef} 
-                    className="h-full px-4 pt-4 pb-2"
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6 flex-1 overflow-hidden">
+            <div className="flex flex-col rounded-lg border overflow-hidden h-[calc(100vh-10rem)]">
+              <Tabs defaultValue="chat" className="flex flex-col h-full">
+                <div className="border-b px-4 py-2">
+                  <TabsList className="h-9 grid grid-cols-2 mb-0">
+                    <TabsTrigger value="chat" className="text-sm flex items-center">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Chat
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="text-sm flex items-center">
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      History
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                
+                <TabsContent value="chat" className="flex-1 flex flex-col overflow-hidden p-0 m-0 data-[state=active]:flex-1">
+                  <div 
+                    ref={chatContainerRef} 
+                    className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300"
                   >
                     {messages.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-in fade-in-50">
-                        <Bot size={48} className="text-muted-foreground mb-4" />
-                        <h3 className="text-xl font-semibold mb-2">Start a conversation</h3>
-                        <p className="text-muted-foreground text-sm max-w-md">
-                          Ask questions about Web3, smart contracts, or get assistance with blockchain tasks.
+                      <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                        <div className="bg-primary/10 p-3 rounded-full mb-4">
+                          <Bot size={24} className="text-primary" />
+                        </div>
+                        <h3 className="text-lg font-semibold">How can I help you today?</h3>
+                        <p className="text-muted-foreground text-sm mt-2 max-w-md">
+                          Ask me anything about blockchain, smart contracts, or web3 development. I'm here to assist!
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
-                        {messages.map((message, index) => (
-                          <MessageItem key={message.id} message={message} index={index} />
-                        ))}
-                        {isLoading && (
-                          <div className="flex gap-3 bg-accent/10 p-4 rounded-md animate-in fade-in-50 slide-in-from-bottom-5">
-                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                              <Sparkles size={18} className="text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex space-x-2 items-center">
-                                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-                              </div>
+                      messages.map(message => (
+                        <div 
+                          key={message.id}
+                          className={cn(
+                            "flex animate-in fade-in-0 duration-300",
+                            message.role === "user" ? "justify-end" : "justify-start"
+                          )}
+                        >
+                          <div 
+                            className={cn(
+                              "max-w-[80%] rounded-lg px-4 py-3 shadow-sm border",
+                              message.role === "user" 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-muted border-border/50"
+                            )}
+                          >
+                            <div className="whitespace-pre-wrap break-words">
+                              {message.content}
                             </div>
                           </div>
-                        )}
-                        <div ref={messagesEndRef} className="h-4" />
-                      </div>
+                        </div>
+                      ))
                     )}
-                  </ScrollArea>
-                </CardContent>
-                <CardFooter className="pt-4 pb-4 border-t bg-gradient-to-r from-primary/5 to-accent/5">
-                  <form onSubmit={handleSubmit} className="w-full">
-                    <div className="flex gap-2">
-                      <Textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Type your message..."
-                        className="resize-none min-h-[50px] border-secondary/30 focus:border-primary/30 transition-all duration-300 bg-background/50"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSubmit(e);
-                          }
-                        }}
-                      />
+                    <div ref={messagesEndRef} />
+                  </div>
+                  
+                  <div className="border-t p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="local-ai"
+                            checked={useLocalAI}
+                            onCheckedChange={setUseLocalAI}
+                          />
+                          <Label htmlFor="local-ai" className="text-sm cursor-pointer select-none">
+                            {useLocalAI ? "Llama 3.2 (Local)" : "GPT-4 (Cloud)"}
+                          </Label>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setShowEndpointSettings(!showEndpointSettings)}
+                          className="h-8 w-8"
+                        >
+                          <Settings size={14} />
+                        </Button>
+                      </div>
                       <Button 
-                        type="submit" 
-                        size="icon" 
-                        disabled={isLoading || !input.trim()}
-                        className="h-[50px] w-[50px] transition-all duration-300 bg-primary/90 hover:bg-primary"
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={clearChat}
+                        className="text-xs h-8 px-2"
+                        disabled={messages.length === 0}
                       >
-                        <Send size={18} className="animate-in fade-in-50" />
+                        <RotateCcw size={14} className="mr-1" />
+                        Clear
                       </Button>
                     </div>
-                  </form>
-                </CardFooter>
-              </Card>
+                    
+                    {showEndpointSettings && (
+                      <div className="mb-4 p-3 border rounded-md bg-muted/40 space-y-3 relative">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-6 w-6 absolute top-2 right-2"
+                          onClick={() => setShowEndpointSettings(false)}
+                        >
+                          <X size={12} />
+                        </Button>
+                        <div className="space-y-2">
+                          <Label htmlFor="local-endpoint" className="text-xs">Local Endpoint</Label>
+                          <Input
+                            id="local-endpoint"
+                            placeholder="http://localhost:11434"
+                            value={localEndpoint}
+                            onChange={(e) => setLocalEndpoint(e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="cloud-endpoint" className="text-xs">Cloud Endpoint</Label>
+                          <Input
+                            id="cloud-endpoint"
+                            placeholder="https://api.openai.com/v1"
+                            value={cloudEndpoint}
+                            onChange={(e) => setCloudEndpoint(e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    <form onSubmit={handleSubmit} className="flex space-x-2">
+                      <div className="flex-1 flex border rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-ring h-10">
+                        <Input
+                          placeholder="Ask anything..."
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          className="flex-1 px-3 py-2 border-0 focus-visible:ring-0 focus-visible:ring-transparent h-10"
+                        />
+                      </div>
+                      <Button type="submit" disabled={loading || !input.trim()} className="h-10">
+                        {loading ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                        ) : (
+                          <>
+                            Ask Now
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="history" className="flex-1 overflow-y-auto data-[state=active]:flex-1 m-0 p-0">
+                  <div className="text-center p-8 h-full flex flex-col items-center justify-center">
+                    <Sparkles className="h-12 w-12 text-primary/40 mb-4" />
+                    <h3 className="text-lg font-medium">Chat History</h3>
+                    <p className="text-muted-foreground text-sm mt-2 max-w-md">
+                      Your previous conversations will appear here for easy access.
+                    </p>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
             
-            <div className="lg:col-span-3 md:block hidden h-full" data-sidebar="prompts-panel">
-              <SuggestedPromptsPanel onSelectQuestion={handleSelectQuestion} />
+            <div className="h-[calc(100vh-10rem)]">
+              <SuggestedPromptsPanel onSelectQuestion={handleSuggestedQuestion} />
             </div>
           </div>
         )}
