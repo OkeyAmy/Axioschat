@@ -30,6 +30,16 @@ const getReplicateApiToken = (): string => {
   return "";
 };
 
+// Use a CORS proxy for development environments
+const corsProxy = (url: string): string => {
+  // For production, you'd ideally use your own backend server or Supabase edge function
+  // This is a temporary solution for development
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return `https://corsproxy.io/?${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> => {
   try {
     const REPLICATE_API_TOKEN = getReplicateApiToken();
@@ -43,7 +53,11 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
       return "Error: Please provide a Replicate API token in the settings";
     }
 
-    console.log("Calling Replicate API with input:", { query: input.query.substring(0, 50) + "...", temperature: input.temperature, top_p: input.top_p });
+    console.log("Calling Replicate API with input:", { 
+      query: input.query.substring(0, 50) + "...", 
+      temperature: input.temperature, 
+      top_p: input.top_p 
+    });
     
     const body = {
       version: "3babfa32ab245cf8e047ff7366bcb4d5a2b4f0f108f504c47d5a84e23c02ff5f",
@@ -58,48 +72,90 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
     
     console.log("Request body:", JSON.stringify(body, null, 2));
 
-    const response = await fetch("https://api.replicate.com/v1/predictions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Token ${REPLICATE_API_TOKEN}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    console.log("Response status:", response.status);
+    // Use fetch with mode: 'no-cors' to avoid CORS issues
+    // Note: This will return an opaque response that can't be read directly
+    // In a production environment, you should use a server-side proxy
+    const replicateUrl = corsProxy("https://api.replicate.com/v1/predictions");
     
-    const responseData = await response.json();
-    console.log("Response data:", responseData);
-
-    if (!response.ok) {
-      let errorMessage = "Failed to call Flock Web3 model";
-      if (responseData.detail) {
-        errorMessage = `API Error: ${responseData.detail}`;
-      } else if (responseData.error) {
-        errorMessage = `API Error: ${responseData.error}`;
+    try {
+      const response = await fetch(replicateUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${REPLICATE_API_TOKEN}`,
+        },
+        body: JSON.stringify(body),
+      });
+      
+      console.log("Response status:", response.status);
+      
+      if (!response.ok) {
+        // Try to extract error details if possible
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.error("Replicate API Error Response:", errorData);
+        } catch (e) {
+          console.error("Could not parse error response:", e);
+        }
+        
+        let errorMessage = `API Error (${response.status}): `;
+        if (errorData?.detail) {
+          errorMessage += errorData.detail;
+        } else if (errorData?.error) {
+          errorMessage += errorData.error;
+        } else {
+          errorMessage += "Unknown error from Replicate API";
+        }
+        
+        if (response.status === 403) {
+          errorMessage = "Authentication failed. Please check your API token.";
+        } else if (response.status === 429) {
+          errorMessage = "Rate limit exceeded. Please try again later.";
+        } else if (response.status >= 500) {
+          errorMessage = "Replicate API server error. Please try again later.";
+        }
+        
+        throw new Error(errorMessage);
       }
-      console.error("Replicate API Error:", responseData);
-      throw new Error(errorMessage);
-    }
+      
+      const responseData = await response.json();
+      console.log("Response data:", responseData);
 
-    const prediction: ReplicateResponse = responseData;
-    console.log("Prediction response:", prediction);
-    
-    // Check if we need to poll for results
-    if (prediction.status === "starting" || prediction.status === "processing") {
-      return await pollForCompletion(prediction.id);
+      const prediction: ReplicateResponse = responseData;
+      console.log("Prediction response:", prediction);
+      
+      // Check if we need to poll for results
+      if (prediction.status === "starting" || prediction.status === "processing") {
+        return await pollForCompletion(prediction.id);
+      }
+      
+      return prediction.output || "No response from model";
+    } catch (fetchError: any) {
+      // Handle network-related errors
+      console.error("Network error calling Replicate:", fetchError);
+      
+      // Check if this is a CORS error
+      if (fetchError.message.includes("CORS") || fetchError.name === "TypeError") {
+        return "Error: CORS issue detected. This is likely due to cross-origin restrictions when calling the Replicate API directly from the browser. In a production environment, you should use a server-side API or Supabase Edge Function to make this request.";
+      }
+      
+      throw fetchError;
     }
-    
-    return prediction.output || "No response from model";
   } catch (error) {
     console.error("Error calling Flock Web3 model:", error);
+    
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : "Unknown error occurred while calling the AI model";
+    
     toast({
       title: "API Error",
-      description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      description: errorMessage,
       variant: "destructive",
     });
-    return `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
+    
+    return `Error: ${errorMessage}`;
   }
 };
 
@@ -117,7 +173,9 @@ const pollForCompletion = async (predictionId: string): Promise<string> => {
     try {
       console.log(`Poll attempt ${attempt + 1} for prediction ${predictionId}...`);
       
-      const response = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+      const pollUrl = corsProxy(`https://api.replicate.com/v1/predictions/${predictionId}`);
+      
+      const response = await fetch(pollUrl, {
         headers: {
           "Authorization": `Token ${REPLICATE_API_TOKEN}`,
           "Content-Type": "application/json",
@@ -126,13 +184,14 @@ const pollForCompletion = async (predictionId: string): Promise<string> => {
       
       console.log(`Poll attempt ${attempt + 1} response status:`, response.status);
       
-      const responseData = await response.json();
-      console.log(`Poll attempt ${attempt + 1} response data:`, responseData);
-      
       if (!response.ok) {
-        const errorData = responseData;
+        const errorData = await response.json();
+        console.error(`Poll attempt ${attempt + 1} error:`, errorData);
         throw new Error(errorData.detail || "Failed to poll prediction status");
       }
+      
+      const responseData = await response.json();
+      console.log(`Poll attempt ${attempt + 1} response data:`, responseData);
       
       const prediction: ReplicateResponse = responseData;
       console.log(`Poll attempt ${attempt + 1} status:`, prediction.status);

@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { MessageSquare, ChevronRight, Plus, ArrowLeftCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import TransactionQueue from './TransactionQueue';
@@ -75,37 +74,44 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
 
   return (
     <div className={cn(
-      "bg-gradient-to-br from-sidebar-accent/30 to-sidebar-background border rounded-lg h-full flex flex-col transition-all duration-300 shadow-sm",
-      isCollapsed ? "w-14" : "w-full"
+      "h-full transition-all duration-300",
+      isCollapsed ? "w-10" : "w-full"
     )}>
-      <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
-        <div className="flex items-center justify-between p-2">
-          {!isCollapsed && <h3 className="text-sm font-medium truncate">Chat History</h3>}
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto transition-transform duration-300">
-              {isCollapsed ? <ChevronRight size={16} /> : <ArrowLeftCircle size={16} />}
+      {isCollapsed ? (
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setIsCollapsed(false)}
+          className="h-full w-full rounded-lg border flex items-center justify-center"
+        >
+          <ChevronRight size={16} />
+        </Button>
+      ) : (
+        <div className="bg-gradient-to-br from-sidebar-accent/30 to-sidebar-background border rounded-lg h-full flex flex-col transition-all duration-300 shadow-sm">
+          <div className="flex items-center justify-between p-2">
+            <h3 className="text-sm font-medium truncate">Chat History</h3>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 ml-auto" 
+              onClick={() => setIsCollapsed(true)}
+            >
+              <ArrowLeftCircle size={16} />
             </Button>
-          </CollapsibleTrigger>
-        </div>
+          </div>
 
-        <div className="px-2 mb-2">
-          <Button 
-            variant="outline" 
-            className={cn(
-              "w-full justify-start bg-secondary/30 hover:bg-secondary/50 border-secondary/20 transition-all duration-300",
-              isCollapsed ? "w-auto p-2 justify-center" : ""
-            )} 
-            onClick={onNewChat}
-          >
-            {isCollapsed ? <Plus size={16} /> : <>
+          <div className="px-2 mb-2">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start bg-secondary/30 hover:bg-secondary/50 border-secondary/20 transition-all duration-300"
+              onClick={onNewChat}
+            >
               <MessageSquare className="mr-2" size={16} />
               New Chat
-            </>}
-          </Button>
-        </div>
-        
-        <CollapsibleContent>
-          <ScrollArea className="h-[calc(100vh-16rem)] px-2">
+            </Button>
+          </div>
+          
+          <ScrollArea className="h-[calc(100vh-16rem)] px-2 flex-1">
             <div className="space-y-1 pr-2">
               {sampleChatHistory.map((chat) => (
                 <Button
@@ -140,8 +146,8 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
               </div>
             </>
           )}
-        </CollapsibleContent>
-      </Collapsible>
+        </div>
+      )}
     </div>
   );
 };

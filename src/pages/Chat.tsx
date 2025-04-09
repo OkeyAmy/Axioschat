@@ -1,17 +1,17 @@
+
 import { useState, useRef, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ChatHistory from "@/components/ChatHistory";
 import ChatMessages from "@/components/ChatMessages";
 import SuggestedPromptsPanel from "@/components/SuggestedPromptsPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { useAccount } from "wagmi";
 import WalletRequired from "@/components/WalletRequired";
-import { ArrowRight, Send, Bot, MessageSquare, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Bot, MessageSquare, RotateCcw } from "lucide-react";
 import { mainnet } from "wagmi/chains";
 import TransactionQueue from "@/components/TransactionQueue";
 import useApiKeys from "@/hooks/useApiKeys";
@@ -174,92 +174,49 @@ const Chat = () => {
     setMessages([]);
   };
 
-  const toggleHistoryPanel = () => {
-    setIsHistoryPanelCollapsed(!isHistoryPanelCollapsed);
-  };
-
-  const togglePromptsPanel = () => {
-    setIsPromptsPanelCollapsed(!isPromptsPanelCollapsed);
-  };
-
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden">
+    <div className="flex flex-col h-screen bg-background">
       <Header />
       
-      <main className="flex-1 container px-0 md:px-4 py-4 flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] overflow-hidden">
+      <main className="flex-1 container px-0 md:px-4 py-4 flex flex-col max-h-[calc(100vh-4rem)] overflow-hidden">
         {!isConnected ? (
           <div className="flex-1 flex items-center justify-center">
             <WalletRequired />
           </div>
         ) : (
-          <div className="grid grid-cols-[auto_1fr_auto] gap-0 md:gap-2 lg:gap-4 flex-1 h-full overflow-hidden">
+          <div className="grid grid-cols-[auto_1fr_auto] gap-0 md:gap-2 lg:gap-4 h-full max-h-full">
             {/* History Panel */}
             <div className={cn(
-              "transition-all duration-300 flex flex-col h-full",
+              "transition-all duration-300 h-full max-h-full overflow-hidden",
               isHistoryPanelCollapsed ? "w-10" : "w-[280px] md:w-[320px]"
             )}>
-              {isHistoryPanelCollapsed ? (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={toggleHistoryPanel}
-                  className="h-full rounded-none border-r"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              ) : (
-                <div className="flex flex-col h-full overflow-hidden border rounded-lg">
-                  <ChatHistory 
-                    onSelectChat={handleSelectChat} 
-                    onNewChat={handleNewChat}
-                    activeChat={activeChat}
-                    currentChain={currentChain}
-                  />
-                </div>
-              )}
+              <ChatHistory 
+                onSelectChat={handleSelectChat} 
+                onNewChat={handleNewChat}
+                activeChat={activeChat}
+                currentChain={currentChain}
+              />
             </div>
             
             {/* Main Chat Area */}
-            <div className="flex flex-col rounded-lg border overflow-hidden h-full max-h-full">
-              <div className="border-b px-4 py-2 flex justify-between items-center">
+            <div className="flex flex-col rounded-lg border h-full max-h-full overflow-hidden">
+              <div className="border-b px-4 py-2 flex justify-between items-center flex-shrink-0">
                 <div className="flex items-center gap-2">
-                  {isHistoryPanelCollapsed && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={toggleHistoryPanel}
-                      className="md:hidden h-8 w-8"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  )}
                   <MessageSquare className="h-5 w-5 text-primary" />
                   <h2 className="text-sm font-medium">
                     {activeChat ? "Conversation" : "New Chat"}
                   </h2>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearChat}
-                    className="text-xs h-8"
-                    disabled={messages.length === 0}
-                  >
-                    <RotateCcw size={14} className="mr-1" />
-                    Clear
-                  </Button>
-                  {isPromptsPanelCollapsed && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={togglePromptsPanel}
-                      className="md:hidden h-8 w-8"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearChat}
+                  className="text-xs h-8"
+                  disabled={messages.length === 0}
+                >
+                  <RotateCcw size={14} className="mr-1" />
+                  Clear
+                </Button>
               </div>
                 
               <div 
@@ -282,7 +239,7 @@ const Chat = () => {
                 <div ref={messagesEndRef} />
               </div>
               
-              <div className="border-t p-3 md:p-4">
+              <div className="border-t p-3 md:p-4 flex-shrink-0">
                 <ModelSelector 
                   useLocalAI={useLocalAI}
                   onUseLocalAIChange={setUseLocalAI}
@@ -320,40 +277,14 @@ const Chat = () => {
             
             {/* Suggested Prompts Panel */}
             <div className={cn(
-              "transition-all duration-300 h-full",
+              "transition-all duration-300 h-full max-h-full overflow-hidden",
               isPromptsPanelCollapsed ? "w-10" : "w-[260px] lg:w-[300px]"
             )}>
-              {isPromptsPanelCollapsed ? (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={togglePromptsPanel}
-                  className="h-full rounded-none border-l"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              ) : (
-                <div className="h-full flex flex-col border rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between p-2 border-b">
-                    <h3 className="text-sm font-medium">Suggested Prompts</h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={togglePromptsPanel}
-                      className="h-7 w-7"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <SuggestedPromptsPanel 
-                      onSelectQuestion={handleSuggestedQuestion}
-                      onCollapseChange={setIsPromptsPanelCollapsed}
-                      defaultCollapsed={false}
-                    />
-                  </div>
-                </div>
-              )}
+              <SuggestedPromptsPanel 
+                onSelectQuestion={handleSuggestedQuestion}
+                onCollapseChange={setIsPromptsPanelCollapsed}
+                defaultCollapsed={isPromptsPanelCollapsed}
+              />
             </div>
           </div>
         )}

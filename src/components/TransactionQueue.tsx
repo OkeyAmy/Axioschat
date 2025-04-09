@@ -51,7 +51,7 @@ const TransactionQueue: React.FC<TransactionQueueProps> = ({
   if (inPanel) {
     return (
       <div className={cn("flex flex-col gap-2 max-h-full overflow-hidden", className)}>
-        <ScrollArea className="max-h-[200px]">
+        <ScrollArea className="max-h-[180px]">
           <div className="space-y-2 pr-3">
             {queue.map((tx) => (
               <Card key={tx.id} className={cn(

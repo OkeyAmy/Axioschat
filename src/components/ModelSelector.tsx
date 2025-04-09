@@ -83,6 +83,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                 onChange={onReplicateApiKeyChange}
                 placeholder="Enter your Replicate API key"
               />
+              <div className="text-xs text-muted-foreground mt-2">
+                <p>Note: Due to CORS restrictions, API calls may not work directly from the browser. 
+                Consider using a backend service or Supabase Edge Function for production use.</p>
+              </div>
             </div>
           )}
         </div>

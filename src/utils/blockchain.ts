@@ -46,8 +46,18 @@ export const getChainBlockExplorer = (chainId: number): string => {
 };
 
 export const getTxUrl = (chainId: number, txHash: string): string => {
-  const baseUrl = getChainBlockExplorer(chainId);
-  return `${baseUrl}/tx/${txHash}`;
+  const explorers: Record<number, string> = {
+    1: "https://etherscan.io/tx/",
+    5: "https://goerli.etherscan.io/tx/",
+    11155111: "https://sepolia.etherscan.io/tx/",
+    56: "https://bscscan.com/tx/",
+    137: "https://polygonscan.com/tx/",
+    42161: "https://arbiscan.io/tx/",
+    10: "https://optimistic.etherscan.io/tx/",
+    43114: "https://snowtrace.io/tx/",
+  };
+
+  return `${explorers[chainId] || "https://etherscan.io/tx/"}${txHash}`;
 };
 
 export const getAddressUrl = (chainId: number, address: string): string => {
@@ -841,6 +851,46 @@ export const getContractABI = async (
     { inputs: [{ name: "from", type: "address" }, { name: "to", type: "address" }, { name: "amount", type: "uint256" }], name: "transferFrom", outputs: [{ name: "", type: "bool" }], stateMutability: "nonpayable", type: "function" },
     { inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], name: "allowance", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" }
   ];
+};
+
+export const getGasPrice = async (chainId: number): Promise<string> => {
+  try {
+    const defaultGasPrices: Record<number, string> = {
+      1: "20",
+      56: "5",
+      137: "30",
+      42161: "0.1",
+      10: "0.001",
+      43114: "25"
+    };
+    
+    return defaultGasPrices[chainId] || "10";
+  } catch (error) {
+    console.error("Error getting gas price:", error);
+    return "10";
+  }
+};
+
+export const formatBigInt = (value: bigint, decimals: number = 18, displayDecimals: number = 4): string => {
+  try {
+    if (value === BigInt(0)) return "0";
+    
+    const divisor = BigInt(10) ** BigInt(decimals);
+    const quotient = value / divisor;
+    const remainder = value % divisor;
+    
+    let remainderStr = remainder.toString().padStart(decimals, "0");
+    remainderStr = remainderStr.substring(0, displayDecimals).replace(/0+$/, "");
+    
+    if (remainderStr === "") {
+      return quotient.toString();
+    }
+    
+    return `${quotient}.${remainderStr}`;
+  } catch (error) {
+    console.error("Error formatting BigInt:", error);
+    return String(value);
+  }
 };
 
 export const convertEstimatedGas = (gas: bigint): number => {
