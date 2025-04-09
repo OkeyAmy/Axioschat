@@ -60,11 +60,17 @@ const TransferSection: React.FC<TransferSectionProps> = ({ currentChain }) => {
         description: `Preparing to send ${transferAmount} ETH to ${transferAddress}`,
       });
 
-      const txHash = await sendTransaction(web3, {
-        from: address,
-        to: transferAddress,
-        value: transferAmount
-      });
+      // Convert the amount to wei
+      const amountWei = web3.utils.toWei(transferAmount, 'ether');
+
+      // Fix: Pass all required arguments to sendTransaction
+      const txHash = await sendTransaction(
+        web3,
+        address,
+        transferAddress,
+        amountWei,
+        "0x" // Empty data for a simple transfer
+      );
 
       setTransactionHash(txHash);
       setTxStatus("success");
