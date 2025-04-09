@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,7 +79,7 @@ const ContractsSection: React.FC = () => {
   const [functionName, setFunctionName] = useState<string>('');
   const [functionArgs, setFunctionArgs] = useState<string>('');
   const [functionValue, setFunctionValue] = useState<string>('0');
-  const [abi, setAbi] useState<string>('');
+  const [abi, setAbi] = useState<string>('');
   const [bytecode, setBytecode] = useState<string>('');
   const [constructorArgs, setConstructorArgs] = useState<string>('');
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
