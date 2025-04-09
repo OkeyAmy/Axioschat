@@ -3,13 +3,22 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { FunctionCard } from "./FunctionCard";
-import { ArrowUpDown, ExternalLink, CheckCircle2, RefreshCw, Share2 } from "lucide-react";
+import { ArrowUpDown, ExternalLink, CheckCircle2, RefreshCw, Share2, Settings, X } from "lucide-react";
 import { useWeb3 } from "@/hooks/useWeb3";
-import { getAddressUrl, getTxUrl, sendTransaction } from "@/utils/blockchain";
+import { getAddressUrl, getTxUrl, sendTransaction, fetchRecentTransactions, getRecommendedGasPrice } from "@/utils/blockchain";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 
 interface TransactionsSectionProps {
   currentChain: number;
@@ -31,12 +40,43 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ currentChain 
   const [txStatus, setTxStatus] = useState<TransactionStatus>("none");
   const [recentTxs, setRecentTxs] = useState<any[]>([]);
   const [isLoadingTxs, setIsLoadingTxs] = useState(false);
+  
+  // Gas settings
+  const [gasPrice, setGasPrice] = useState<string>("");
+  const [gasLimit, setGasLimit] = useState<string>("");
+  const [recommendedGasPrice, setRecommendedGasPrice] = useState<string>("");
+  const [gasPriceGwei, setGasPriceGwei] = useState<number>(20);
+  const [isEditingGas, setIsEditingGas] = useState(false);
+  const [useEIP1559, setUseEIP1559] = useState(false);
+  const [maxFeePerGas, setMaxFeePerGas] = useState<string>("");
+  const [maxPriorityFeePerGas, setMaxPriorityFeePerGas] = useState<string>("");
 
   useEffect(() => {
     if (web3 && address) {
       loadRecentTransactions();
+      loadRecommendedGasPrice();
     }
   }, [web3, address, currentChain]);
+
+  const loadRecommendedGasPrice = async () => {
+    if (!web3) return;
+    
+    try {
+      const recommended = await getRecommendedGasPrice(web3, currentChain);
+      setRecommendedGasPrice(recommended);
+      
+      // Convert to Gwei for UI
+      const gweiValue = parseFloat(web3.utils.fromWei(recommended, 'gwei'));
+      setGasPriceGwei(gweiValue);
+      setGasPrice(recommended);
+      
+      // Set EIP-1559 values
+      setMaxFeePerGas(web3.utils.toWei((gweiValue * 1.5).toString(), 'gwei'));
+      setMaxPriorityFeePerGas(web3.utils.toWei("1.5", 'gwei'));
+    } catch (error) {
+      console.error("Error getting recommended gas price:", error);
+    }
+  };
 
   const validateAddress = (address: string) => {
     if (!address) {
@@ -57,58 +97,17 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ currentChain 
     setIsLoadingTxs(true);
     
     try {
-      // Get recent transactions from the blockchain
-      const getTransactions = async () => {
-        try {
-          // This would normally use the explorer API, but for demo purposes:
-          const blockNumber = await web3.eth.getBlockNumber();
-          const txs = [];
-          
-          // Get the last 3 blocks
-          for (let i = 0; i < 3; i++) {
-            if (blockNumber - i >= 0) {
-              const block = await web3.eth.getBlock(blockNumber - i, true);
-              if (block && block.transactions) {
-                // Find transactions involving the user's address
-                const relevantTxs = block.transactions
-                  .filter((tx: any) => 
-                    tx.from?.toLowerCase() === address?.toLowerCase() || 
-                    tx.to?.toLowerCase() === address?.toLowerCase())
-                  .map((tx: any) => ({
-                    hash: tx.hash,
-                    type: tx.from?.toLowerCase() === address?.toLowerCase() ? "Outgoing" : "Incoming",
-                    value: web3.utils.fromWei(tx.value.toString(), 'ether') + " ETH",
-                    to: tx.to,
-                    from: tx.from,
-                    timestamp: new Date().toLocaleString(), // Block timestamp would be ideal
-                    status: "success" as TransactionStatus,
-                  }));
-                
-                txs.push(...relevantTxs);
-              }
-            }
-          }
-          
-          return txs;
-        } catch (error) {
-          console.error("Error getting transactions:", error);
-          return [];
-        }
-      };
+      const txs = await fetchRecentTransactions(web3, address);
       
-      const txs = await getTransactions();
-      setRecentTxs(txs.length > 0 ? txs : [
-        // Fallback to sample data if no transactions found
-        {
-          hash: `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
-          type: "Transfer",
-          value: "0.1 ETH",
-          to: `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
-          from: address,
-          timestamp: new Date(Date.now() - 3600000).toLocaleString(),
-          status: "success" as TransactionStatus,
-        }
-      ]);
+      if (txs && txs.length > 0) {
+        setRecentTxs(txs);
+      } else {
+        // If no transactions found, let's display a message but not reset to empty array
+        toast({
+          title: "No Transactions Found",
+          description: "We couldn't find any recent transactions for this address."
+        });
+      }
     } catch (error) {
       console.error("Error loading transactions:", error);
       toast({
@@ -139,12 +138,27 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ currentChain 
         description: `Preparing to send ${transferAmount} ETH to ${transferAddress}`,
       });
 
-      const txHash = await sendTransaction(web3, {
+      // Prepare transaction options
+      const txOptions: any = {
         from: address,
         to: transferAddress,
         value: transferAmount,
         data: txData || undefined
-      });
+      };
+      
+      // Add gas parameters from user input
+      if (gasLimit) {
+        txOptions.gasLimit = gasLimit;
+      }
+      
+      if (useEIP1559) {
+        txOptions.maxFeePerGas = maxFeePerGas;
+        txOptions.maxPriorityFeePerGas = maxPriorityFeePerGas;
+      } else if (gasPrice) {
+        txOptions.gasPrice = gasPrice;
+      }
+
+      const txHash = await sendTransaction(web3, txOptions);
 
       setTransactionHash(txHash);
       setTxStatus("success");
@@ -177,6 +191,160 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ currentChain 
     }
   };
 
+  const handleGasPriceChange = (value: number[]) => {
+    if (!web3) return;
+    
+    setGasPriceGwei(value[0]);
+    const newGasPrice = web3.utils.toWei(value[0].toString(), 'gwei');
+    setGasPrice(newGasPrice);
+    
+    // Update EIP-1559 values based on gas price
+    setMaxFeePerGas(web3.utils.toWei((value[0] * 1.5).toString(), 'gwei'));
+  };
+
+  const GasSettings = () => (
+    <div className="space-y-4 p-2">
+      <div className="flex justify-between items-center">
+        <h3 className="text-sm font-medium">Gas Settings</h3>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={loadRecommendedGasPrice}
+            className="h-7 text-xs"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Refresh
+          </Button>
+          <DialogClose asChild>
+            <Button variant="ghost" size="sm" className="h-7 p-0 w-7">
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogClose>
+        </div>
+      </div>
+      
+      <div className="p-3 bg-muted/50 rounded-md text-xs">
+        <p>Current network: {
+          currentChain === 1 ? "Ethereum" :
+          currentChain === 137 ? "Polygon" :
+          currentChain === 10 ? "Optimism" :
+          currentChain === 42161 ? "Arbitrum" :
+          currentChain === 8453 ? "Base" :
+          currentChain === 7777777 ? "Zora" : "Unknown"
+        }</p>
+        <p className="mt-1">Recommended gas price: {
+          web3 ? parseFloat(web3.utils.fromWei(recommendedGasPrice, 'gwei')).toFixed(2) : "0"
+        } Gwei</p>
+      </div>
+      
+      <div className="space-y-4">
+        <div>
+          <div className="flex justify-between mb-2">
+            <Label htmlFor="gas-type" className="text-xs">Gas Price Type</Label>
+            <div className="text-xs text-muted-foreground">
+              {useEIP1559 ? "EIP-1559 (Dynamic Fee)" : "Legacy (Fixed Price)"}
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full text-xs" 
+            onClick={() => setUseEIP1559(!useEIP1559)}
+          >
+            {useEIP1559 ? "Switch to Legacy Gas" : "Switch to EIP-1559"}
+          </Button>
+        </div>
+        
+        {useEIP1559 ? (
+          <>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label htmlFor="max-fee" className="text-xs">Max Fee (Gwei)</Label>
+                <div className="text-xs font-mono">
+                  {web3 ? parseFloat(web3.utils.fromWei(maxFeePerGas, 'gwei')).toFixed(2) : "0"}
+                </div>
+              </div>
+              <Input
+                id="max-fee"
+                type="text"
+                value={web3 ? parseFloat(web3.utils.fromWei(maxFeePerGas, 'gwei')).toFixed(2) : "0"}
+                onChange={(e) => {
+                  if (web3) {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value)) {
+                      setMaxFeePerGas(web3.utils.toWei(value.toString(), 'gwei'));
+                    }
+                  }
+                }}
+                className="text-xs h-8"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label htmlFor="priority-fee" className="text-xs">Priority Fee (Gwei)</Label>
+                <div className="text-xs font-mono">
+                  {web3 ? parseFloat(web3.utils.fromWei(maxPriorityFeePerGas, 'gwei')).toFixed(2) : "0"}
+                </div>
+              </div>
+              <Input
+                id="priority-fee"
+                type="text"
+                value={web3 ? parseFloat(web3.utils.fromWei(maxPriorityFeePerGas, 'gwei')).toFixed(2) : "0"}
+                onChange={(e) => {
+                  if (web3) {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value)) {
+                      setMaxPriorityFeePerGas(web3.utils.toWei(value.toString(), 'gwei'));
+                    }
+                  }
+                }}
+                className="text-xs h-8"
+              />
+            </div>
+          </>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label htmlFor="gas-price" className="text-xs">Gas Price (Gwei)</Label>
+              <div className="text-xs font-mono">{gasPriceGwei.toFixed(2)}</div>
+            </div>
+            <div className="pt-2">
+              <Slider
+                defaultValue={[gasPriceGwei]}
+                min={1}
+                max={200}
+                step={0.1}
+                onValueChange={handleGasPriceChange}
+              />
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>Slow</span>
+                <span>Fast</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <Label htmlFor="gas-limit" className="text-xs">Gas Limit</Label>
+            <div className="text-xs text-muted-foreground">Optional</div>
+          </div>
+          <Input
+            id="gas-limit"
+            type="text"
+            placeholder="21000"
+            value={gasLimit}
+            onChange={(e) => setGasLimit(e.target.value)}
+            className="text-xs h-8"
+          />
+          <p className="text-xs text-muted-foreground">Default: 21000 for ETH transfers</p>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <FunctionCard
@@ -184,6 +352,32 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ currentChain 
         description="Track and verify your recent transactions"
         icon={ArrowUpDown}
       >
+        <div className="flex justify-between items-center mb-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={loadRecentTransactions}
+            className="flex items-center gap-1"
+            disabled={isLoadingTxs || !web3 || !address}
+          >
+            <RefreshCw className="h-3 w-3" />
+            <span>Refresh</span>
+          </Button>
+          
+          <a
+            href={address ? getAddressUrl(currentChain, address) : "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "text-primary hover:text-primary/80 text-xs flex items-center",
+              !address && "pointer-events-none opacity-50"
+            )}
+          >
+            <span>View All on Explorer</span>
+            <ExternalLink size={12} className="ml-1" />
+          </a>
+        </div>
+        
         {isLoadingTxs ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
@@ -193,13 +387,15 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ currentChain 
             {recentTxs.map((tx, index) => (
               <div key={index} className="border rounded-md p-3 text-sm">
                 <div className="flex justify-between mb-2">
-                  <div className="font-medium">{tx.type}</div>
+                  <div className="font-medium">
+                    {tx.from?.toLowerCase() === address?.toLowerCase() ? "Outgoing" : "Incoming"}
+                  </div>
                   <div className="text-xs text-muted-foreground">{tx.timestamp}</div>
                 </div>
                 <div className="text-xs space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Value:</span>
-                    <span>{tx.value}</span>
+                    <span>{tx.value} ETH</span>
                   </div>
                   {tx.from && (
                     <div className="flex items-center justify-between">
@@ -309,6 +505,32 @@ const TransactionsSection: React.FC<TransactionsSectionProps> = ({ currentChain 
             <p className="text-xs text-muted-foreground">
               Optional: Include data for contract interactions
             </p>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-1">
+                  <Settings className="h-3 w-3" />
+                  <span>Gas Settings</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Gas Settings</DialogTitle>
+                </DialogHeader>
+                <GasSettings />
+              </DialogContent>
+            </Dialog>
+            
+            <div className="text-xs text-right">
+              <div className="text-muted-foreground">Gas Price: {
+                useEIP1559 
+                  ? `EIP-1559 (Max: ${web3 ? parseFloat(web3.utils.fromWei(maxFeePerGas, 'gwei')).toFixed(2) : "0"} Gwei)`
+                  : `${gasPriceGwei.toFixed(2)} Gwei`
+              }</div>
+              {gasLimit && <div className="text-muted-foreground">Gas Limit: {gasLimit}</div>}
+            </div>
           </div>
 
           <Button
