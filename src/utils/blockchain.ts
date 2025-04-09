@@ -937,3 +937,8 @@ export const getContractABI = async (
     { inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], name: "allowance", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" }
   ];
 };
+
+// Fix the bigint to number conversion
+export const convertEstimatedGas = (gas: bigint): number => {
+  return Number(gas);
+};

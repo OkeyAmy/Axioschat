@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ChatHistory from "@/components/ChatHistory";
+import ChatMessages from "@/components/ChatMessages";
 import SuggestedPromptsPanel from "@/components/SuggestedPromptsPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -186,18 +187,19 @@ const Chat = () => {
     <div className="flex flex-col h-screen bg-background overflow-hidden">
       <Header />
       
-      <main className="flex-1 container px-0 md:px-4 py-4 flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+      <main className="flex-1 container px-0 md:px-4 py-4 flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] overflow-hidden">
         {!isConnected ? (
           <div className="flex-1 flex items-center justify-center">
             <WalletRequired />
           </div>
         ) : (
           <div className="grid grid-cols-[auto_1fr_auto] gap-0 md:gap-2 lg:gap-4 flex-1 h-full overflow-hidden">
+            {/* History Panel */}
             <div className={cn(
-              "transition-all duration-300 flex flex-col",
+              "transition-all duration-300 flex flex-col h-full",
               isHistoryPanelCollapsed ? "w-10" : "w-[280px] md:w-[320px]"
             )}>
-              {isHistoryPanelCollapsed && (
+              {isHistoryPanelCollapsed ? (
                 <Button 
                   variant="ghost" 
                   size="icon" 
@@ -206,21 +208,33 @@ const Chat = () => {
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-              )}
-              
-              {!isHistoryPanelCollapsed && (
-                <div className="flex-1 overflow-hidden">
-                  <ChatHistory 
-                    onSelectChat={handleSelectChat} 
-                    onNewChat={handleNewChat}
-                    activeChat={activeChat}
-                    currentChain={currentChain}
-                  />
+              ) : (
+                <div className="flex flex-col h-full overflow-hidden border rounded-lg">
+                  <div className="flex items-center justify-between p-2 border-b">
+                    <h3 className="text-sm font-medium">Chat History</h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleHistoryPanel}
+                      className="h-7 w-7"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <ChatHistory 
+                      onSelectChat={handleSelectChat} 
+                      onNewChat={handleNewChat}
+                      activeChat={activeChat}
+                      currentChain={currentChain}
+                    />
+                  </div>
                 </div>
               )}
             </div>
             
-            <div className="flex flex-col rounded-lg border overflow-hidden h-full">
+            {/* Main Chat Area */}
+            <div className="flex flex-col rounded-lg border overflow-hidden h-full max-h-full">
               <div className="border-b px-4 py-2 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   {isHistoryPanelCollapsed && (
@@ -277,28 +291,7 @@ const Chat = () => {
                     </p>
                   </div>
                 ) : (
-                  messages.map(message => (
-                    <div 
-                      key={message.id}
-                      className={cn(
-                        "flex",
-                        message.role === "user" ? "justify-end" : "justify-start"
-                      )}
-                    >
-                      <div 
-                        className={cn(
-                          "max-w-[85%] md:max-w-[80%] rounded-lg px-3 py-2 md:px-4 md:py-3 shadow-sm border",
-                          message.role === "user" 
-                            ? "bg-primary text-primary-foreground" 
-                            : "bg-muted border-border/50"
-                        )}
-                      >
-                        <div className="whitespace-pre-wrap break-words text-sm md:text-base">
-                          {message.content}
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                  <ChatMessages messages={messages.map(m => ({ role: m.role, content: m.content }))} />
                 )}
                 <div ref={messagesEndRef} />
               </div>
@@ -339,8 +332,9 @@ const Chat = () => {
               </div>
             </div>
             
+            {/* Suggested Prompts Panel */}
             <div className={cn(
-              "transition-all duration-300",
+              "transition-all duration-300 h-full",
               isPromptsPanelCollapsed ? "w-10" : "w-[260px] lg:w-[300px]"
             )}>
               {isPromptsPanelCollapsed ? (
@@ -353,14 +347,33 @@ const Chat = () => {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
               ) : (
-                <SuggestedPromptsPanel 
-                  onSelectQuestion={handleSuggestedQuestion}
-                  onCollapseChange={setIsPromptsPanelCollapsed}
-                />
+                <div className="h-full flex flex-col border rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between p-2 border-b">
+                    <h3 className="text-sm font-medium">Suggested Prompts</h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={togglePromptsPanel}
+                      className="h-7 w-7"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <SuggestedPromptsPanel 
+                      onSelectQuestion={handleSuggestedQuestion}
+                      onCollapseChange={setIsPromptsPanelCollapsed}
+                      defaultCollapsed={false}
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
         )}
+        
+        {/* Transaction Queue */}
+        <TransactionQueue chainId={currentChain} className="mt-4" />
       </main>
     </div>
   );

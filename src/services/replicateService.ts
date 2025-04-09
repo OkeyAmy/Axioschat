@@ -3,7 +3,7 @@ import { toast } from "@/components/ui/use-toast";
 
 interface ReplicateResponse {
   id: string;
-  output: string;
+  output: string | null;
   error?: string;
   status: string;
 }
@@ -43,6 +43,9 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
       return "Error: Please provide a Replicate API token in the settings";
     }
 
+    console.log("Calling Replicate API with token:", REPLICATE_API_TOKEN.substring(0, 5) + "...");
+    console.log("Input:", { query: input.query, tools: "JSON tools string", top_p: input.top_p, temperature: input.temperature });
+
     const response = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
@@ -68,6 +71,7 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
     }
 
     const prediction: ReplicateResponse = await response.json();
+    console.log("Prediction response:", prediction);
     
     // Check if we need to poll for results
     if (prediction.status === "starting" || prediction.status === "processing") {
@@ -77,6 +81,11 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
     return prediction.output || "No response from model";
   } catch (error) {
     console.error("Error calling Flock Web3 model:", error);
+    toast({
+      title: "API Error",
+      description: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      variant: "destructive",
+    });
     return `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
   }
 };
@@ -86,6 +95,8 @@ const pollForCompletion = async (predictionId: string): Promise<string> => {
   const maxAttempts = 50;
   const delay = 1000; // 1 second delay between polls
   const REPLICATE_API_TOKEN = getReplicateApiToken();
+  
+  console.log("Polling for completion of prediction:", predictionId);
   
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise(resolve => setTimeout(resolve, delay));
@@ -104,6 +115,7 @@ const pollForCompletion = async (predictionId: string): Promise<string> => {
       }
       
       const prediction: ReplicateResponse = await response.json();
+      console.log(`Poll attempt ${attempt + 1}:`, prediction.status);
       
       if (prediction.status === "succeeded") {
         return prediction.output || "No output from model";
