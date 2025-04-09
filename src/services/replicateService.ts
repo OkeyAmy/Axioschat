@@ -50,7 +50,7 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
         "Authorization": `Token ${REPLICATE_API_TOKEN}`,
       },
       body: JSON.stringify({
-        version: "5dd64b2ce588d85991175d56e4fb0f6c9fc40ebd3b6416750d29ea75e4650ddd",
+        version: "3babfa32ab245cf8e047ff7366bcb4d5a2b4f0f108f504c47d5a84e23c02ff5f",
         input: {
           query: input.query,
           tools: input.tools,
@@ -63,6 +63,7 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("Replicate API Error:", errorData);
       throw new Error(errorData.detail || "Failed to call Flock Web3 model");
     }
 

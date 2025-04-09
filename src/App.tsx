@@ -14,7 +14,7 @@ import { Toaster } from '@/components/ui/toaster';
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="novachat-ui-theme">
+    <ThemeProvider>
       <RainbowKitProvider>
         <TransactionQueueProvider>
           <Router>

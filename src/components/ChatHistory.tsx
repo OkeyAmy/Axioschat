@@ -79,20 +79,20 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
       isCollapsed ? "w-14" : "w-full"
     )}>
       <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
-        <div className="flex items-center justify-between p-4">
-          {!isCollapsed && <h3 className="text-sm font-medium">Chat History</h3>}
+        <div className="flex items-center justify-between p-2">
+          {!isCollapsed && <h3 className="text-sm font-medium truncate">Chat History</h3>}
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="icon" className="ml-auto transition-transform duration-300">
+            <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto transition-transform duration-300">
               {isCollapsed ? <ChevronRight size={16} /> : <ArrowLeftCircle size={16} />}
             </Button>
           </CollapsibleTrigger>
         </div>
 
-        <div className="px-4 mb-4">
+        <div className="px-2 mb-2">
           <Button 
             variant="outline" 
             className={cn(
-              "w-full justify-start bg-secondary/30 hover:bg-secondary/50 border-secondary/20 transition-all duration-300 animate-in slide-in-from-left-4",
+              "w-full justify-start bg-secondary/30 hover:bg-secondary/50 border-secondary/20 transition-all duration-300",
               isCollapsed ? "w-auto p-2 justify-center" : ""
             )} 
             onClick={onNewChat}
@@ -105,25 +105,23 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
         </div>
         
         <CollapsibleContent>
-          <ScrollArea className="flex-1 h-[calc(50vh-8rem)]">
-            <div className="space-y-1 px-4 pr-2">
+          <ScrollArea className="h-[calc(100vh-16rem)] px-2">
+            <div className="space-y-1 pr-2">
               {sampleChatHistory.map((chat) => (
                 <Button
                   key={chat.id}
                   variant={activeChat === chat.id ? "secondary" : "ghost"}
                   className={cn(
                     "w-full justify-start text-left transition-all duration-200",
-                    activeChat === chat.id ? "bg-secondary/50" : "hover:bg-secondary/30",
-                    "animate-in slide-in-from-left duration-300"
+                    activeChat === chat.id ? "bg-secondary/50" : "hover:bg-secondary/30"
                   )}
-                  style={{ animationDelay: `${chat.id * 50}ms` }}
                   onClick={() => onSelectChat(chat.id, chat.messages)}
                 >
                   <div className="flex items-center w-full">
                     <MessageSquare className="mr-2 flex-shrink-0" size={14} />
                     <div className="truncate flex-1">
                       <span className="block truncate">{chat.title}</span>
-                      <span className="text-xs text-muted-foreground">{chat.date}</span>
+                      <span className="text-xs text-muted-foreground truncate block">{chat.date}</span>
                     </div>
                   </div>
                 </Button>
@@ -133,10 +131,10 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
 
           {isConnected && (
             <>
-              <Separator className="my-4 mx-4" />
-              <div className="px-4 mb-2">
-                <h3 className="text-sm font-medium mb-2">Transaction Queue</h3>
-                <div className="h-[calc(50vh-10rem)] overflow-auto pr-1">
+              <Separator className="my-2 mx-2" />
+              <div className="px-2 mb-2">
+                <h3 className="text-xs font-medium mb-2">Transaction Queue</h3>
+                <div className="h-[calc(20vh-2rem)] overflow-hidden">
                   <TransactionQueue chainId={currentChain} inPanel={true} />
                 </div>
               </div>

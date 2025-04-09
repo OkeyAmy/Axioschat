@@ -45,75 +45,79 @@ const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId = 1, inPane
   // If displayed in panel, render inline
   if (inPanel) {
     return (
-      <div className="flex flex-col gap-2">
-        {queue.map((tx) => (
-          <Card key={tx.id} className={cn(
-            "shadow-sm border transition-colors",
-            tx.status === 'success' && "border-emerald-500/20 bg-emerald-500/5",
-            tx.status === 'failed' && "border-red-500/20 bg-red-500/5",
-            tx.status === 'processing' && "border-amber-500/20 bg-amber-500/5",
-            tx.status === 'pending' && "border-muted/20 bg-card/95"
-          )}>
-            <CardContent className="p-2 text-xs">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1">
-                  {tx.status === 'processing' && (
-                    <Loader2 className="h-3 w-3 text-amber-500 animate-spin" />
+      <div className="flex flex-col gap-2 max-h-full overflow-hidden">
+        <ScrollArea className="max-h-[200px]">
+          <div className="space-y-2 pr-3">
+            {queue.map((tx) => (
+              <Card key={tx.id} className={cn(
+                "shadow-sm border transition-colors",
+                tx.status === 'success' && "border-emerald-500/20 bg-emerald-500/5",
+                tx.status === 'failed' && "border-red-500/20 bg-red-500/5",
+                tx.status === 'processing' && "border-amber-500/20 bg-amber-500/5",
+                tx.status === 'pending' && "border-muted/20 bg-card/95"
+              )}>
+                <CardContent className="p-2 text-xs">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1">
+                      {tx.status === 'processing' && (
+                        <Loader2 className="h-3 w-3 text-amber-500 animate-spin" />
+                      )}
+                      {tx.status === 'success' && (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      )}
+                      {tx.status === 'failed' && (
+                        <AlertCircle className="h-3 w-3 text-red-500" />
+                      )}
+                      {tx.status === 'pending' && (
+                        <div className="h-3 w-3 rounded-full border-2 border-muted-foreground/20" />
+                      )}
+                      <span className="font-medium truncate max-w-[150px]">{tx.type}</span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-5 w-5 p-0 ml-1 flex-shrink-0" 
+                      onClick={() => removeFromQueue(tx.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground truncate max-w-[220px]">
+                    {tx.description}
+                  </p>
+                  
+                  {tx.error && (
+                    <p className="text-xs text-red-500 mt-1 truncate max-w-[220px]">
+                      {tx.error}
+                    </p>
                   )}
-                  {tx.status === 'success' && (
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                  
+                  {tx.txHash && (
+                    <div className="mt-1 pt-1 border-t border-border/30 flex justify-end">
+                      <a
+                        href={getTxUrl(chainId, tx.txHash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary/90 text-xs flex items-center"
+                      >
+                        View
+                        <ExternalLink className="ml-1 h-2 w-2" />
+                      </a>
+                    </div>
                   )}
-                  {tx.status === 'failed' && (
-                    <AlertCircle className="h-3 w-3 text-red-500" />
-                  )}
-                  {tx.status === 'pending' && (
-                    <div className="h-3 w-3 rounded-full border-2 border-muted-foreground/20" />
-                  )}
-                  <span className="font-medium">{tx.type}</span>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-5 w-5 p-0" 
-                  onClick={() => removeFromQueue(tx.id)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-              
-              <p className="text-xs text-muted-foreground">
-                {tx.description}
-              </p>
-              
-              {tx.error && (
-                <p className="text-xs text-red-500 mt-1">
-                  {tx.error}
-                </p>
-              )}
-              
-              {tx.txHash && (
-                <div className="mt-1 pt-1 border-t border-border/30 flex justify-end">
-                  <a
-                    href={getTxUrl(chainId, tx.txHash)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:text-primary/90 text-xs flex items-center"
-                  >
-                    View
-                    <ExternalLink className="ml-1 h-2 w-2" />
-                  </a>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </ScrollArea>
       </div>
     );
   }
 
   // Default floating version
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-80">
+    <div className="fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)]">
       <ScrollArea className="max-h-[60vh]">
         <div className="flex flex-col gap-2 p-1">
           {queue.map((tx) => (
@@ -139,24 +143,24 @@ const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId = 1, inPane
                     {tx.status === 'pending' && (
                       <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/20" />
                     )}
-                    <span className="font-medium text-sm">{tx.type}</span>
+                    <span className="font-medium text-sm truncate max-w-[180px]">{tx.type}</span>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-6 w-6 p-0" 
+                    className="h-6 w-6 p-0 flex-shrink-0" 
                     onClick={() => removeFromQueue(tx.id)}
                   >
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
                 
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate max-w-[250px]">
                   {tx.description}
                 </p>
                 
                 {tx.error && (
-                  <p className="text-xs text-red-500 mt-1">
+                  <p className="text-xs text-red-500 mt-1 truncate max-w-[250px]">
                     {tx.error}
                   </p>
                 )}

@@ -63,24 +63,28 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           >
             <X size={12} />
           </Button>
-          <div className="space-y-2">
-            <Label htmlFor="local-endpoint" className="text-xs">Local Endpoint</Label>
-            <input
-              id="local-endpoint"
-              placeholder="http://localhost:11434"
-              value={localEndpoint}
-              onChange={(e) => onLocalEndpointChange(e.target.value)}
-              className="w-full px-3 py-1 text-xs h-8 rounded-md border"
-            />
-          </div>
-          <div className="space-y-2">
-            <ApiKeyInput 
-              label="Replicate API Key"
-              apiKey={replicateApiKey}
-              onChange={onReplicateApiKeyChange}
-              placeholder="Enter your Replicate API key"
-            />
-          </div>
+          
+          {useLocalAI ? (
+            <div className="space-y-2">
+              <Label htmlFor="local-endpoint" className="text-xs">Local Endpoint</Label>
+              <input
+                id="local-endpoint"
+                placeholder="http://localhost:11434"
+                value={localEndpoint}
+                onChange={(e) => onLocalEndpointChange(e.target.value)}
+                className="w-full px-3 py-1 text-xs h-8 rounded-md border"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <ApiKeyInput 
+                label="Replicate API Key"
+                apiKey={replicateApiKey}
+                onChange={onReplicateApiKeyChange}
+                placeholder="Enter your Replicate API key"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

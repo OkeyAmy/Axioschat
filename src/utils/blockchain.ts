@@ -41,9 +41,36 @@ export const getExplorerUrl = (chainId: number) => {
 };
 
 // Get transaction URL on block explorer
-export const getTxUrl = (chainId: number, hash: string) => {
-  const explorerUrl = getExplorerUrl(chainId);
-  return `${explorerUrl}/tx/${hash}`;
+export const getTxUrl = (chainId: number, txHash: string): string => {
+  // Convert chainId to a number if it's a bigint
+  const chainIdNumber = typeof chainId === 'bigint' ? Number(chainId) : chainId;
+  
+  switch (chainIdNumber) {
+    case 1: // Ethereum Mainnet
+      return `https://etherscan.io/tx/${txHash}`;
+    case 56: // Binance Smart Chain
+      return `https://bscscan.com/tx/${txHash}`;
+    case 137: // Polygon
+      return `https://polygonscan.com/tx/${txHash}`;
+    case 42161: // Arbitrum
+      return `https://arbiscan.io/tx/${txHash}`;
+    case 10: // Optimism
+      return `https://optimistic.etherscan.io/tx/${txHash}`;
+    case 8453: // Base
+      return `https://basescan.org/tx/${txHash}`;
+    case 43114: // Avalanche
+      return `https://snowtrace.io/tx/${txHash}`;
+    case 250: // Fantom
+      return `https://ftmscan.com/tx/${txHash}`;
+    case 2222: // Educhain
+      return `https://explorer.educhain.io/tx/${txHash}`;
+    // Add more chains as needed
+    default:
+      // For Ethereum testnets and others
+      if (chainIdNumber === 5) return `https://goerli.etherscan.io/tx/${txHash}`;
+      if (chainIdNumber === 11155111) return `https://sepolia.etherscan.io/tx/${txHash}`;
+      return `https://etherscan.io/tx/${txHash}`; // Default to Ethereum
+  }
 };
 
 // Get address URL on block explorer

@@ -22,7 +22,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages }) => {
   }
 
   return (
-    <div className="flex flex-col space-y-4 p-4">
+    <div className="flex flex-col space-y-4 p-4 w-full">
       {messages.map((message, index) => (
         <div
           key={index}
@@ -33,7 +33,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages }) => {
               : "bg-muted"
           )}
         >
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
         </div>
       ))}
     </div>

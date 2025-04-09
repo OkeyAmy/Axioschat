@@ -14,20 +14,18 @@ import {
   LinkIcon, 
   Lock, 
   Send, 
-  Settings,
+  ChevronLeft,
+  ChevronRight,
   Shuffle, 
-  Wallet,
-  X
+  Wallet
 } from 'lucide-react';
 import SuggestedPromptsPanel from '@/components/SuggestedPromptsPanel';
 import TransactionQueue from '@/components/TransactionQueue';
-import ApiKeyInput from '@/components/ApiKeyInput';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import useApiKeys from '@/hooks/useApiKeys';
 import { callFlockWeb3, createDefaultWeb3Tools, FlockWeb3Request } from '@/services/replicateService';
 import { toast } from '@/components/ui/use-toast';
-import { cn } from '@/lib/utils';
+import ModelSelector from '@/components/ModelSelector';
 
 type DeFiSection = {
   id: string;
@@ -52,7 +50,7 @@ const Web3Intro: React.FC = () => {
     { role: 'assistant', content: 'Welcome to Web3 Intro! What would you like to learn about DeFi today?' },
   ]);
   const [activeSection, setActiveSection] = useState('intro');
-  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
+  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(window.innerWidth < 1200);
   const [isSuggestionsCollapsed, setIsSuggestionsCollapsed] = useState(window.innerWidth < 1400);
   const [isProcessing, setIsProcessing] = useState(false);
   const [useLocalAI, setUseLocalAI] = useState(true);
@@ -162,6 +160,14 @@ const Web3Intro: React.FC = () => {
 
   const handleSelectQuestion = (question: string) => {
     setMessageInput(question);
+  };
+
+  const toggleHistoryPanel = () => {
+    setIsHistoryCollapsed(!isHistoryCollapsed);
+  };
+
+  const togglePromptsPanel = () => {
+    setIsSuggestionsCollapsed(!isSuggestionsCollapsed);
   };
 
   useEffect(() => {
@@ -427,39 +433,74 @@ const Web3Intro: React.FC = () => {
       <Header />
       <div className="flex-1 flex overflow-hidden">
         <div className={cn(
-          "border-r bg-card/50 flex-shrink-0 transition-all duration-300 overflow-hidden flex flex-col",
-          isHistoryCollapsed ? "w-0" : "w-1/4 md:w-1/5"
+          "border-r bg-card/50 flex-shrink-0 transition-all duration-300 overflow-hidden",
+          isHistoryCollapsed ? "w-10" : "w-[280px] md:w-1/4 lg:w-1/5"
         )}>
-          <div className="p-4 flex-1 overflow-hidden">
-            <h2 className="text-xl font-bold mb-4">DeFi Topics</h2>
-            <ScrollArea className="h-[calc(100vh-16rem)]">
-              <div className="space-y-2 pr-4">
-                {defiSections.map((section) => (
-                  <Button
-                    key={section.id}
-                    variant={activeSection === section.id ? "default" : "ghost"}
-                    className="w-full justify-start text-left"
-                    onClick={() => handleSelectSection(section.id)}
-                  >
-                    <section.icon className="mr-2 h-4 w-4" />
-                    {section.name}
-                  </Button>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
+          {isHistoryCollapsed ? (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleHistoryPanel}
+              className="h-full rounded-none border-r"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <div className="p-4 h-full flex flex-col">
+              <h2 className="text-xl font-bold mb-4">DeFi Topics</h2>
+              <ScrollArea className="flex-1 h-[calc(100vh-16rem)]">
+                <div className="space-y-2 pr-4">
+                  {defiSections.map((section) => (
+                    <Button
+                      key={section.id}
+                      variant={activeSection === section.id ? "default" : "ghost"}
+                      className="w-full justify-start text-left"
+                      onClick={() => handleSelectSection(section.id)}
+                    >
+                      <section.icon className="mr-2 h-4 w-4" />
+                      {section.name}
+                    </Button>
+                  ))}
+                </div>
+              </ScrollArea>
 
-          {!isHistoryCollapsed && (
-            <div className="border-t pt-4 p-4 h-1/3 overflow-hidden">
-              <h3 className="font-medium text-sm mb-2">Transaction Queue</h3>
-              <div className="overflow-y-auto h-[calc(100%-2rem)]">
-                <TransactionQueue chainId={currentChain} inPanel={true} />
+              <div className="border-t pt-4 mt-4">
+                <h3 className="font-medium text-sm mb-2">Transaction Queue</h3>
+                <div className="overflow-y-auto h-[calc(20vh-4rem)]">
+                  <TransactionQueue chainId={currentChain} inPanel={true} />
+                </div>
               </div>
             </div>
           )}
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex items-center border-b px-4 py-2">
+            {isHistoryCollapsed && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleHistoryPanel}
+                className="md:hidden h-8 w-8 mr-2"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+            <h2 className="text-lg font-semibold">
+              {defiSections.find(s => s.id === activeSection)?.name || "Web3 Introduction"}
+            </h2>
+            {isSuggestionsCollapsed && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={togglePromptsPanel}
+                className="md:hidden h-8 w-8 ml-auto"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
           <div className="flex-1 overflow-hidden flex flex-col">
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
@@ -467,13 +508,15 @@ const Web3Intro: React.FC = () => {
                   <div
                     key={index}
                     className={cn(
-                      "p-4 rounded-lg max-w-3xl",
+                      "p-3 md:p-4 rounded-lg max-w-[85%] md:max-w-3xl",
                       message.role === 'user'
                         ? "bg-primary text-primary-foreground ml-auto"
                         : "bg-muted"
                     )}
                   >
-                    {message.content}
+                    <div className="whitespace-pre-wrap break-words text-sm md:text-base">
+                      {message.content}
+                    </div>
                   </div>
                 ))}
                 {isProcessing && (
@@ -547,59 +590,17 @@ const Web3Intro: React.FC = () => {
             )}
 
             <div className="border-t p-4 bg-background">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="web3-intro-local-ai"
-                      checked={useLocalAI}
-                      onCheckedChange={setUseLocalAI}
-                    />
-                    <Label htmlFor="web3-intro-local-ai" className="text-sm cursor-pointer select-none">
-                      {useLocalAI ? "Llama 3.2 (Local)" : "Flock Web3 (Cloud)"}
-                    </Label>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => setShowEndpointSettings(!showEndpointSettings)}
-                    className="h-8 w-8"
-                  >
-                    <Settings size={14} />
-                  </Button>
-                </div>
-              </div>
-              
-              {showEndpointSettings && (
-                <div className="mb-4 p-3 border rounded-md bg-muted/40 space-y-3 relative">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="h-6 w-6 absolute top-2 right-2"
-                    onClick={() => setShowEndpointSettings(false)}
-                  >
-                    <X size={12} />
-                  </Button>
-                  <div className="space-y-2">
-                    <Label htmlFor="web3-intro-local-endpoint" className="text-xs">Local Endpoint</Label>
-                    <Textarea
-                      id="web3-intro-local-endpoint"
-                      placeholder="http://localhost:11434"
-                      value={localEndpoint}
-                      onChange={(e) => setLocalEndpoint(e.target.value)}
-                      className="h-8 text-xs resize-none"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <ApiKeyInput 
-                      label="Replicate API Key"
-                      apiKey={apiKeys.replicate}
-                      onChange={(key) => updateApiKey('replicate', key)}
-                      placeholder="Enter your Replicate API key"
-                    />
-                  </div>
-                </div>
-              )}
+              <ModelSelector 
+                useLocalAI={useLocalAI}
+                onUseLocalAIChange={setUseLocalAI}
+                showSettings={showEndpointSettings}
+                onShowSettingsChange={setShowEndpointSettings}
+                localEndpoint={localEndpoint}
+                onLocalEndpointChange={setLocalEndpoint}
+                replicateApiKey={apiKeys.replicate}
+                onReplicateApiKeyChange={(key) => updateApiKey('replicate', key)}
+                className="mb-3"
+              />
               
               <div className="flex gap-2">
                 <Textarea
@@ -618,14 +619,26 @@ const Web3Intro: React.FC = () => {
         </div>
 
         <div className={cn(
-          "flex-shrink-0 transition-all duration-300 p-4 overflow-hidden",
-          isSuggestionsCollapsed ? "w-0" : "w-1/4 md:w-1/5"
+          "flex-shrink-0 transition-all duration-300 overflow-hidden",
+          isSuggestionsCollapsed ? "w-10" : "w-[260px] lg:w-[300px]"
         )}>
-          <SuggestedPromptsPanel
-            onSelectQuestion={handleSelectQuestion}
-            onCollapseChange={setIsSuggestionsCollapsed}
-            defaultCollapsed={isSuggestionsCollapsed}
-          />
+          {isSuggestionsCollapsed ? (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={togglePromptsPanel}
+              className="h-full rounded-none border-l"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          ) : (
+            <div className="p-4 h-full">
+              <SuggestedPromptsPanel
+                onSelectQuestion={handleSelectQuestion}
+                onCollapseChange={setIsSuggestionsCollapsed}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
