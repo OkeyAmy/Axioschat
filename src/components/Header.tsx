@@ -102,7 +102,7 @@ const Header = () => {
                           onClick={openAccountModal}
                           type="button"
                           variant="secondary"
-                          className="flex items-center gap-2 bg-primary/20 hover:bg-primary/30 text-primary-foreground transition-colors"
+                          className="flex items-center gap-2 bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
                         >
                           <Avatar className="w-5 h-5 mr-1">
                             <AvatarFallback className="bg-primary/30 text-xs">

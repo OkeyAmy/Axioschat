@@ -44,7 +44,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onAskQuestion }
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder="Ask anything about Web3, blockchain, or smart contracts..."
-                  className="resize-none min-h-[60px] flex-1 bg-background/50 border-secondary/30"
+                  className="resize-none min-h-[60px] h-[60px] flex-1 bg-background/50 border-secondary/30"
                 />
                 <Button 
                   type="submit" 

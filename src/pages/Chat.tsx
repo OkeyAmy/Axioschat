@@ -1,10 +1,13 @@
+
 import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, Sparkles, Settings } from "lucide-react";
+import { Send, Bot, User, Sparkles, Settings, Cloud, Server } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import Header from "@/components/Header";
 import WalletRequired from "@/components/WalletRequired";
 import ChatHistory from "@/components/ChatHistory";
@@ -12,18 +15,20 @@ import SuggestedPromptsPanel from "@/components/SuggestedPromptsPanel";
 import { useAccount } from "wagmi";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { ResizablePanelGroup, ResizablePanel } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const Chat = () => {
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string; id: string }>>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeChat, setActiveChat] = useState<number | null>(null);
   const [isLocalAI, setIsLocalAI] = useState(false);
   const [localAIEndpoint, setLocalAIEndpoint] = useState("http://localhost:11434/api/generate");
+  const [cloudAIEndpoint, setCloudAIEndpoint] = useState("");
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [showEndpointSettings, setShowEndpointSettings] = useState(false);
   
   const { address, isConnected } = useAccount();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -86,13 +91,16 @@ const Chat = () => {
     };
   }, []);
 
+  // Generate a unique ID for each message to prevent animation re-triggers
+  const generateMessageId = () => `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
   const handleSubmit = async (e?: React.FormEvent, predefinedInput?: string) => {
     if (e) e.preventDefault();
     
     const userMessage = predefinedInput || input.trim();
     if (!userMessage || isLoading) return;
     
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+    setMessages(prev => [...prev, { role: "user", content: userMessage, id: generateMessageId() }]);
     setInput("");
     setIsLoading(true);
 
@@ -121,7 +129,8 @@ const Chat = () => {
             ...prev, 
             { 
               role: "assistant", 
-              content: data.response || "Sorry, I couldn't generate a response." 
+              content: data.response || "Sorry, I couldn't generate a response.",
+              id: generateMessageId()
             }
           ]);
         } catch (error) {
@@ -136,7 +145,8 @@ const Chat = () => {
             ...prev, 
             { 
               role: "assistant", 
-              content: "Error connecting to local AI. Please check that Ollama is running on port 11434." 
+              content: "Error connecting to local AI. Please check that Ollama is running on port 11434.",
+              id: generateMessageId()
             }
           ]);
         }
@@ -146,7 +156,8 @@ const Chat = () => {
             ...prev, 
             { 
               role: "assistant", 
-              content: `This is a simulated response to: "${userMessage}". In a complete implementation, this would come from the Flock Web3 Agent Model.` 
+              content: `This is a simulated response to: "${userMessage}". In a complete implementation, this would come from the Flock Web3 Agent Model.`,
+              id: generateMessageId()
             }
           ]);
         }, 1000);
@@ -175,7 +186,8 @@ const Chat = () => {
     setActiveChat(chatId);
     const typedMessages = chatMessages.map(msg => ({
       role: msg.role as "user" | "assistant",
-      content: msg.content
+      content: msg.content,
+      id: generateMessageId()
     }));
     setMessages(typedMessages);
     
@@ -185,10 +197,11 @@ const Chat = () => {
     });
   };
 
-  const MessageItem = ({ message, index }: { message: { role: "user" | "assistant"; content: string }, index: number }) => (
+  const MessageItem = ({ message, index }: { message: { role: "user" | "assistant"; content: string; id: string }, index: number }) => (
     <div 
+      key={message.id}
       className={`flex gap-3 ${message.role === "assistant" ? "bg-accent/10 p-4 rounded-md" : "py-4"} animate-in fade-in-50 slide-in-from-bottom-5`}
-      style={{ animationDelay: `${index * 100}ms` }}
+      style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="flex-shrink-0 pt-1">
         {message.role === "assistant" ? (
@@ -207,25 +220,26 @@ const Chat = () => {
     </div>
   );
 
-  const toggleLocalAI = () => {
-    setIsLocalAI(!isLocalAI);
+  const toggleLocalAI = (value: number[]) => {
+    const newValue = value[0] === 100;
+    setIsLocalAI(newValue);
     toast({
-      title: isLocalAI ? "Using Cloud AI" : "Using Local AI",
-      description: isLocalAI 
-        ? "Switched to cloud-based AI responses" 
-        : "Switched to local Ollama with llama3.2:latest. Make sure Ollama is running on port 11434.",
+      title: newValue ? "Using Local AI" : "Using Cloud AI",
+      description: newValue 
+        ? "Switched to local Ollama with llama3.2:latest. Make sure Ollama is running on port 11434." 
+        : "Switched to cloud-based AI responses",
     });
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main className="flex-1 container mx-auto px-4 py-6 mt-4 mb-4">
         {!isConnected ? (
           <WalletRequired />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-12rem)]">
-            <div className="lg:col-span-3 hidden md:block" data-sidebar="chat-history">
+            <div className="lg:col-span-3 md:block hidden" data-sidebar="chat-history">
               <ChatHistory 
                 onSelectChat={handleSelectChat}
                 onNewChat={handleNewChat}
@@ -259,20 +273,68 @@ const Chat = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Popover open={showEndpointSettings} onOpenChange={setShowEndpointSettings}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost" 
+                          size="icon" 
+                          className="ml-auto transition-colors hover:bg-secondary/20"
+                          title="AI Settings"
+                        >
+                          <Settings size={18} className="text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-4">
+                        <div className="space-y-4">
+                          <h3 className="font-medium">AI Model Settings</h3>
+                          
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center">
+                                <Cloud size={14} className="mr-2 text-blue-500" />
+                                <span className="text-sm">Cloud</span>
+                              </div>
+                              <div className="flex items-center">
+                                <span className="text-sm">Local</span>
+                                <Server size={14} className="ml-2 text-green-500" />
+                              </div>
+                            </div>
+                            <Slider 
+                              defaultValue={[isLocalAI ? 100 : 0]} 
+                              max={100} 
+                              step={100}
+                              onValueChange={toggleLocalAI}
+                              className="my-2"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Local AI Endpoint</label>
+                            <Input 
+                              value={localAIEndpoint}
+                              onChange={(e) => setLocalAIEndpoint(e.target.value)}
+                              placeholder="http://localhost:11434/api/generate"
+                            />
+                            <p className="text-xs text-muted-foreground">Default port for Ollama is 11434</p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Cloud AI Endpoint (Optional)</label>
+                            <Input 
+                              value={cloudAIEndpoint}
+                              onChange={(e) => setCloudAIEndpoint(e.target.value)}
+                              placeholder="https://api.example.com/ai"
+                            />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
                     {isLocalAI && (
-                      <Badge variant="outline" className="mr-2 bg-green-500/10 text-green-500 border-green-500/20 animate-in slide-in-from-right-4">
-                        Local AI
+                      <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 animate-in slide-in-from-right-4">
+                        Local AI: llama3.2
                       </Badge>
                     )}
-                    <Button
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={toggleLocalAI}
-                      className="ml-auto transition-colors hover:bg-secondary/20"
-                      title={isLocalAI ? "Switch to Cloud AI" : "Switch to Local AI"}
-                    >
-                      <Settings size={18} className="text-muted-foreground" />
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-hidden p-0">
@@ -292,7 +354,7 @@ const Chat = () => {
                     ) : (
                       <div className="space-y-4">
                         {messages.map((message, index) => (
-                          <MessageItem key={index} message={message} index={index} />
+                          <MessageItem key={message.id} message={message} index={index} />
                         ))}
                         {isLoading && (
                           <div className="flex gap-3 bg-accent/10 p-4 rounded-md animate-in fade-in-50 slide-in-from-bottom-5">
@@ -342,7 +404,7 @@ const Chat = () => {
               </Card>
             </div>
             
-            <div className="lg:col-span-3 hidden md:block" data-sidebar="prompts-panel">
+            <div className="lg:col-span-3 md:block hidden" data-sidebar="prompts-panel">
               <SuggestedPromptsPanel onSelectQuestion={handleSelectQuestion} />
             </div>
           </div>
