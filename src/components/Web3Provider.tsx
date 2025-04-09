@@ -1,11 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from "@/components/ui/use-toast";
-
-// Add this interface to properly type window.ethereum
-interface WindowWithEthereum extends Window {
-  ethereum?: any;
-}
+import { useAccount, useDisconnect } from 'wagmi';
 
 interface Web3ProviderProps {
   children: React.ReactNode;
@@ -14,99 +10,31 @@ interface Web3ProviderProps {
 
 const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-
-  // Check for existing connection on mount
-  useEffect(() => {
-    const checkExistingConnection = async () => {
-      const windowWithEthereum = window as WindowWithEthereum;
-      
-      if (windowWithEthereum.ethereum) {
-        try {
-          const accounts = await windowWithEthereum.ethereum.request({ method: 'eth_accounts' });
-          if (accounts && accounts.length > 0) {
-            setWalletAddress(accounts[0]);
-            setIsConnected(true);
-            onConnect(accounts[0]);
-          }
-        } catch (error) {
-          console.error('Error checking existing connection', error);
-        }
-      }
-    };
-    
-    checkExistingConnection();
-  }, [onConnect]);
-
-  // Check if MetaMask or WalletConnect is installed/available
-  const checkIfWalletIsInstalled = () => {
-    // Use the typed window
-    const windowWithEthereum = window as WindowWithEthereum;
-    return windowWithEthereum.ethereum !== undefined;
-  };
-
-  // Connect wallet function
-  const connectWallet = async () => {
-    if (isConnected) return; // Already connected
-    
-    if (!checkIfWalletIsInstalled()) {
-      toast({
-        title: "Wallet not found",
-        description: "Please install MetaMask or another Web3 wallet.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const windowWithEthereum = window as WindowWithEthereum;
-      
-      // Actually try to connect to MetaMask if it exists
-      if (windowWithEthereum.ethereum) {
-        const accounts = await windowWithEthereum.ethereum.request({ 
-          method: 'eth_requestAccounts' 
+  const { address, isConnected } = useAccount({
+    onConnect: ({ address }) => {
+      if (address) {
+        onConnect(address);
+        toast({
+          title: "Wallet connected",
+          description: "Your wallet has been successfully connected.",
         });
-        
-        if (accounts && accounts.length > 0) {
-          const address = accounts[0];
-          setWalletAddress(address);
-          setIsConnected(true);
-          onConnect(address);
-          
-          // Only show toast if successfully connected
-          if (accounts && accounts.length > 0) {
-            toast({
-              title: "Wallet connected",
-              description: "Your wallet has been successfully connected.",
-            });
-          }
-          return;
-        }
       }
-      
-      // If we reach here, the connection failed despite ethereum being available
-      throw new Error("Failed to connect to wallet");
-      
-    } catch (error) {
-      console.error("Wallet connection error:", error);
-      toast({
-        title: "Connection failed",
-        description: "Failed to connect wallet. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+  });
+  
+  const { disconnect } = useDisconnect();
 
   // Expose the wallet connection methods to child components
   const contextValue = {
-    connectWallet,
+    connectWallet: () => {
+      // This is handled by RainbowKit's ConnectButton
+      console.log("Use RainbowKit's ConnectButton to connect wallet");
+    },
+    disconnectWallet: () => {
+      disconnect();
+    },
     isLoading,
-    checkIfWalletIsInstalled,
-    walletAddress,
+    walletAddress: address,
     isConnected
   };
 
@@ -114,7 +42,7 @@ const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
   useEffect(() => {
     // @ts-ignore
     window.web3Context = contextValue;
-  }, [isLoading, walletAddress, isConnected]); // Add dependencies to ensure context updates
+  }, [isLoading, address, isConnected]);
 
   return <>{children}</>;
 };

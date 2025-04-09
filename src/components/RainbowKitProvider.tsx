@@ -6,8 +6,7 @@ import { useState, useEffect } from "react"
 import {
   RainbowKitProvider as RKProvider,
   darkTheme,
-  lightTheme,
-  connectorsForWallets
+  lightTheme
 } from "@rainbow-me/rainbowkit"
 import { 
   http, 
@@ -23,11 +22,8 @@ import {
   zora
 } from "wagmi/chains"
 import { 
-  coinbaseWallet,
-  injectedWallet,
-  metaMaskWallet,
-  walletConnectWallet
-} from '@rainbow-me/rainbowkit/wallets';
+  getDefaultWallets
+} from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useTheme } from "@/components/ThemeProvider"
 import "@rainbow-me/rainbowkit/styles.css"
@@ -39,24 +35,14 @@ interface RainbowKitWrapperProps {
 // WalletConnect Project ID
 const projectId = 'f648e94e1f1c32327aaa0416d6409e2b';
 
-// Chain config - using an array instead of individual chains
-const chains = [mainnet, polygon, optimism, arbitrum, base, zora];
+// Chain configuration
+const chains = [mainnet, polygon, optimism, arbitrum, base, zora] as const;
 
-// Wallets config - properly pass options object with projectId
-const connectors = connectorsForWallets([
-  {
-    groupName: 'Recommended',
-    wallets: [
-      injectedWallet({ chains }),
-      metaMaskWallet({ chains, projectId }),
-      walletConnectWallet({ chains, projectId }),
-      coinbaseWallet({ 
-        chains,
-        appName: 'NovachatV2',
-      }),
-    ],
-  },
-]);
+// Get wallets using the proper API for RainbowKit v2
+const { wallets } = getDefaultWallets({
+  appName: 'NovachatV2',
+  projectId,
+});
 
 // Create wagmi config
 const config = createConfig({
@@ -69,7 +55,7 @@ const config = createConfig({
     [base.id]: http(),
     [zora.id]: http(),
   },
-  connectors
+  connectors: wallets,
 })
 
 // Create query client
