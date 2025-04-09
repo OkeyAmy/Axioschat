@@ -39,9 +39,10 @@ const projectId = 'f648e94e1f1c32327aaa0416d6409e2b';
 const chains = [mainnet, polygon, optimism, arbitrum, base, zora] as const;
 
 // Get wallets using the proper API for RainbowKit v2
-const { wallets } = getDefaultWallets({
+const { connectors } = getDefaultWallets({
   appName: 'NovachatV2',
   projectId,
+  chains,
 });
 
 // Create wagmi config
@@ -55,7 +56,7 @@ const config = createConfig({
     [base.id]: http(),
     [zora.id]: http(),
   },
-  connectors: wallets,
+  connectors
 })
 
 // Create query client

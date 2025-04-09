@@ -10,19 +10,19 @@ interface Web3ProviderProps {
 
 const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { address, isConnected } = useAccount({
-    onConnect: ({ address }) => {
-      if (address) {
-        onConnect(address);
-        toast({
-          title: "Wallet connected",
-          description: "Your wallet has been successfully connected.",
-        });
-      }
-    },
-  });
-  
+  const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
+  
+  // Handle wallet connection separately since onConnect is no longer in useAccount parameters
+  useEffect(() => {
+    if (address && isConnected) {
+      onConnect(address);
+      toast({
+        title: "Wallet connected",
+        description: "Your wallet has been successfully connected.",
+      });
+    }
+  }, [address, isConnected, onConnect]);
 
   // Expose the wallet connection methods to child components
   const contextValue = {
