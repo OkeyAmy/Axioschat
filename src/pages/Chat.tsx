@@ -29,6 +29,7 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [useLocalAI, setUseLocalAI] = useState(true);
   const [activeChat, setActiveChat] = useState<number | null>(null);
+  const [isPromptsPanelCollapsed, setIsPromptsPanelCollapsed] = useState(false);
   
   // State for custom endpoints
   const [localEndpoint, setLocalEndpoint] = useState("http://localhost:11434");
@@ -44,6 +45,22 @@ const Chat = () => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  // Check window width and collapse panel on smaller screens
+  useEffect(() => {
+    const handleResize = () => {
+      setIsPromptsPanelCollapsed(window.innerWidth < 1400);
+    };
+
+    // Initial check
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -118,6 +135,11 @@ const Chat = () => {
     setMessages(formattedMessages);
   };
 
+  // Handle collapsing prompts panel
+  const handlePromptsPanelCollapse = (collapsed: boolean) => {
+    setIsPromptsPanelCollapsed(collapsed);
+  };
+
   // Start a new chat
   const handleNewChat = () => {
     setActiveChat(null);
@@ -125,16 +147,16 @@ const Chat = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
       <Header />
       
-      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col">
+      <main className="flex-1 container mx-auto px-4 py-4 flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
         {!isConnected ? (
           <div className="flex-1 flex items-center justify-center">
             <WalletRequired />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-[280px_1fr_300px] gap-6 flex-1 overflow-hidden h-[calc(100vh-10rem)]">
+          <div className="grid grid-cols-1 md:grid-cols-[280px_1fr_auto] gap-6 flex-1 h-full overflow-hidden">
             {/* Chat History Sidebar */}
             <div className="hidden md:block h-full overflow-hidden">
               <ChatHistory 
@@ -144,8 +166,11 @@ const Chat = () => {
               />
             </div>
             
-            {/* Main Chat Area */}
-            <div className="flex flex-col rounded-lg border overflow-hidden h-full">
+            {/* Main Chat Area - Dynamic width based on prompts panel state */}
+            <div className={cn(
+              "flex flex-col rounded-lg border overflow-hidden h-full",
+              isPromptsPanelCollapsed ? "md:col-span-2" : ""
+            )}>
               <div className="border-b px-4 py-2 flex justify-between items-center">
                 <div className="flex items-center">
                   <MessageSquare className="h-5 w-5 mr-2 text-primary" />
@@ -167,7 +192,7 @@ const Chat = () => {
                 
               <div 
                 ref={chatContainerRef} 
-                className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-300"
+                className="flex-1 overflow-y-auto p-4 space-y-4"
               >
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -286,9 +311,16 @@ const Chat = () => {
               </div>
             </div>
             
-            {/* Suggested Prompts Panel */}
-            <div className="hidden md:block h-full">
-              <SuggestedPromptsPanel onSelectQuestion={handleSuggestedQuestion} />
+            {/* Suggested Prompts Panel - Pass the state to the component */}
+            <div className={cn(
+              "hidden md:block h-full",
+              isPromptsPanelCollapsed ? "w-14" : "w-[300px]"
+            )}>
+              <SuggestedPromptsPanel 
+                onSelectQuestion={handleSuggestedQuestion}
+                onCollapseChange={handlePromptsPanelCollapse}
+                defaultCollapsed={isPromptsPanelCollapsed}
+              />
             </div>
           </div>
         )}

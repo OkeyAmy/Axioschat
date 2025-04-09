@@ -9,16 +9,30 @@ import { FunctionCard } from "./FunctionCard";
 import { toast } from "@/components/ui/use-toast";
 import { useWeb3 } from "@/hooks/useWeb3";
 import { useConfig, useSwitchChain } from "wagmi";
-import { mainnet, polygon, optimism, arbitrum, base, zora } from "wagmi/chains";
+import { mainnet, polygon, optimism, arbitrum, base, zora, bsc } from "wagmi/chains";
 import { cn } from "@/lib/utils";
+
+// Custom EduChain definition
+const educhain = {
+  id: 98432,
+  name: 'EduChain',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'EduChain',
+    symbol: 'EDU',
+  },
+  rpcUrls: {
+    default: { http: ['https://rpc.edutestnet.io'] },
+  }
+};
 
 interface WalletSectionProps {
   currentChain: number;
   setCurrentChain: (chainId: number) => void;
 }
 
-// Fixed type for chains array
-const availableChains = [mainnet, polygon, optimism, arbitrum, base, zora];
+// Updated chains array to include BSC and EduChain
+const availableChains = [mainnet, polygon, optimism, arbitrum, base, zora, bsc, educhain];
 
 const WalletSection: React.FC<WalletSectionProps> = ({ currentChain, setCurrentChain }) => {
   const { web3, isReady, address } = useWeb3();
@@ -111,7 +125,9 @@ const WalletSection: React.FC<WalletSectionProps> = ({ currentChain, setCurrentC
                 currentChain === optimism.id ? "bg-red-500" :
                 currentChain === arbitrum.id ? "bg-blue-500" :
                 currentChain === base.id ? "bg-blue-600" :
-                currentChain === zora.id ? "bg-pink-500" : "bg-gray-500"
+                currentChain === zora.id ? "bg-pink-500" :
+                currentChain === bsc.id ? "bg-yellow-500" :
+                currentChain === educhain.id ? "bg-green-300" : "bg-gray-500"
               )} />
               <span>{availableChains.find(c => c.id === currentChain)?.name || "Unknown"}</span>
             </div>

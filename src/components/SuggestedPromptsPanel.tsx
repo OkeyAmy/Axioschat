@@ -9,10 +9,16 @@ import { Badge } from "@/components/ui/badge";
 
 interface SuggestedPromptsPanelProps {
   onSelectQuestion: (question: string) => void;
+  onCollapseChange?: (collapsed: boolean) => void;
+  defaultCollapsed?: boolean;
 }
 
-const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({ onSelectQuestion }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({ 
+  onSelectQuestion, 
+  onCollapseChange,
+  defaultCollapsed = false 
+}) => {
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   
   // Example categories and prompts
@@ -46,23 +52,36 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({ onSelectQ
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
+      // Auto-collapse on smaller screens
+      if (window.innerWidth < 1400 && !isCollapsed) {
+        setIsCollapsed(true);
+        onCollapseChange?.(true);
+      }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isCollapsed, onCollapseChange]);
 
-  // Auto-collapse on smaller screens
+  // Update collapsed state and notify parent
+  const handleCollapseChange = (open: boolean) => {
+    const newCollapsedState = !open;
+    setIsCollapsed(newCollapsedState);
+    onCollapseChange?.(newCollapsedState);
+  };
+
+  // Sync with parent's defaultCollapsed prop changes
   useEffect(() => {
-    if (windowWidth < 1400) {
-      setIsCollapsed(true);
-    } else {
-      setIsCollapsed(false);
+    if (defaultCollapsed !== isCollapsed) {
+      setIsCollapsed(defaultCollapsed);
     }
-  }, [windowWidth]);
+  }, [defaultCollapsed]);
 
   return (
-    <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
+    <Collapsible 
+      open={!isCollapsed} 
+      onOpenChange={(open) => handleCollapseChange(open)}
+    >
       <div className={cn(
         "bg-gradient-to-br from-sidebar-accent/30 to-sidebar-background backdrop-blur-sm border rounded-lg h-full transition-all duration-300 shadow-sm",
         isCollapsed ? "w-14" : "w-full"

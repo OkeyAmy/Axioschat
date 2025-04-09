@@ -17,8 +17,8 @@ const Header = () => {
   const location = useLocation()
 
   return (
-    <header className="border-b bg-card/80 backdrop-blur-lg sticky top-0 z-10 shadow-sm animate-in fade-in-10">
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+    <header className="border-b bg-card/80 backdrop-blur-lg sticky top-0 z-10 shadow-sm animate-in fade-in-10 h-16">
+      <div className="container mx-auto px-6 h-full flex justify-between items-center">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-2 transition-colors hover:opacity-90">
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
