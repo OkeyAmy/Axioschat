@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area"; 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Lightbulb, ArrowRightCircle } from "lucide-react";
+import { Lightbulb, ArrowRightCircle, ArrowLeftCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -90,7 +90,7 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({
           {!isCollapsed && <h3 className="text-sm font-medium">Suggested Prompts</h3>}
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="icon" className="ml-auto transition-transform duration-300">
-              {isCollapsed ? <Lightbulb size={16} /> : <ArrowRightCircle size={16} />}
+              {isCollapsed ? <ArrowRightCircle size={16} /> : <ArrowLeftCircle size={16} />}
             </Button>
           </CollapsibleTrigger>
         </div>

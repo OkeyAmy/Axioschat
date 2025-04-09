@@ -10,6 +10,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
 import { cn } from "@/lib/utils"
+import { mainnet, polygon, optimism, arbitrum, base, zora, bsc } from "wagmi/chains"
+
+// Custom EduChain definition for the header
+const educhain = {
+  id: 98432,
+  name: 'EduChain',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'EduChain',
+    symbol: 'EDU',
+  },
+  rpcUrls: {
+    default: { http: ['https://rpc.edutestnet.io'] },
+  }
+};
 
 const Header = () => {
   const { theme, setTheme } = useTheme()

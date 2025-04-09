@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { MessageSquare, ChevronRight, Plus, ArrowLeftCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import TransactionQueue from './TransactionQueue';
+import { Separator } from "@/components/ui/separator";
+import { useAccount } from 'wagmi';
 
 // Sample data for chat history
 const sampleChatHistory = [
@@ -58,14 +61,17 @@ interface ChatHistoryProps {
   onSelectChat: (chatId: number, messages: Array<{ role: string; content: string }>) => void;
   onNewChat: () => void;
   activeChat: number | null;
+  currentChain: number;
 }
 
 const ChatHistory: React.FC<ChatHistoryProps> = ({ 
   onSelectChat, 
   onNewChat,
-  activeChat 
+  activeChat,
+  currentChain
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isConnected } = useAccount();
 
   return (
     <div className={cn(
@@ -98,8 +104,8 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
           </Button>
         </div>
         
-        <CollapsibleContent className="space-y-1">
-          <ScrollArea className="flex-1 h-[calc(100vh-12rem)]">
+        <CollapsibleContent>
+          <ScrollArea className="flex-1 h-[calc(50vh-8rem)]">
             <div className="space-y-1 px-4 pr-2">
               {sampleChatHistory.map((chat) => (
                 <Button
@@ -124,6 +130,18 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
               ))}
             </div>
           </ScrollArea>
+
+          {isConnected && (
+            <>
+              <Separator className="my-4 mx-4" />
+              <div className="px-4 mb-2">
+                <h3 className="text-sm font-medium mb-2">Transaction Queue</h3>
+                <div className="h-[calc(50vh-10rem)] overflow-auto pr-1">
+                  <TransactionQueue chainId={currentChain} inPanel={true} />
+                </div>
+              </div>
+            </>
+          )}
         </CollapsibleContent>
       </Collapsible>
     </div>

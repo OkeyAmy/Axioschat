@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useAccount } from "wagmi";
 import WalletRequired from "@/components/WalletRequired";
 import { ArrowRight, Send, Bot, Settings, MessageSquare, RotateCcw, X } from "lucide-react";
+import { mainnet } from "wagmi/chains";
 
 // Define the message type to avoid TypeScript errors
 type Message = {
@@ -29,7 +30,9 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [useLocalAI, setUseLocalAI] = useState(true);
   const [activeChat, setActiveChat] = useState<number | null>(null);
+  const [isHistoryPanelCollapsed, setIsHistoryPanelCollapsed] = useState(false);
   const [isPromptsPanelCollapsed, setIsPromptsPanelCollapsed] = useState(false);
+  const [currentChain, setCurrentChain] = useState(mainnet.id);
   
   // State for custom endpoints
   const [localEndpoint, setLocalEndpoint] = useState("http://localhost:11434");
@@ -46,10 +49,15 @@ const Chat = () => {
     }
   }, [messages]);
 
-  // Check window width and collapse panel on smaller screens
+  // Check window width and collapse panels on smaller screens
   useEffect(() => {
     const handleResize = () => {
-      setIsPromptsPanelCollapsed(window.innerWidth < 1400);
+      if (window.innerWidth < 1400) {
+        setIsPromptsPanelCollapsed(true);
+      }
+      if (window.innerWidth < 1200) {
+        setIsHistoryPanelCollapsed(true);
+      }
     };
 
     // Initial check
@@ -135,7 +143,11 @@ const Chat = () => {
     setMessages(formattedMessages);
   };
 
-  // Handle collapsing prompts panel
+  // Handle collapsing panels
+  const handleHistoryPanelCollapse = (collapsed: boolean) => {
+    setIsHistoryPanelCollapsed(collapsed);
+  };
+  
   const handlePromptsPanelCollapse = (collapsed: boolean) => {
     setIsPromptsPanelCollapsed(collapsed);
   };
@@ -156,21 +168,22 @@ const Chat = () => {
             <WalletRequired />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-[280px_1fr_auto] gap-6 flex-1 h-full overflow-hidden">
-            {/* Chat History Sidebar */}
-            <div className="hidden md:block h-full overflow-hidden">
+          <div className="grid grid-cols-[auto_1fr_auto] gap-6 flex-1 h-full overflow-hidden">
+            {/* Chat History Sidebar - Dynamic width based on collapse state */}
+            <div className={cn(
+              "transition-all duration-300",
+              isHistoryPanelCollapsed ? "w-14" : "w-[280px]"
+            )}>
               <ChatHistory 
                 onSelectChat={handleSelectChat} 
                 onNewChat={handleNewChat}
                 activeChat={activeChat}
+                currentChain={currentChain}
               />
             </div>
             
-            {/* Main Chat Area - Dynamic width based on prompts panel state */}
-            <div className={cn(
-              "flex flex-col rounded-lg border overflow-hidden h-full",
-              isPromptsPanelCollapsed ? "md:col-span-2" : ""
-            )}>
+            {/* Main Chat Area - Dynamic width based on panels state */}
+            <div className="flex flex-col rounded-lg border overflow-hidden h-full">
               <div className="border-b px-4 py-2 flex justify-between items-center">
                 <div className="flex items-center">
                   <MessageSquare className="h-5 w-5 mr-2 text-primary" />
@@ -311,9 +324,9 @@ const Chat = () => {
               </div>
             </div>
             
-            {/* Suggested Prompts Panel - Pass the state to the component */}
+            {/* Suggested Prompts Panel - Dynamic width based on collapse state */}
             <div className={cn(
-              "hidden md:block h-full",
+              "transition-all duration-300",
               isPromptsPanelCollapsed ? "w-14" : "w-[300px]"
             )}>
               <SuggestedPromptsPanel 

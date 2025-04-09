@@ -76,7 +76,7 @@ export const getRecommendedGasPrice = async (web3: Web3, chainId: number): Promi
     // Try to get current gas price from the network
     let gasPrice;
     try {
-      gasPrice = Number(await web3.eth.getGasPrice()) as unknown as number;
+      gasPrice = Number(web3.eth.getGasPrice()) as unknown as number;
     } catch (error) {
       console.error("Error getting gas price, using default:", error);
       return web3.utils.toWei(defaultGasPrices[chainId] || "20", 'gwei');
@@ -84,7 +84,8 @@ export const getRecommendedGasPrice = async (web3: Web3, chainId: number): Promi
     
     if (gasPrice) {
       // Convert from Wei to Gwei for display and add 10%
-      const gasPriceGwei = parseFloat(web3.utils.fromWei(gasPrice, 'gwei'));
+      // Fix TS2352 error by explicitly converting bigint to number via Number()
+      const gasPriceGwei = parseFloat(web3.utils.fromWei(Number(gasPrice).toString(), 'gwei'));
       return web3.utils.toWei((gasPriceGwei * 1.1).toFixed(2), 'gwei');
     }
     

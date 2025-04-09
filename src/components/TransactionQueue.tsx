@@ -10,9 +10,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TransactionQueueProps {
   chainId: number;
+  inPanel?: boolean;
 }
 
-const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId }) => {
+const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId, inPanel = false }) => {
   const { 
     queue, 
     removeFromQueue, 
@@ -30,8 +31,87 @@ const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId }) => {
     }
   }, [queue, isProcessing, executeNext]);
 
-  if (queue.length === 0) return null;
+  if (queue.length === 0) {
+    if (inPanel) {
+      return (
+        <div className="text-center py-4 text-sm text-muted-foreground">
+          No pending transactions
+        </div>
+      );
+    }
+    return null;
+  }
 
+  // If displayed in panel, render inline
+  if (inPanel) {
+    return (
+      <div className="flex flex-col gap-2">
+        {queue.map((tx) => (
+          <Card key={tx.id} className={cn(
+            "shadow-sm border transition-colors",
+            tx.status === 'success' && "border-emerald-500/20 bg-emerald-500/5",
+            tx.status === 'failed' && "border-red-500/20 bg-red-500/5",
+            tx.status === 'processing' && "border-amber-500/20 bg-amber-500/5",
+            tx.status === 'pending' && "border-muted/20 bg-card/95"
+          )}>
+            <CardContent className="p-2 text-xs">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1">
+                  {tx.status === 'processing' && (
+                    <Loader2 className="h-3 w-3 text-amber-500 animate-spin" />
+                  )}
+                  {tx.status === 'success' && (
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                  )}
+                  {tx.status === 'failed' && (
+                    <AlertCircle className="h-3 w-3 text-red-500" />
+                  )}
+                  {tx.status === 'pending' && (
+                    <div className="h-3 w-3 rounded-full border-2 border-muted-foreground/20" />
+                  )}
+                  <span className="font-medium">{tx.type}</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-5 w-5 p-0" 
+                  onClick={() => removeFromQueue(tx.id)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                {tx.description}
+              </p>
+              
+              {tx.error && (
+                <p className="text-xs text-red-500 mt-1">
+                  {tx.error}
+                </p>
+              )}
+              
+              {tx.txHash && (
+                <div className="mt-1 pt-1 border-t border-border/30 flex justify-end">
+                  <a
+                    href={getTxUrl(chainId, tx.txHash)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:text-primary/90 text-xs flex items-center"
+                  >
+                    View
+                    <ExternalLink className="ml-1 h-2 w-2" />
+                  </a>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  // Default floating version
   return (
     <div className="fixed bottom-4 right-4 z-50 w-80">
       <ScrollArea className="max-h-[60vh]">
