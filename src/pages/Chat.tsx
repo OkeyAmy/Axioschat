@@ -15,6 +15,10 @@ import { useAccount } from "wagmi";
 import WalletRequired from "@/components/WalletRequired";
 import { ArrowRight, Send, Bot, Settings, MessageSquare, RotateCcw, X } from "lucide-react";
 import { mainnet } from "wagmi/chains";
+import TransactionQueue from "@/components/TransactionQueue";
+import ApiKeyInput from "@/components/ApiKeyInput";
+import useApiKeys from "@/hooks/useApiKeys";
+import { callFlockWeb3, createDefaultWeb3Tools, FlockWeb3Request } from "@/services/replicateService";
 
 // Define the message type to avoid TypeScript errors
 type Message = {
@@ -34,11 +38,11 @@ const Chat = () => {
   const [isPromptsPanelCollapsed, setIsPromptsPanelCollapsed] = useState(false);
   const [currentChain, setCurrentChain] = useState(mainnet.id);
   
-  // State for custom endpoints
+  // State for endpoints
   const [localEndpoint, setLocalEndpoint] = useState("http://localhost:11434");
-  const [cloudEndpoint, setCloudEndpoint] = useState("https://api.openai.com/v1");
   const [showEndpointSettings, setShowEndpointSettings] = useState(false);
-
+  const { apiKeys, updateApiKey, isLoaded } = useApiKeys();
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
@@ -88,25 +92,69 @@ const Chat = () => {
     setLoading(true);
     
     try {
-      // Simulate AI response
-      setTimeout(() => {
-        const aiMessage: Message = {
-          role: "assistant",
-          content: `This is a simulated response to: "${userMessage.content}" using ${useLocalAI ? "Llama 3.2 (Local)" : "GPT-4 (Cloud)"}`,
-          id: Date.now().toString(),
-        };
-        
-        setMessages(prevMessages => [...prevMessages, aiMessage]);
-        setLoading(false);
-        
-        toast({
-          title: "Response received",
-          description: "The AI has responded to your message.",
+      let aiResponse: string;
+      
+      if (useLocalAI) {
+        // Local Llama 3.2 API call
+        const response = await fetch(`${localEndpoint}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'llama3.2',
+            messages: [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: userMessage.content }],
+          }),
         });
-      }, 1500);
+        
+        if (!response.ok) {
+          throw new Error(`Error from local API: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        aiResponse = data.message?.content || "No response from local model";
+      } else {
+        // Flock Web3 model via Replicate
+        if (!apiKeys.replicate) {
+          aiResponse = "Please provide a Replicate API key in the settings to use the Flock Web3 model.";
+        } else {
+          const flockRequest: FlockWeb3Request = {
+            query: userMessage.content,
+            tools: createDefaultWeb3Tools(),
+            temperature: 0.7,
+            top_p: 0.9,
+            max_new_tokens: 3000
+          };
+          
+          aiResponse = await callFlockWeb3(flockRequest);
+        }
+      }
+      
+      // Create AI message
+      const aiMessage: Message = {
+        role: "assistant",
+        content: aiResponse,
+        id: Date.now().toString(),
+      };
+      
+      setMessages(prevMessages => [...prevMessages, aiMessage]);
+      setLoading(false);
+      
+      toast({
+        title: "Response received",
+        description: "The AI has responded to your message.",
+      });
     } catch (error) {
       console.error("Error getting response:", error);
       setLoading(false);
+      
+      // Add error message
+      const errorMessage: Message = {
+        role: "assistant",
+        content: `Error: ${error instanceof Error ? error.message : "Failed to get a response from the AI."}`,
+        id: Date.now().toString(),
+      };
+      
+      setMessages(prevMessages => [...prevMessages, errorMessage]);
+      
       toast({
         title: "Error",
         description: "Failed to get a response from the AI.",
@@ -143,15 +191,6 @@ const Chat = () => {
     setMessages(formattedMessages);
   };
 
-  // Handle collapsing panels
-  const handleHistoryPanelCollapse = (collapsed: boolean) => {
-    setIsHistoryPanelCollapsed(collapsed);
-  };
-  
-  const handlePromptsPanelCollapse = (collapsed: boolean) => {
-    setIsPromptsPanelCollapsed(collapsed);
-  };
-
   // Start a new chat
   const handleNewChat = () => {
     setActiveChat(null);
@@ -171,15 +210,27 @@ const Chat = () => {
           <div className="grid grid-cols-[auto_1fr_auto] gap-6 flex-1 h-full overflow-hidden">
             {/* Chat History Sidebar - Dynamic width based on collapse state */}
             <div className={cn(
-              "transition-all duration-300",
+              "transition-all duration-300 flex flex-col",
               isHistoryPanelCollapsed ? "w-14" : "w-[280px]"
             )}>
-              <ChatHistory 
-                onSelectChat={handleSelectChat} 
-                onNewChat={handleNewChat}
-                activeChat={activeChat}
-                currentChain={currentChain}
-              />
+              <div className="flex-1 overflow-hidden">
+                <ChatHistory 
+                  onSelectChat={handleSelectChat} 
+                  onNewChat={handleNewChat}
+                  activeChat={activeChat}
+                  currentChain={currentChain}
+                />
+              </div>
+              
+              {/* Transaction Queue in bottom half */}
+              {!isHistoryPanelCollapsed && (
+                <div className="mt-4 border-t pt-4 h-1/3 overflow-hidden">
+                  <h3 className="font-medium text-sm mb-2 px-2">Transaction Queue</h3>
+                  <div className="overflow-y-auto h-[calc(100%-2rem)]">
+                    <TransactionQueue />
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Main Chat Area - Dynamic width based on panels state */}
@@ -254,7 +305,7 @@ const Chat = () => {
                         onCheckedChange={setUseLocalAI}
                       />
                       <Label htmlFor="local-ai" className="text-sm cursor-pointer select-none">
-                        {useLocalAI ? "Llama 3.2 (Local)" : "GPT-4 (Cloud)"}
+                        {useLocalAI ? "Llama 3.2 (Local)" : "Flock Web3 (Cloud)"}
                       </Label>
                     </div>
                     <Button 
@@ -289,13 +340,11 @@ const Chat = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cloud-endpoint" className="text-xs">Cloud Endpoint</Label>
-                      <Input
-                        id="cloud-endpoint"
-                        placeholder="https://api.openai.com/v1"
-                        value={cloudEndpoint}
-                        onChange={(e) => setCloudEndpoint(e.target.value)}
-                        className="h-8 text-xs"
+                      <ApiKeyInput 
+                        label="Replicate API Key"
+                        apiKey={apiKeys.replicate}
+                        onChange={(key) => updateApiKey('replicate', key)}
+                        placeholder="Enter your Replicate API key"
                       />
                     </div>
                   </div>
@@ -331,7 +380,7 @@ const Chat = () => {
             )}>
               <SuggestedPromptsPanel 
                 onSelectQuestion={handleSuggestedQuestion}
-                onCollapseChange={handlePromptsPanelCollapse}
+                onCollapseChange={setIsPromptsPanelCollapsed}
                 defaultCollapsed={isPromptsPanelCollapsed}
               />
             </div>

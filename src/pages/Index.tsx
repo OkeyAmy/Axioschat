@@ -1,24 +1,20 @@
+
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import ChatHistory from '@/components/ChatHistory';
 import ChatMessages from '@/components/ChatMessages';
 
 const Home: React.FC = () => {
-  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [activeChat, setActiveChat] = useState<number | null>(null);
   const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([]);
 
-  const handleSelectChat = (chatId: string) => {
+  const handleSelectChat = (chatId: number, messages: { role: string; content: string }[]) => {
     setActiveChat(chatId);
-    // Fetch chat messages based on chatId (dummy data for now)
-    const dummyMessages = [
-      { role: 'assistant', content: `Hello! This is the start of chat ${chatId}.` },
-      { role: 'user', content: 'Hi! Thanks for starting the chat.' },
-    ];
-    setChatMessages(dummyMessages);
+    setChatMessages(messages || []);
   };
 
   const handleNewChat = () => {
-    const newChatId = Math.random().toString(36).substring(7);
+    const newChatId = Date.now();
     setActiveChat(newChatId);
     setChatMessages([]); // Clear messages for a new chat
   };

@@ -190,7 +190,8 @@ export const getTokenBalance = async (
     }
     
     // Convert based on token decimals
-    return web3.utils.fromWei(balance ? balance.toString() : '0', 'ether');
+    const balanceNumber = Number(parseFloat(balance.toString()) / 10 ** decimals);
+    return web3.utils.fromWei(balanceNumber.toString(), 'ether');
   } catch (error) {
     console.error("Error fetching token balance:", error);
     return "0";

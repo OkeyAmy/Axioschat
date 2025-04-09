@@ -15,10 +15,19 @@ import {
   LinkIcon, 
   Lock, 
   Send, 
+  Settings,
   Shuffle, 
-  Wallet
+  Wallet,
+  X
 } from 'lucide-react';
 import SuggestedPromptsPanel from '@/components/SuggestedPromptsPanel';
+import TransactionQueue from '@/components/TransactionQueue';
+import ApiKeyInput from '@/components/ApiKeyInput';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import useApiKeys from '@/hooks/useApiKeys';
+import { callFlockWeb3, createDefaultWeb3Tools, FlockWeb3Request } from '@/services/replicateService';
+import { toast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 
 type DeFiSection = {
@@ -47,6 +56,10 @@ const Web3Intro: React.FC = () => {
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
   const [isSuggestionsCollapsed, setIsSuggestionsCollapsed] = useState(window.innerWidth < 1400);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [useLocalAI, setUseLocalAI] = useState(true);
+  const [localEndpoint, setLocalEndpoint] = useState("http://localhost:11434");
+  const [showEndpointSettings, setShowEndpointSettings] = useState(false);
+  const { apiKeys, updateApiKey } = useApiKeys();
 
   // Shared functionality with Chat component
   const handleSendMessage = async () => {
@@ -57,21 +70,78 @@ const Web3Intro: React.FC = () => {
     setMessageInput('');
     setIsProcessing(true);
     
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      let aiResponse = '';
       const currentSection = defiSections.find(section => section.id === activeSection);
-      let responseContent = `I'd be happy to tell you about ${currentSection?.name || 'DeFi'}. `;
       
-      if (currentSection) {
-        responseContent += `${currentSection.description} You can explore more specific concepts within this section or ask me questions about ${currentSection.name}.`;
+      if (useLocalAI) {
+        // Use local Llama 3.2 API
+        try {
+          const response = await fetch(`${localEndpoint}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'llama3.2',
+              messages: [
+                ...messages.map(m => ({ role: m.role, content: m.content })),
+                { 
+                  role: 'user', 
+                  content: `${messageInput}\n\nContext: We are discussing ${currentSection?.name || 'DeFi'}. ${currentSection?.description || ''}`
+                }
+              ],
+            }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Error from local API: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          aiResponse = data.message?.content || "No response from local model";
+        } catch (error) {
+          console.error("Error calling local model:", error);
+          aiResponse = `I couldn't connect to the local model. ${error instanceof Error ? error.message : "Unknown error"}`;
+        }
       } else {
-        responseContent += 'DeFi (Decentralized Finance) refers to financial applications built on blockchain technologies, typically using smart contracts. It aims to recreate and improve on traditional financial systems without the need for intermediaries like banks.';
+        // Use Flock Web3 model via Replicate
+        if (!apiKeys.replicate) {
+          aiResponse = "Please provide a Replicate API key in the settings to use the Flock Web3 model.";
+        } else {
+          const contextInfo = currentSection 
+            ? `We are discussing ${currentSection.name}. ${currentSection.description}`
+            : 'We are discussing DeFi (Decentralized Finance) in general.';
+          
+          const flockRequest: FlockWeb3Request = {
+            query: `${messageInput}\n\nContext: ${contextInfo}`,
+            tools: createDefaultWeb3Tools(),
+            temperature: 0.7,
+            top_p: 0.9,
+            max_new_tokens: 3000
+          };
+          
+          aiResponse = await callFlockWeb3(flockRequest);
+        }
       }
       
-      const aiResponse = { role: 'assistant', content: responseContent };
-      setMessages(prev => [...prev, aiResponse]);
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+    } catch (error) {
+      console.error("Error processing message:", error);
+      setMessages(prev => [
+        ...prev, 
+        { 
+          role: 'assistant', 
+          content: `I'm sorry, I encountered an error: ${error instanceof Error ? error.message : "Unknown error"}`
+        }
+      ]);
+      
+      toast({
+        title: "Error",
+        description: "Failed to get a response from the AI.",
+        variant: "destructive",
+      });
+    } finally {
       setIsProcessing(false);
-    }, 1000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -96,6 +166,27 @@ const Web3Intro: React.FC = () => {
   const handleSelectQuestion = (question: string) => {
     setMessageInput(question);
   };
+
+  // Handle window resize for responsive layout
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1400) {
+        setIsSuggestionsCollapsed(true);
+      }
+      if (window.innerWidth < 1200) {
+        setIsHistoryCollapsed(true);
+      }
+    };
+
+    // Initial check
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // DeFi sections data
   const defiSections: DeFiSection[] = [
@@ -345,12 +436,12 @@ const Web3Intro: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Section Navigation */}
         <div className={cn(
-          "border-r bg-card/50 flex-shrink-0 transition-all duration-300 overflow-hidden",
+          "border-r bg-card/50 flex-shrink-0 transition-all duration-300 overflow-hidden flex flex-col",
           isHistoryCollapsed ? "w-0" : "w-1/4 md:w-1/5"
         )}>
-          <div className="p-4 h-full">
+          <div className="p-4 flex-1 overflow-hidden">
             <h2 className="text-xl font-bold mb-4">DeFi Topics</h2>
-            <ScrollArea className="h-[calc(100vh-12rem)]">
+            <ScrollArea className="h-[calc(100vh-16rem)]">
               <div className="space-y-2 pr-4">
                 {defiSections.map((section) => (
                   <Button
@@ -366,14 +457,24 @@ const Web3Intro: React.FC = () => {
               </div>
             </ScrollArea>
           </div>
+
+          {/* Transaction Queue in bottom half */}
+          {!isHistoryCollapsed && (
+            <div className="border-t pt-4 p-4 h-1/3 overflow-hidden">
+              <h3 className="font-medium text-sm mb-2">Transaction Queue</h3>
+              <div className="overflow-y-auto h-[calc(100%-2rem)]">
+                <TransactionQueue />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-hidden flex flex-col">
             {/* Messages display */}
-            <ScrollArea className="h-[calc(100vh-12rem)]">
-              <div className="space-y-4 p-4">
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
                 {messages.map((message, index) => (
                   <div
                     key={index}
@@ -398,80 +499,134 @@ const Web3Intro: React.FC = () => {
                 )}
               </div>
             </ScrollArea>
-          </div>
 
-          {/* Active Section Info Display */}
-          {activeSection && (
-            <div className="border-t p-4 bg-card/50">
-              <Tabs defaultValue="overview">
-                <TabsList className="mb-2">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="concepts">Key Concepts</TabsTrigger>
-                  <TabsTrigger value="resources">Resources</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="overview">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        {defiSections.find(s => s.id === activeSection)?.icon && 
-                          React.createElement(
-                            defiSections.find(s => s.id === activeSection)?.icon || 'div', 
-                            { className: "mr-2 h-4 w-4" }
-                          )
-                        }
-                        {defiSections.find(s => s.id === activeSection)?.name}
-                      </CardTitle>
-                      <CardDescription>
-                        {defiSections.find(s => s.id === activeSection)?.description}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                </TabsContent>
-                
-                <TabsContent value="concepts">
-                  <Card>
-                    <CardContent className="pt-4">
-                      {defiSections.find(s => s.id === activeSection)?.concepts.map((concept, i) => (
-                        <div key={i} className="mb-4">
-                          <h3 className="font-medium">{concept.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">{concept.description}</p>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                
-                <TabsContent value="resources">
-                  <Card>
-                    <CardContent className="pt-4">
-                      {defiSections.find(s => s.id === activeSection)?.concepts.flatMap((concept) => 
-                        concept.resources.map((resource, i) => (
-                          <div key={i} className="mb-2">
-                            {renderResourceLink(resource)}
+            {/* Active Section Info Display */}
+            {activeSection && (
+              <div className="border-t p-4 bg-card/50">
+                <Tabs defaultValue="overview">
+                  <TabsList className="mb-2">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="concepts">Key Concepts</TabsTrigger>
+                    <TabsTrigger value="resources">Resources</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="overview">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          {defiSections.find(s => s.id === activeSection)?.icon && 
+                            React.createElement(
+                              defiSections.find(s => s.id === activeSection)?.icon || 'div', 
+                              { className: "mr-2 h-4 w-4" }
+                            )
+                          }
+                          {defiSections.find(s => s.id === activeSection)?.name}
+                        </CardTitle>
+                        <CardDescription>
+                          {defiSections.find(s => s.id === activeSection)?.description}
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </TabsContent>
+                  
+                  <TabsContent value="concepts">
+                    <Card>
+                      <CardContent className="pt-4">
+                        {defiSections.find(s => s.id === activeSection)?.concepts.map((concept, i) => (
+                          <div key={i} className="mb-4">
+                            <h3 className="font-medium">{concept.title}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">{concept.description}</p>
                           </div>
-                        ))
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  
+                  <TabsContent value="resources">
+                    <Card>
+                      <CardContent className="pt-4">
+                        {defiSections.find(s => s.id === activeSection)?.concepts.flatMap((concept) => 
+                          concept.resources.map((resource, i) => (
+                            <div key={i} className="mb-2">
+                              {renderResourceLink(resource)}
+                            </div>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
 
-          {/* Input area */}
-          <div className="border-t p-4 bg-background">
-            <div className="flex gap-2">
-              <Textarea
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask a question about Web3 or DeFi..."
-                className="min-h-[60px] flex-1"
-              />
-              <Button onClick={handleSendMessage} className="self-end" disabled={isProcessing}>
-                <Send className="h-4 w-4" />
-              </Button>
+            {/* Input area with settings */}
+            <div className="border-t p-4 bg-background">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="web3-intro-local-ai"
+                      checked={useLocalAI}
+                      onCheckedChange={setUseLocalAI}
+                    />
+                    <Label htmlFor="web3-intro-local-ai" className="text-sm cursor-pointer select-none">
+                      {useLocalAI ? "Llama 3.2 (Local)" : "Flock Web3 (Cloud)"}
+                    </Label>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setShowEndpointSettings(!showEndpointSettings)}
+                    className="h-8 w-8"
+                  >
+                    <Settings size={14} />
+                  </Button>
+                </div>
+              </div>
+              
+              {showEndpointSettings && (
+                <div className="mb-4 p-3 border rounded-md bg-muted/40 space-y-3 relative">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-6 w-6 absolute top-2 right-2"
+                    onClick={() => setShowEndpointSettings(false)}
+                  >
+                    <X size={12} />
+                  </Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="web3-intro-local-endpoint" className="text-xs">Local Endpoint</Label>
+                    <Textarea
+                      id="web3-intro-local-endpoint"
+                      placeholder="http://localhost:11434"
+                      value={localEndpoint}
+                      onChange={(e) => setLocalEndpoint(e.target.value)}
+                      className="h-8 text-xs resize-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <ApiKeyInput 
+                      label="Replicate API Key"
+                      apiKey={apiKeys.replicate}
+                      onChange={(key) => updateApiKey('replicate', key)}
+                      placeholder="Enter your Replicate API key"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <Textarea
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask a question about Web3 or DeFi..."
+                  className="min-h-[60px] flex-1"
+                />
+                <Button onClick={handleSendMessage} className="self-end" disabled={isProcessing}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

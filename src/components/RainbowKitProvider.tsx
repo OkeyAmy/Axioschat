@@ -12,7 +12,6 @@ import {
   http, 
   createConfig, 
   WagmiProvider,
-  Chain
 } from "wagmi"
 import {
   mainnet,
@@ -38,7 +37,7 @@ interface RainbowKitWrapperProps {
 const projectId = 'f648e94e1f1c32327aaa0416d6409e2b';
 
 // Custom EduChain
-const educhain: Chain = {
+const educhain = {
   id: 11155111,
   name: 'EduChain',
   nativeCurrency: {
@@ -62,7 +61,6 @@ const chains = [mainnet, polygon, optimism, arbitrum, base, zora, bsc, educhain]
 const { connectors } = getDefaultWallets({
   appName: 'NovachatV2',
   projectId,
-  chains,
 });
 
 // Create wagmi config
