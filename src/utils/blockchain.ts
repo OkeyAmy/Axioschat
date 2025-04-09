@@ -1,4 +1,3 @@
-
 import Web3 from 'web3';
 import { toast } from "@/components/ui/use-toast";
 
@@ -12,6 +11,17 @@ export interface TxOptions {
   gasPrice?: string;
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
+}
+
+// Transaction queue state type
+export interface QueuedTransaction {
+  id: string;
+  type: string;
+  description: string;
+  status: 'pending' | 'processing' | 'success' | 'failed';
+  txHash?: string;
+  error?: string;
+  execute: () => Promise<void>;
 }
 
 // Chain explorer URLs
@@ -105,7 +115,7 @@ export const sendTransaction = async (web3: Web3, options: TxOptions): Promise<s
           data: tx.data
         });
         // Add 20% buffer to gas estimate
-        tx.gas = Math.floor(Number(estimatedGas) * 1.2);
+        tx.gas = Math.floor(Number(parseInt(estimatedGas.toString())) * 1.2);
       } catch (error) {
         console.warn("Gas estimation failed, using default:", error);
         tx.gas = 100000; // Default gas limit
@@ -161,7 +171,7 @@ export const getTokenBalance = async (
     const balance = await contract.methods.balanceOf(walletAddress).call();
     
     // Convert based on token decimals
-    return web3.utils.fromWei(balance.toString(), 'ether');
+    return web3.utils.fromWei(balance !== null ? balance.toString() : '0', 'ether');
   } catch (error) {
     console.error("Error fetching token balance:", error);
     return "0";
@@ -251,7 +261,7 @@ export const fetchRecentTransactions = async (
             hash: tx.hash,
             from: tx.from,
             to: tx.to,
-            value: web3.utils.fromWei(tx.value.toString(), 'ether'),
+            value: web3.utils.fromWei(tx.value ? tx.value.toString() : '0', 'ether'),
             timestamp: new Date((block.timestamp as number) * 1000).toLocaleString(),
             status: "success",
             gasUsed: tx.gas,

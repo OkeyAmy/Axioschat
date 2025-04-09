@@ -16,6 +16,13 @@ declare global {
       walletAddress?: string;
       isConnected: boolean;
       web3?: Web3;
+      currentChain?: number;
+    };
+    transactionQueue?: {
+      add: (tx: any) => string;
+      execute: (id: string) => Promise<void>;
+      remove: (id: string) => void;
+      clear: () => void;
     };
   }
 }
