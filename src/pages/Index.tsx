@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -26,15 +25,15 @@ const Index = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Handle initial question from landing page
   useEffect(() => {
-    if (initialQuestion && walletConnected && showChat) {
-      handleSubmit(undefined, initialQuestion);
-      setInitialQuestion("");
+    if (initialQuestion && showChat) {
+      if (walletConnected) {
+        handleSubmit(undefined, initialQuestion);
+        setInitialQuestion("");
+      }
     }
   }, [initialQuestion, walletConnected, showChat]);
 
-  // Scroll to bottom of messages
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -47,13 +46,11 @@ const Index = () => {
     const userMessage = predefinedInput || input.trim();
     if (!userMessage || isLoading) return;
     
-    // Add user message to chat
     setMessages(prev => [...prev, { role: "user", content: userMessage }]);
     setInput("");
     setIsLoading(true);
 
     try {
-      // Simulate AI response - in a real app, this would call your API
       setTimeout(() => {
         setMessages(prev => [
           ...prev, 
@@ -91,12 +88,10 @@ const Index = () => {
 
   const handleSelectChat = (chatId: number) => {
     setActiveChat(chatId);
-    // In a real app, fetch messages for this chat
     toast({
       title: "Chat Selected",
       description: `Loading chat #${chatId}`,
     });
-    // Mock loading previous messages
     setMessages([
       { role: "user", content: "Tell me about smart contracts" },
       { role: "assistant", content: "Smart contracts are self-executing contracts with the terms directly written into code. They run on blockchain networks like Ethereum." }
@@ -137,7 +132,6 @@ const Index = () => {
               <WalletRequired />
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-12rem)]">
-                {/* Chat History - Left Sidebar */}
                 <div className="lg:col-span-3 hidden md:block">
                   <ChatHistory 
                     onSelectChat={handleSelectChat}
@@ -146,7 +140,6 @@ const Index = () => {
                   />
                 </div>
                 
-                {/* Main Chat Area */}
                 <div className="lg:col-span-6">
                   <Card className="w-full h-full border shadow-md flex flex-col">
                     <CardHeader>
@@ -214,7 +207,6 @@ const Index = () => {
                   </Card>
                 </div>
                 
-                {/* Suggested Questions - Right Sidebar */}
                 <div className="lg:col-span-3 hidden md:block">
                   <SuggestedQuestions onSelectQuestion={handleSelectQuestion} />
                 </div>

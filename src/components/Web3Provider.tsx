@@ -39,14 +39,14 @@ const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
     checkExistingConnection();
   }, [onConnect]);
 
-  // Simulate checking if MetaMask or WalletConnect is installed/available
+  // Check if MetaMask or WalletConnect is installed/available
   const checkIfWalletIsInstalled = () => {
     // Use the typed window
     const windowWithEthereum = window as WindowWithEthereum;
     return windowWithEthereum.ethereum !== undefined;
   };
 
-  // This function would be replaced with actual wallet connection logic
+  // Connect wallet function
   const connectWallet = async () => {
     if (isConnected) return; // Already connected
     
@@ -83,14 +83,11 @@ const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
         }
       }
       
-      // Fallback to mock if real connection fails
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const mockAddress = "0x" + Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-      setWalletAddress(mockAddress);
-      setIsConnected(true);
-      onConnect(mockAddress);
+      // If we reach here, the connection failed despite ethereum being available
+      throw new Error("Failed to connect to wallet");
       
     } catch (error) {
+      console.error("Wallet connection error:", error);
       toast({
         title: "Connection failed",
         description: "Failed to connect wallet. Please try again.",

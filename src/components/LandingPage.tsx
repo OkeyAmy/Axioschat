@@ -17,6 +17,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onAskQuestion }
     e.preventDefault();
     if (question.trim()) {
       onAskQuestion(question.trim());
+    } else {
+      // If no question, just go to chat
+      onGetStarted();
     }
   };
 
@@ -42,16 +45,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onAskQuestion }
                 placeholder="Ask anything about Web3, blockchain, or smart contracts..."
                 className="resize-none min-h-[80px]"
               />
-              <div className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={onGetStarted}
-                >
-                  Just Browse
-                </Button>
+              <div className="flex justify-end">
                 <Button 
                   type="submit" 
-                  disabled={!question.trim()}
                   className="gap-2"
                 >
                   <Send size={16} />

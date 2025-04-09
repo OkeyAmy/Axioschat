@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Moon, Sun, Wallet } from "lucide-react";
+import { Moon, Sun, Wallet, Check } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
 const Header = () => {
@@ -41,17 +41,27 @@ const Header = () => {
             />
           </div>
           
-          <Button 
-            onClick={connectWallet} 
-            disabled={isLoading || isConnected}
-            variant="outline"
-            size="sm"
-            className="hover:bg-primary/10 flex items-center gap-2"
-          >
-            <Wallet size={16} />
-            {isLoading ? "Connecting..." : 
-             isConnected ? formattedAddress : "Connect Wallet"}
-          </Button>
+          {isConnected ? (
+            <Button 
+              variant="outline"
+              size="sm"
+              className="bg-primary/10 flex items-center gap-2 cursor-default"
+            >
+              <Check size={16} className="text-green-500" />
+              {formattedAddress}
+            </Button>
+          ) : (
+            <Button 
+              onClick={connectWallet} 
+              disabled={isLoading}
+              variant="outline"
+              size="sm"
+              className="hover:bg-primary/10 flex items-center gap-2"
+            >
+              <Wallet size={16} />
+              {isLoading ? "Connecting..." : "Connect Wallet"}
+            </Button>
+          )}
         </div>
       </div>
     </header>
