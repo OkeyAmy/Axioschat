@@ -75,10 +75,13 @@ const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
           setIsConnected(true);
           onConnect(address);
           
-          toast({
-            title: "Wallet connected",
-            description: "Your wallet has been successfully connected.",
-          });
+          // Only show toast if successfully connected
+          if (accounts && accounts.length > 0) {
+            toast({
+              title: "Wallet connected",
+              description: "Your wallet has been successfully connected.",
+            });
+          }
           return;
         }
       }
@@ -111,7 +114,7 @@ const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
   useEffect(() => {
     // @ts-ignore
     window.web3Context = contextValue;
-  }, [contextValue]);
+  }, [isLoading, walletAddress, isConnected]); // Add dependencies to ensure context updates
 
   return <>{children}</>;
 };

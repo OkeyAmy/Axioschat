@@ -39,16 +39,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onAskQuestion }
         <Card className="w-full max-w-2xl mb-8 border shadow-md">
           <CardContent className="p-4">
             <form onSubmit={handleSubmitQuestion} className="flex flex-col gap-4">
-              <Textarea
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Ask anything about Web3, blockchain, or smart contracts..."
-                className="resize-none min-h-[80px]"
-              />
-              <div className="flex justify-end">
+              <div className="flex gap-2">
+                <Textarea
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="Ask anything about Web3, blockchain, or smart contracts..."
+                  className="resize-none min-h-[60px] flex-1"
+                />
                 <Button 
                   type="submit" 
-                  className="gap-2"
+                  className="h-full min-w-[100px] flex items-center justify-center gap-2"
                 >
                   <Send size={16} />
                   Ask Now
