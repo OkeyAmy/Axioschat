@@ -5,15 +5,16 @@ import { Moon, Sun, LayoutDashboard } from "lucide-react"
 import { useTheme } from "@/components/ThemeProvider"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { useAccount } from "wagmi"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const Header = () => {
   const { theme, setTheme } = useTheme()
   const { isConnected, address } = useAccount()
+  const location = useLocation()
 
   return (
-    <header className="border-b bg-card sticky top-0 z-10">
+    <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2 transition-colors hover:opacity-90">
           <LayoutDashboard className="h-6 w-6 text-primary" />
@@ -30,88 +31,90 @@ const Header = () => {
             />
           </div>
 
-          <ConnectButton.Custom>
-            {({
-              account,
-              chain,
-              openAccountModal,
-              openChainModal,
-              openConnectModal,
-              mounted,
-            }) => {
-              const ready = mounted;
-              const connected = ready && account && chain;
+          {location.pathname !== "/" && (
+            <ConnectButton.Custom>
+              {({
+                account,
+                chain,
+                openAccountModal,
+                openChainModal,
+                openConnectModal,
+                mounted,
+              }) => {
+                const ready = mounted;
+                const connected = ready && account && chain;
 
-              return (
-                <div
-                  {...(!ready && {
-                    'aria-hidden': true,
-                    style: {
-                      opacity: 0,
-                      pointerEvents: 'none',
-                      userSelect: 'none',
-                    },
-                  })}
-                >
-                  {(() => {
-                    if (!connected) {
+                return (
+                  <div
+                    {...(!ready && {
+                      'aria-hidden': true,
+                      style: {
+                        opacity: 0,
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                      },
+                    })}
+                  >
+                    {(() => {
+                      if (!connected) {
+                        return (
+                          <Button onClick={openConnectModal} type="button">
+                            Connect Wallet
+                          </Button>
+                        );
+                      }
+
+                      if (chain.unsupported) {
+                        return (
+                          <Button onClick={openChainModal} type="button" variant="destructive">
+                            Wrong network
+                          </Button>
+                        );
+                      }
+
                       return (
-                        <Button onClick={openConnectModal} type="button">
-                          Connect Wallet
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={openChainModal}
+                            type="button"
+                            variant="outline"
+                            className="flex items-center gap-1"
+                          >
+                            {chain.hasIcon && (
+                              <div className="w-4 h-4 mr-1">
+                                {chain.iconUrl && (
+                                  <img
+                                    alt={chain.name ?? 'Chain icon'}
+                                    src={chain.iconUrl}
+                                    className="w-4 h-4"
+                                  />
+                                )}
+                              </div>
+                            )}
+                            {chain.name}
+                          </Button>
+
+                          <Button
+                            onClick={openAccountModal}
+                            type="button"
+                            variant="secondary"
+                            className="flex items-center gap-2"
+                          >
+                            <Avatar className="w-5 h-5 mr-1">
+                              <AvatarFallback className="bg-primary/10 text-xs">
+                                {account.displayName.slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            {account.displayName}
+                          </Button>
+                        </div>
                       );
-                    }
-
-                    if (chain.unsupported) {
-                      return (
-                        <Button onClick={openChainModal} type="button" variant="destructive">
-                          Wrong network
-                        </Button>
-                      );
-                    }
-
-                    return (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={openChainModal}
-                          type="button"
-                          variant="outline"
-                          className="flex items-center gap-1"
-                        >
-                          {chain.hasIcon && (
-                            <div className="w-4 h-4 mr-1">
-                              {chain.iconUrl && (
-                                <img
-                                  alt={chain.name ?? 'Chain icon'}
-                                  src={chain.iconUrl}
-                                  className="w-4 h-4"
-                                />
-                              )}
-                            </div>
-                          )}
-                          {chain.name}
-                        </Button>
-
-                        <Button
-                          onClick={openAccountModal}
-                          type="button"
-                          variant="secondary"
-                          className="flex items-center gap-2"
-                        >
-                          <Avatar className="w-5 h-5 mr-1">
-                            <AvatarFallback className="bg-primary/10 text-xs">
-                              {account.displayName.slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          {account.displayName}
-                        </Button>
-                      </div>
-                    );
-                  })()}
-                </div>
-              );
-            }}
-          </ConnectButton.Custom>
+                    })()}
+                  </div>
+                );
+              }}
+            </ConnectButton.Custom>
+          )}
         </div>
       </div>
     </header>
