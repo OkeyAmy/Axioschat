@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 import { useAccount } from "wagmi";
 import WalletRequired from "@/components/WalletRequired";
 import { ArrowRight, Bot, MessageSquare, RotateCcw } from "lucide-react";
-import { mainnet } from "wagmi/chains";
 import TransactionQueue from "@/components/TransactionQueue";
 import useApiKeys from "@/hooks/useApiKeys";
 import ModelSelector from "@/components/ModelSelector";
@@ -28,11 +27,11 @@ const Chat = () => {
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [useLocalAI, setUseLocalAI] = useState(false); // Default to false since local doesn't work easily
+  const [useLocalAI, setUseLocalAI] = useState(false);
   const [activeChat, setActiveChat] = useState<number | null>(null);
   const [isHistoryPanelCollapsed, setIsHistoryPanelCollapsed] = useState(window.innerWidth < 1200);
   const [isPromptsPanelCollapsed, setIsPromptsPanelCollapsed] = useState(window.innerWidth < 1400);
-  const [currentChain, setCurrentChain] = useState(mainnet.id);
+  const [currentChain, setCurrentChain] = useState(1); // Ethereum mainnet
   
   const [localEndpoint, setLocalEndpoint] = useState("http://localhost:11434");
   const [showEndpointSettings, setShowEndpointSettings] = useState(false);
@@ -125,7 +124,6 @@ const Chat = () => {
       };
       
       setMessages(prevMessages => [...prevMessages, aiMessage]);
-      setLoading(false);
       
       toast({
         title: "Response received",
@@ -133,7 +131,6 @@ const Chat = () => {
       });
     } catch (error) {
       console.error("Error getting response:", error);
-      setLoading(false);
       
       const errorMessage: Message = {
         role: "assistant",
@@ -148,6 +145,8 @@ const Chat = () => {
         description: "Failed to get a response from the AI.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -187,8 +186,13 @@ const Chat = () => {
       return cn(baseClasses, "flex-1");
     }
     
-    // One panel is collapsed
-    if (isHistoryPanelCollapsed !== isPromptsPanelCollapsed) {
+    // Only history panel is collapsed
+    if (isHistoryPanelCollapsed && !isPromptsPanelCollapsed) {
+      return cn(baseClasses, "flex-[2]");
+    }
+    
+    // Only prompts panel is collapsed
+    if (!isHistoryPanelCollapsed && isPromptsPanelCollapsed) {
       return cn(baseClasses, "flex-[2]");
     }
     

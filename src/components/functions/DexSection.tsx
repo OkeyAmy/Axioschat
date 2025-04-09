@@ -1,812 +1,696 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FunctionCard } from "./FunctionCard";
-import { Repeat, ArrowUpDown, ExternalLink, CheckCircle2, Share2, RefreshCw, Settings, X } from "lucide-react";
-import { useWeb3 } from "@/hooks/useWeb3";
-import { 
-  getTxUrl, 
-  swapTokensOnUniswap, 
-  approveToken,
-  addLiquidity,
-  removeLiquidity,
-  getRecommendedGasPrice 
-} from "@/utils/blockchain";
-import { toast } from "@/components/ui/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mainnet, polygon, optimism, arbitrum, base, zora } from "wagmi/chains";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose
-} from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowRightLeft, DollarSign, RefreshCw, RotateCw } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { swapTokens, addLiquidity, getPairInfo, getTokenAllowance, approveToken } from '@/utils/blockchain';
+import useWeb3 from '@/hooks/useWeb3';
+import useTransactionQueue from '@/hooks/useTransactionQueue';
 
-interface DexSectionProps {
-  currentChain: number;
-}
-
-type TransactionStatus = "pending" | "success" | "failed" | "none";
-
-// Uniswap router addresses for each chain
-const UNISWAP_ROUTER_ADDRESSES: Record<number, string> = {
-  [mainnet.id]: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", // Uniswap V2
-  [polygon.id]: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff", // QuickSwap
-  [optimism.id]: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45", // Uniswap V3
-  [arbitrum.id]: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506", // SushiSwap
-  [base.id]: "0x2626664c2603336E57B271c5C0b26F421741e481", // BaseSwap
-  [zora.id]: "0x5F52B9d1C0853DA6Facebook30574f1F801c34B729c", // ZoraSwap
-};
-
-// Token data with addresses per chain
-const tokenData = {
-  eth: { name: "Ethereum", symbol: "ETH", decimals: 18 },
-  usdc: { name: "USD Coin", symbol: "USDC", decimals: 6 },
-  dai: { name: "Dai Stablecoin", symbol: "DAI", decimals: 18 },
-  usdt: { name: "Tether", symbol: "USDT", decimals: 6 },
-  wbtc: { name: "Wrapped Bitcoin", symbol: "WBTC", decimals: 8 },
-};
-
-const tokenAddresses: Record<number, Record<string, string>> = {
-  [mainnet.id]: {
-    eth: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    usdc: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    dai: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-    usdt: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-    wbtc: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+// Common token addresses for various networks
+const commonTokens: Record<string, Record<string, { symbol: string, address: string }>> = {
+  "1": { // Ethereum Mainnet
+    "ETH": { symbol: "ETH", address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
+    "WETH": { symbol: "WETH", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
+    "USDC": { symbol: "USDC", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" },
+    "USDT": { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7" },
+    "DAI": { symbol: "DAI", address: "0x6B175474E89094C44Da98b954EedeAC495271d0F" },
   },
-  [polygon.id]: {
-    eth: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // WETH on Polygon
-    usdc: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
-    dai: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
-    usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-    wbtc: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
+  "11155111": { // Sepolia Testnet
+    "ETH": { symbol: "ETH", address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
+    "WETH": { symbol: "WETH", address: "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9" },
+    "USDC": { symbol: "USDC", address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" },
+    "DAI": { symbol: "DAI", address: "0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6" },
   },
-  // Add other chains as needed
+  "137": { // Polygon
+    "MATIC": { symbol: "MATIC", address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
+    "WMATIC": { symbol: "WMATIC", address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270" },
+    "USDC": { symbol: "USDC", address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174" },
+    "WETH": { symbol: "WETH", address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619" },
+  },
 };
 
-// Default to mainnet tokens if chain not supported
-const getTokenAddress = (chainId: number, token: string): string => {
-  return tokenAddresses[chainId]?.[token] || tokenAddresses[mainnet.id][token];
-};
-
-const DexSection: React.FC<DexSectionProps> = ({ currentChain }) => {
-  const { web3, address } = useWeb3();
-  const [swapAmount, setSwapAmount] = useState("");
-  const [fromToken, setFromToken] = useState("eth");
-  const [toToken, setToToken] = useState("usdc");
-  const [transactionHash, setTransactionHash] = useState("");
-  const [txStatus, setTxStatus] = useState<TransactionStatus>("none");
-  const [slippageTolerance, setSlippageTolerance] = useState("0.5");
+const DexSection: React.FC = () => {
+  const { web3, isReady, address, chainId } = useWeb3();
+  const { addTransaction } = useTransactionQueue();
   
-  // Gas settings
-  const [gasPrice, setGasPrice] = useState<string>("");
-  const [gasPriceGwei, setGasPriceGwei] = useState<number>(20);
-  const [recommendedGasPrice, setRecommendedGasPrice] = useState<string>("");
+  const [fromToken, setFromToken] = useState<string>(chainId === 137 ? "MATIC" : "ETH");
+  const [toToken, setToToken] = useState<string>("USDC");
+  const [fromAmount, setFromAmount] = useState<string>("");
+  const [toAmount, setToAmount] = useState<string>("");
+  const [slippage, setSlippage] = useState<string>("0.5");
+  const [deadline, setDeadline] = useState<string>("20"); // minutes
   
-  // Liquidity pool states
-  const [liquidityTab, setLiquidityTab] = useState<"add" | "remove">("add");
-  const [lpToken1, setLpToken1] = useState("eth");
-  const [lpToken2, setLpToken2] = useState("usdc");
-  const [lpAmount1, setLpAmount1] = useState("");
-  const [lpAmount2, setLpAmount2] = useState("");
-  const [lpSlippage, setLpSlippage] = useState("1.0");
-  const [lpTxStatus, setLpTxStatus] = useState<TransactionStatus>("none");
-  const [lpTxHash, setLpTxHash] = useState("");
-
+  const [tokenAAmount, setTokenAAmount] = useState<string>("");
+  const [tokenBAmount, setTokenBAmount] = useState<string>("");
+  const [tokenA, setTokenA] = useState<string>(chainId === 137 ? "WMATIC" : "WETH");
+  const [tokenB, setTokenB] = useState<string>("USDC");
+  
+  const [isSwapping, setIsSwapping] = useState<boolean>(false);
+  const [isAddingLiquidity, setIsAddingLiquidity] = useState<boolean>(false);
+  const [isLoadingPair, setIsLoadingPair] = useState<boolean>(false);
+  const [pairInfo, setPairInfo] = useState<any>(null);
+  
+  // Get available tokens based on current chain
+  const availableTokens = chainId && commonTokens[chainId.toString()]
+    ? Object.values(commonTokens[chainId.toString()])
+    : Object.values(commonTokens["1"]); // Default to Ethereum tokens
+  
+  // Reset selected tokens when chain changes
   useEffect(() => {
-    if (web3) {
-      loadRecommendedGasPrice();
+    if (chainId) {
+      // Set default tokens based on chain
+      if (chainId === 137) {
+        setFromToken("MATIC");
+        setTokenA("WMATIC");
+      } else {
+        setFromToken("ETH");
+        setTokenA("WETH");
+      }
+      setToToken("USDC");
+      setTokenB("USDC");
+      setPairInfo(null);
     }
-  }, [web3, currentChain]);
-
-  const loadRecommendedGasPrice = async () => {
-    if (!web3) return;
+  }, [chainId]);
+  
+  const fetchPairInfo = async () => {
+    if (!web3 || !isReady || !address) return;
+    
+    const chainKey = chainId?.toString() || "1";
+    if (!commonTokens[chainKey]) return;
+    
+    const tokenAAddress = commonTokens[chainKey][tokenA]?.address;
+    const tokenBAddress = commonTokens[chainKey][tokenB]?.address;
+    
+    if (!tokenAAddress || !tokenBAddress) return;
+    
+    setIsLoadingPair(true);
     
     try {
-      const recommended = await getRecommendedGasPrice(web3, currentChain);
-      setRecommendedGasPrice(recommended);
+      const result = await getPairInfo(
+        web3,
+        address,
+        tokenAAddress,
+        tokenBAddress,
+        String(chainId)
+      );
       
-      // Convert to Gwei for UI
-      const gweiValue = parseFloat(web3.utils.fromWei(recommended, 'gwei'));
-      setGasPriceGwei(gweiValue);
-      setGasPrice(recommended);
+      setPairInfo(result);
+      
+      toast({
+        title: "Pair Info Loaded",
+        description: `LP Token Address: ${result.pairAddress.slice(0, 6)}...${result.pairAddress.slice(-4)}`,
+      });
     } catch (error) {
-      console.error("Error getting recommended gas price:", error);
+      console.error("Error fetching pair info:", error);
+      
+      toast({
+        title: "Failed to Load Pair",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+      
+      setPairInfo(null);
+    } finally {
+      setIsLoadingPair(false);
     }
   };
   
-  // Calculate estimated output
-  const calculateEstimatedOutput = (): string => {
-    if (!swapAmount || parseFloat(swapAmount) <= 0) return "0";
+  const checkAllowanceAndApprove = async (tokenSymbol: string, tokenAmount: string, spender: string): Promise<boolean> => {
+    if (!web3 || !isReady || !address || !chainId) return false;
     
-    // This would normally come from a price oracle or AMM calculation
-    // Using fixed rates for demo purposes
-    const rates: Record<string, Record<string, number>> = {
-      eth: { usdc: 1500, dai: 1500, usdt: 1500, wbtc: 0.06 },
-      usdc: { eth: 0.00066, dai: 1, usdt: 1, wbtc: 0.00004 },
-      dai: { eth: 0.00066, usdc: 1, usdt: 1, wbtc: 0.00004 },
-      usdt: { eth: 0.00066, usdc: 1, dai: 1, wbtc: 0.00004 },
-      wbtc: { eth: 16.7, usdc: 25000, dai: 25000, usdt: 25000 }
-    };
+    const chainKey = chainId.toString();
+    if (!commonTokens[chainKey]) return false;
     
-    if (fromToken === toToken) return swapAmount;
+    const tokenAddress = commonTokens[chainKey][tokenSymbol]?.address;
+    if (!tokenAddress || tokenAddress === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
+      // Native token (ETH/MATIC) doesn't need approval
+      return true;
+    }
     
-    const rate = rates[fromToken]?.[toToken] || 0;
-    return (parseFloat(swapAmount) * rate).toString();
+    try {
+      const allowance = await getTokenAllowance(
+        web3,
+        address,
+        tokenAddress,
+        spender
+      );
+      
+      const requiredAmount = web3.utils.toWei(tokenAmount, 'ether');
+      
+      if (BigInt(allowance) >= BigInt(requiredAmount)) {
+        return true;
+      }
+      
+      // Need to approve
+      const receipt = await approveToken(
+        web3,
+        address,
+        tokenAddress,
+        spender,
+        requiredAmount
+      );
+      
+      if (receipt && receipt.transactionHash) {
+        addTransaction({
+          hash: receipt.transactionHash,
+          from: address,
+          to: tokenAddress,
+          value: "0",
+          chainId: String(chainId),
+          type: "approve",
+          status: "confirmed",
+          method: "approve",
+          timestamp: Date.now()
+        });
+        
+        toast({
+          title: "Token Approved",
+          description: `Successfully approved ${tokenSymbol} for trading`,
+        });
+        
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.error("Error approving token:", error);
+      
+      toast({
+        title: "Approval Failed",
+        description: error instanceof Error ? error.message : "Failed to approve token for trading",
+        variant: "destructive",
+      });
+      
+      return false;
+    }
   };
-
-  // Calculate liquidity token ratio
-  const calculatePairRatio = (): string => {
-    if (!lpAmount1 || parseFloat(lpAmount1) <= 0) return "0";
-    
-    // Using fixed rates for demo purposes
-    const rates: Record<string, Record<string, number>> = {
-      eth: { usdc: 1500, dai: 1500, usdt: 1500, wbtc: 0.06 },
-      usdc: { eth: 0.00066, dai: 1, usdt: 1, wbtc: 0.00004 },
-      dai: { eth: 0.00066, usdc: 1, usdt: 1, wbtc: 0.00004 },
-      usdt: { eth: 0.00066, usdc: 1, dai: 1, wbtc: 0.00004 },
-      wbtc: { eth: 16.7, usdc: 25000, dai: 25000, usdt: 25000 }
-    };
-    
-    if (lpToken1 === lpToken2) return lpAmount1;
-    
-    const rate = rates[lpToken1]?.[lpToken2] || 0;
-    return (parseFloat(lpAmount1) * rate).toString();
-  };
-
-  const updateLiquidityPair = () => {
-    const amount = calculatePairRatio();
-    setLpAmount2(amount);
-  };
-
-  useEffect(() => {
-    updateLiquidityPair();
-  }, [lpAmount1, lpToken1, lpToken2]);
-
+  
   const handleSwap = async () => {
-    if (!web3 || !address) {
+    if (!web3 || !isReady || !address || !chainId) {
       toast({
-        title: "Error",
-        description: "Web3 not initialized or wallet not connected",
+        title: "Wallet not connected",
+        description: "Please connect your wallet to swap tokens.",
         variant: "destructive",
       });
       return;
     }
-
-    try {
-      setTxStatus("pending");
-      toast({
-        title: "Swap Initiated",
-        description: `Preparing to swap ${swapAmount} ${fromToken.toUpperCase()} to ${toToken.toUpperCase()}`,
-      });
-
-      const routerAddress = UNISWAP_ROUTER_ADDRESSES[currentChain] || UNISWAP_ROUTER_ADDRESSES[mainnet.id];
-      const isFromETH = fromToken === "eth";
-      const isToETH = toToken === "eth";
-      
-      // Create token path for the swap
-      const path = [];
-      if (isFromETH) {
-        path.push(getTokenAddress(currentChain, "eth")); // Using WETH address
-      } else {
-        path.push(getTokenAddress(currentChain, fromToken));
-      }
-      
-      if (isToETH) {
-        path.push(getTokenAddress(currentChain, "eth")); // Using WETH address
-      } else {
-        path.push(getTokenAddress(currentChain, toToken));
-      }
-      
-      // Calculate minimum amount out with slippage
-      const amountOut = calculateEstimatedOutput();
-      const slippagePercent = parseFloat(slippageTolerance) / 100;
-      const minAmountOut = (parseFloat(amountOut) * (1 - slippagePercent)).toString();
-      
-      // Execute the swap with gas price
-      const txHash = await swapTokensOnUniswap(
-        web3,
-        address,
-        routerAddress,
-        swapAmount,
-        web3.utils.toWei(minAmountOut, 'ether'), // Convert to wei
-        path,
-        30, // 30 minute deadline
-        isFromETH,
-        gasPrice // Pass custom gas price if set
-      );
-
-      setTransactionHash(txHash);
-      setTxStatus("success");
-
-      toast({
-        title: "Swap Executed",
-        description: `Successfully swapped ${swapAmount} ${fromToken.toUpperCase()} to ${toToken.toUpperCase()}`,
-      });
-    } catch (error: any) {
-      console.error("Swap error:", error);
-      setTxStatus("failed");
-      toast({
-        title: "Error",
-        description: error.message || "Failed to execute swap. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleAddLiquidity = async () => {
-    if (!web3 || !address) {
-      toast({
-        title: "Error",
-        description: "Web3 not initialized or wallet not connected",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setLpTxStatus("pending");
-      toast({
-        title: "Adding Liquidity",
-        description: `Preparing to add ${lpAmount1} ${lpToken1.toUpperCase()} and ${lpAmount2} ${lpToken2.toUpperCase()} to the pool`,
-      });
-
-      const routerAddress = UNISWAP_ROUTER_ADDRESSES[currentChain] || UNISWAP_ROUTER_ADDRESSES[mainnet.id];
-      const token1Address = getTokenAddress(currentChain, lpToken1);
-      const token2Address = getTokenAddress(currentChain, lpToken2);
-      
-      // Calculate min amounts with slippage
-      const slippagePercent = parseFloat(lpSlippage) / 100;
-      const minAmount1 = (parseFloat(lpAmount1) * (1 - slippagePercent)).toString();
-      const minAmount2 = (parseFloat(lpAmount2) * (1 - slippagePercent)).toString();
-      
-      // Add liquidity
-      const txHash = await addLiquidity(
-        web3,
-        address,
-        routerAddress,
-        token1Address,
-        token2Address,
-        lpAmount1,
-        lpAmount2,
-        minAmount1,
-        minAmount2,
-        30, // 30 minute deadline
-        gasPrice // Use custom gas price if set
-      );
-
-      setLpTxHash(txHash);
-      setLpTxStatus("success");
-
-      toast({
-        title: "Liquidity Added",
-        description: `Successfully added liquidity to ${lpToken1.toUpperCase()}/${lpToken2.toUpperCase()} pool`,
-      });
-    } catch (error: any) {
-      console.error("Add liquidity error:", error);
-      setLpTxStatus("failed");
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add liquidity. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRemoveLiquidity = async () => {
-    if (!web3 || !address) {
-      toast({
-        title: "Error",
-        description: "Web3 not initialized or wallet not connected",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setLpTxStatus("pending");
-      toast({
-        title: "Removing Liquidity",
-        description: `Preparing to remove liquidity from ${lpToken1.toUpperCase()}/${lpToken2.toUpperCase()} pool`,
-      });
-
-      const routerAddress = UNISWAP_ROUTER_ADDRESSES[currentChain] || UNISWAP_ROUTER_ADDRESSES[mainnet.id];
-      const token1Address = getTokenAddress(currentChain, lpToken1);
-      const token2Address = getTokenAddress(currentChain, lpToken2);
-      
-      // In a real implementation, we would need to get the LP token balance
-      // For demo, we'll use a fixed amount
-      const liquidity = "1.0"; // Example amount of LP tokens
-      
-      // Calculate min amounts with slippage
-      const slippagePercent = parseFloat(lpSlippage) / 100;
-      const minAmount1 = (parseFloat(lpAmount1) * (1 - slippagePercent)).toString();
-      const minAmount2 = (parseFloat(lpAmount2) * (1 - slippagePercent)).toString();
-      
-      // Remove liquidity
-      const txHash = await removeLiquidity(
-        web3,
-        address,
-        routerAddress,
-        token1Address,
-        token2Address,
-        liquidity,
-        minAmount1,
-        minAmount2,
-        30, // 30 minute deadline
-        gasPrice // Use custom gas price if set
-      );
-
-      setLpTxHash(txHash);
-      setLpTxStatus("success");
-
-      toast({
-        title: "Liquidity Removed",
-        description: `Successfully removed liquidity from ${lpToken1.toUpperCase()}/${lpToken2.toUpperCase()} pool`,
-      });
-    } catch (error: any) {
-      console.error("Remove liquidity error:", error);
-      setLpTxStatus("failed");
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove liquidity. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleGasPriceChange = (value: number[]) => {
-    if (!web3) return;
     
-    setGasPriceGwei(value[0]);
-    const newGasPrice = web3.utils.toWei(value[0].toString(), 'gwei');
-    setGasPrice(newGasPrice);
+    if (!fromAmount || parseFloat(fromAmount) <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount to swap.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSwapping(true);
+    
+    try {
+      const chainKey = chainId.toString();
+      if (!commonTokens[chainKey]) {
+        throw new Error(`Unsupported chain: ${chainId}`);
+      }
+      
+      const fromTokenData = commonTokens[chainKey][fromToken];
+      const toTokenData = commonTokens[chainKey][toToken];
+      
+      if (!fromTokenData || !toTokenData) {
+        throw new Error("Invalid token selection");
+      }
+      
+      // For DEX swaps, we need to approve router to spend tokens first (except native token)
+      if (fromTokenData.address !== "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
+        // Assuming router address is consistent for each chain or we have a map somewhere
+        const routerAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"; // Uniswap V2 router for Ethereum
+        
+        const approved = await checkAllowanceAndApprove(fromToken, fromAmount, routerAddress);
+        if (!approved) {
+          throw new Error("Failed to approve token for swapping");
+        }
+      }
+      
+      const receipt = await swapTokens(
+        web3,
+        address,
+        fromTokenData.address,
+        toTokenData.address,
+        web3.utils.toWei(fromAmount, 'ether'),
+        slippage,
+        deadline
+      );
+      
+      if (receipt && receipt.transactionHash) {
+        addTransaction({
+          hash: receipt.transactionHash,
+          from: address,
+          to: receipt.to || "",
+          value: fromTokenData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" ? web3.utils.toWei(fromAmount, 'ether') : "0",
+          chainId: String(chainId),
+          type: "swap",
+          status: "confirmed",
+          method: "swap",
+          timestamp: Date.now()
+        });
+        
+        toast({
+          title: "Swap Successful",
+          description: `Successfully swapped ${fromAmount} ${fromToken} to ${toToken}`,
+        });
+        
+        // Reset form
+        setFromAmount("");
+        setToAmount("");
+      }
+    } catch (error) {
+      console.error("Error swapping tokens:", error);
+      
+      toast({
+        title: "Swap Failed",
+        description: error instanceof Error ? error.message : "Failed to swap tokens",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSwapping(false);
+    }
   };
-
-  const GasSettings = () => (
-    <div className="space-y-4 p-2">
-      <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium">Gas Settings</h3>
-        <div className="flex gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={loadRecommendedGasPrice}
-            className="h-7 text-xs"
-          >
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Refresh
-          </Button>
-          <DialogClose asChild>
-            <Button variant="ghost" size="sm" className="h-7 p-0 w-7">
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogClose>
-        </div>
-      </div>
+  
+  const handleAddLiquidity = async () => {
+    if (!web3 || !isReady || !address || !chainId) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to add liquidity.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!tokenAAmount || !tokenBAmount || parseFloat(tokenAAmount) <= 0 || parseFloat(tokenBAmount) <= 0) {
+      toast({
+        title: "Invalid amounts",
+        description: "Please enter valid amounts for both tokens.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsAddingLiquidity(true);
+    
+    try {
+      const chainKey = chainId.toString();
+      if (!commonTokens[chainKey]) {
+        throw new Error(`Unsupported chain: ${chainId}`);
+      }
       
-      <div className="p-3 bg-muted/50 rounded-md text-xs">
-        <p>Current network: {
-          currentChain === 1 ? "Ethereum" :
-          currentChain === 137 ? "Polygon" :
-          currentChain === 10 ? "Optimism" :
-          currentChain === 42161 ? "Arbitrum" :
-          currentChain === 8453 ? "Base" :
-          currentChain === 7777777 ? "Zora" : "Unknown"
-        }</p>
-        <p className="mt-1">Recommended gas price: {
-          web3 ? parseFloat(web3.utils.fromWei(recommendedGasPrice, 'gwei')).toFixed(2) : "0"
-        } Gwei</p>
-      </div>
+      const tokenAData = commonTokens[chainKey][tokenA];
+      const tokenBData = commonTokens[chainKey][tokenB];
       
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label htmlFor="gas-price" className="text-xs">Gas Price (Gwei)</Label>
-            <div className="text-xs font-mono">{gasPriceGwei.toFixed(2)}</div>
-          </div>
-          <div className="pt-2">
-            <Slider
-              defaultValue={[gasPriceGwei]}
-              min={1}
-              max={200}
-              step={0.1}
-              onValueChange={handleGasPriceChange}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>Slow</span>
-              <span>Fast</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
+      if (!tokenAData || !tokenBData) {
+        throw new Error("Invalid token selection");
+      }
+      
+      // For adding liquidity, we need to approve router to spend tokens
+      const routerAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"; // Uniswap V2 router for Ethereum
+      
+      // Approve token A if not native token
+      if (tokenAData.address !== "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
+        const approvedA = await checkAllowanceAndApprove(tokenA, tokenAAmount, routerAddress);
+        if (!approvedA) {
+          throw new Error(`Failed to approve ${tokenA} for adding liquidity`);
+        }
+      }
+      
+      // Approve token B if not native token
+      if (tokenBData.address !== "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
+        const approvedB = await checkAllowanceAndApprove(tokenB, tokenBAmount, routerAddress);
+        if (!approvedB) {
+          throw new Error(`Failed to approve ${tokenB} for adding liquidity`);
+        }
+      }
+      
+      const receipt = await addLiquidity(
+        web3,
+        address,
+        tokenAData.address,
+        tokenBData.address,
+        web3.utils.toWei(tokenAAmount, 'ether'),
+        web3.utils.toWei(tokenBAmount, 'ether'),
+        slippage,
+        deadline
+      );
+      
+      if (receipt && receipt.transactionHash) {
+        addTransaction({
+          hash: receipt.transactionHash,
+          from: address,
+          to: receipt.to || "",
+          value: (tokenAData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" || tokenBData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") 
+            ? (tokenAData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" ? web3.utils.toWei(tokenAAmount, 'ether') : web3.utils.toWei(tokenBAmount, 'ether'))
+            : "0",
+          chainId: String(chainId),
+          type: "liquidity",
+          status: "confirmed",
+          method: "addLiquidity",
+          timestamp: Date.now()
+        });
+        
+        toast({
+          title: "Liquidity Added",
+          description: `Successfully added ${tokenAAmount} ${tokenA} and ${tokenBAmount} ${tokenB} to the pool`,
+        });
+        
+        // Refresh pair info
+        fetchPairInfo();
+        
+        // Reset form
+        setTokenAAmount("");
+        setTokenBAmount("");
+      }
+    } catch (error) {
+      console.error("Error adding liquidity:", error);
+      
+      toast({
+        title: "Failed to Add Liquidity",
+        description: error instanceof Error ? error.message : "Failed to add liquidity to the pool",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingLiquidity(false);
+    }
+  };
+  
+  const switchTokens = () => {
+    const tempFromToken = fromToken;
+    const tempFromAmount = fromAmount;
+    
+    setFromToken(toToken);
+    setFromAmount(toAmount);
+    
+    setToToken(tempFromToken);
+    setToAmount(tempFromAmount);
+  };
+  
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <FunctionCard
-        title="Uniswap Token Swap"
-        description="Swap tokens using Uniswap protocol"
-        icon={Repeat}
-      >
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>From</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                placeholder="0.0"
-                value={swapAmount}
-                onChange={(e) => setSwapAmount(e.target.value)}
-              />
-              <Select
-                defaultValue={fromToken}
-                value={fromToken}
-                onValueChange={setFromToken}
-              >
-                <SelectTrigger className="w-28">
-                  <SelectValue placeholder="Token" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="eth">ETH</SelectItem>
-                  <SelectItem value="usdc">USDC</SelectItem>
-                  <SelectItem value="dai">DAI</SelectItem>
-                  <SelectItem value="usdt">USDT</SelectItem>
-                  <SelectItem value="wbtc">WBTC</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex justify-center my-2">
-            <Button variant="ghost" size="icon" onClick={() => {
-              const temp = fromToken;
-              setFromToken(toToken);
-              setToToken(temp);
-            }}>
-              <ArrowUpDown className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            <Label>To (Estimated)</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="text"
-                placeholder="0.0"
-                value={calculateEstimatedOutput()}
-                disabled
-              />
-              <Select
-                defaultValue={toToken}
-                value={toToken}
-                onValueChange={setToToken}
-              >
-                <SelectTrigger className="w-28">
-                  <SelectValue placeholder="Token" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="eth">ETH</SelectItem>
-                  <SelectItem value="usdc">USDC</SelectItem>
-                  <SelectItem value="dai">DAI</SelectItem>
-                  <SelectItem value="usdt">USDT</SelectItem>
-                  <SelectItem value="wbtc">WBTC</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Slippage Tolerance (%)</Label>
-            <Input
-              type="number"
-              placeholder="0.5"
-              value={slippageTolerance}
-              onChange={(e) => setSlippageTolerance(e.target.value)}
-              min="0.1"
-              max="100"
-              step="0.1"
-            />
-          </div>
-
-          <div className="bg-muted p-3 rounded-md text-sm text-muted-foreground">
-            <div className="flex justify-between">
-              <span>Exchange Rate:</span>
-              <span>1 {fromToken.toUpperCase()} ≈ {
-                fromToken === toToken ? '1' : 
-                calculateEstimatedOutput() && swapAmount ? 
-                (parseFloat(calculateEstimatedOutput()) / parseFloat(swapAmount)).toFixed(4) : 
-                '0'
-              } {toToken.toUpperCase()}</span>
-            </div>
-            <div className="flex justify-between mt-1">
-              <span>Router Address:</span>
-              <span className="truncate max-w-[180px]">
-                {UNISWAP_ROUTER_ADDRESSES[currentChain] || UNISWAP_ROUTER_ADDRESSES[mainnet.id]?.substring(0, 6)}...
-              </span>
-            </div>
-            <div className="flex justify-between mt-1">
-              <span>Slippage Tolerance:</span>
-              <span>{slippageTolerance}%</span>
-            </div>
-            <div className="flex justify-between mt-1">
-              <span>Gas Price:</span>
-              <span>{gasPriceGwei.toFixed(2)} Gwei</span>
-            </div>
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-1">
-                  <Settings className="h-3 w-3" />
-                  <span>Gas Settings</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Gas Settings</DialogTitle>
-                </DialogHeader>
-                <GasSettings />
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <Button
-            className="w-full bg-primary hover:bg-primary/90"
-            disabled={!swapAmount || fromToken === toToken || txStatus === "pending" || !web3 || !address}
-            onClick={handleSwap}
-          >
-            {txStatus === "pending" ? (
-              <div className="flex items-center">
-                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
-                <span>Processing Swap...</span>
-              </div>
-            ) : "Swap Tokens"}
-          </Button>
-
-          {transactionHash && txStatus === "success" && (
-            <div className="bg-primary/5 p-3 rounded-md border border-primary/10 mt-2">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Transaction Hash:</p>
-                  <p className="text-xs font-mono break-all">{transactionHash}</p>
-                </div>
-                <a
-                  href={getTxUrl(currentChain, transactionHash)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:text-primary/80 text-xs flex items-center"
-                >
-                  View <ExternalLink size={12} className="ml-1" />
-                </a>
-              </div>
-              <div className="flex items-center text-xs text-emerald-600 mt-2">
-                <CheckCircle2 size={12} className="mr-1" />
-                Swap successful
-              </div>
-            </div>
-          )}
-        </div>
-      </FunctionCard>
-
-      <FunctionCard
-        title="Liquidity Pools"
-        description="Provide or remove liquidity from Uniswap pools"
-        icon={Share2}
-      >
-        <Tabs defaultValue="add" onValueChange={(value) => setLiquidityTab(value as "add" | "remove")}>
-          <TabsList className="w-full mb-4">
-            <TabsTrigger value="add" className="flex-1">
-              Add Liquidity
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ArrowRightLeft className="h-5 w-5 text-primary" />
+          Decentralized Exchange
+        </CardTitle>
+        <CardDescription>
+          Swap tokens and provide liquidity to pools
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="swap">
+          <TabsList className="grid grid-cols-2 mb-4 w-full sm:w-[300px]">
+            <TabsTrigger value="swap">
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Swap
             </TabsTrigger>
-            <TabsTrigger value="remove" className="flex-1">
-              Remove Liquidity
+            <TabsTrigger value="liquidity">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Liquidity
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="add" className="space-y-4">
-            <div className="space-y-2">
-              <Label>First Token</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  placeholder="0.0"
-                  value={lpAmount1}
-                  onChange={(e) => setLpAmount1(e.target.value)}
-                />
-                <Select
-                  defaultValue={lpToken1}
-                  value={lpToken1}
-                  onValueChange={setLpToken1}
-                >
-                  <SelectTrigger className="w-28">
-                    <SelectValue placeholder="Token" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="eth">ETH</SelectItem>
-                    <SelectItem value="usdc">USDC</SelectItem>
-                    <SelectItem value="dai">DAI</SelectItem>
-                    <SelectItem value="usdt">USDT</SelectItem>
-                    <SelectItem value="wbtc">WBTC</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Second Token</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="text"
-                  placeholder="0.0"
-                  value={lpAmount2}
-                  onChange={(e) => setLpAmount2(e.target.value)}
-                />
-                <Select
-                  defaultValue={lpToken2}
-                  value={lpToken2}
-                  onValueChange={setLpToken2}
-                >
-                  <SelectTrigger className="w-28">
-                    <SelectValue placeholder="Token" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="eth">ETH</SelectItem>
-                    <SelectItem value="usdc">USDC</SelectItem>
-                    <SelectItem value="dai">DAI</SelectItem>
-                    <SelectItem value="usdt">USDT</SelectItem>
-                    <SelectItem value="wbtc">WBTC</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Slippage Tolerance (%)</Label>
-              <Input
-                type="number"
-                placeholder="1.0"
-                value={lpSlippage}
-                onChange={(e) => setLpSlippage(e.target.value)}
-                min="0.1"
-                max="100"
-                step="0.1"
-              />
-            </div>
-            
-            <div className="bg-muted p-3 rounded-md text-sm">
-              <div className="flex justify-between text-muted-foreground">
-                <span>Pool:</span>
-                <span>{lpToken1.toUpperCase()}/{lpToken2.toUpperCase()}</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground mt-1">
-                <span>Share of Pool:</span>
-                <span>&lt;0.01%</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground mt-1">
-                <span>Gas Price:</span>
-                <span>{gasPriceGwei.toFixed(2)} Gwei</span>
-              </div>
-            </div>
-            
-            <Button
-              className="w-full"
-              disabled={!lpAmount1 || !lpAmount2 || lpTxStatus === "pending" || !web3 || !address}
-              onClick={handleAddLiquidity}
-            >
-              {lpTxStatus === "pending" ? (
-                <div className="flex items-center">
-                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
-                  <span>Adding Liquidity...</span>
-                </div>
-              ) : "Add Liquidity"}
-            </Button>
-          </TabsContent>
-          
-          <TabsContent value="remove" className="space-y-4">
+          <TabsContent value="swap" className="space-y-4">
             <div className="space-y-4">
-              <div className="bg-muted/50 p-4 rounded-md">
-                <h3 className="font-medium mb-3">Select Liquidity Position</h3>
-                
-                <div className="space-y-2">
-                  <Select
-                    defaultValue={`${lpToken1}-${lpToken2}`}
-                    value={`${lpToken1}-${lpToken2}`}
-                    onValueChange={(value) => {
-                      const [t1, t2] = value.split('-');
-                      setLpToken1(t1);
-                      setLpToken2(t2);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select pool" />
+              <div className="space-y-2">
+                <Label>From</Label>
+                <div className="flex gap-2">
+                  <Select value={fromToken} onValueChange={setFromToken}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Select token" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="eth-usdc">ETH/USDC</SelectItem>
-                      <SelectItem value="eth-dai">ETH/DAI</SelectItem>
-                      <SelectItem value="usdc-dai">USDC/DAI</SelectItem>
+                      {availableTokens.map((token) => (
+                        <SelectItem 
+                          key={token.symbol} 
+                          value={token.symbol}
+                          disabled={token.symbol === toToken}
+                        >
+                          {token.symbol}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  
-                  <div className="bg-background p-3 rounded-md mt-3">
-                    <div className="flex justify-between text-sm">
-                      <span>Pool Tokens:</span>
-                      <span>1.0</span>
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>{lpToken1.toUpperCase()}:</span>
-                      <span>{lpAmount1 || "0.0"}</span>
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>{lpToken2.toUpperCase()}:</span>
-                      <span>{lpAmount2 || "0.0"}</span>
-                    </div>
-                  </div>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.000001"
+                    placeholder="0.0"
+                    value={fromAmount}
+                    onChange={(e) => setFromAmount(e.target.value)}
+                  />
                 </div>
+              </div>
+              
+              <div className="flex justify-center">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={switchTokens}
+                  className="rounded-full h-8 w-8"
+                >
+                  <RotateCw className="h-4 w-4" />
+                </Button>
               </div>
               
               <div className="space-y-2">
-                <Label>Slippage Tolerance (%)</Label>
+                <Label>To</Label>
+                <div className="flex gap-2">
+                  <Select value={toToken} onValueChange={setToToken}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Select token" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTokens.map((token) => (
+                        <SelectItem 
+                          key={token.symbol} 
+                          value={token.symbol}
+                          disabled={token.symbol === fromToken}
+                        >
+                          {token.symbol}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.000001"
+                    placeholder="0.0"
+                    value={toAmount}
+                    onChange={(e) => setToAmount(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Slippage Tolerance (%)</Label>
+                  <Input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={slippage}
+                    onChange={(e) => setSlippage(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Transaction Deadline (minutes)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <Button 
+                className="w-full"
+                onClick={handleSwap}
+                disabled={!isReady || isSwapping || !fromAmount || parseFloat(fromAmount) <= 0}
+              >
+                {isSwapping ? (
+                  <>
+                    <span className="animate-spin mr-2">⟳</span>
+                    Swapping...
+                  </>
+                ) : (
+                  <>
+                    <ArrowRightLeft className="mr-2 h-4 w-4" />
+                    Swap {fromToken} for {toToken}
+                  </>
+                )}
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="liquidity" className="space-y-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Token A</Label>
+                  <Select value={tokenA} onValueChange={setTokenA}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select token" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTokens.map((token) => (
+                        <SelectItem 
+                          key={token.symbol} 
+                          value={token.symbol}
+                          disabled={token.symbol === tokenB}
+                        >
+                          {token.symbol}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Token B</Label>
+                  <Select value={tokenB} onValueChange={setTokenB}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select token" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTokens.map((token) => (
+                        <SelectItem 
+                          key={token.symbol} 
+                          value={token.symbol}
+                          disabled={token.symbol === tokenA}
+                        >
+                          {token.symbol}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={fetchPairInfo}
+                disabled={!isReady || isLoadingPair || tokenA === tokenB}
+              >
+                {isLoadingPair ? (
+                  <>
+                    <span className="animate-spin mr-2">⟳</span>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Load Pair Information
+                  </>
+                )}
+              </Button>
+              
+              {pairInfo && (
+                <div className="p-3 bg-muted rounded-md space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Pair Address:</span>
+                    <span className="text-sm font-medium">{pairInfo.pairAddress.slice(0, 6)}...{pairInfo.pairAddress.slice(-4)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Liquidity:</span>
+                    <span className="text-sm font-medium">${parseFloat(pairInfo.reserveUSD || "0").toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">{tokenA} Balance:</span>
+                    <span className="text-sm font-medium">{parseFloat(pairInfo.reserve0 || "0").toFixed(6)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">{tokenB} Balance:</span>
+                    <span className="text-sm font-medium">{parseFloat(pairInfo.reserve1 || "0").toFixed(6)}</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label>{tokenA} Amount</Label>
                 <Input
                   type="number"
-                  placeholder="1.0"
-                  value={lpSlippage}
-                  onChange={(e) => setLpSlippage(e.target.value)}
-                  min="0.1"
-                  max="100"
-                  step="0.1"
+                  min="0"
+                  step="0.000001"
+                  placeholder="0.0"
+                  value={tokenAAmount}
+                  onChange={(e) => setTokenAAmount(e.target.value)}
                 />
               </div>
               
-              <Button
+              <div className="space-y-2">
+                <Label>{tokenB} Amount</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.000001"
+                  placeholder="0.0"
+                  value={tokenBAmount}
+                  onChange={(e) => setTokenBAmount(e.target.value)}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Slippage Tolerance (%)</Label>
+                  <Input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={slippage}
+                    onChange={(e) => setSlippage(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Transaction Deadline (minutes)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <Button 
                 className="w-full"
-                disabled={lpTxStatus === "pending" || !web3 || !address}
-                onClick={handleRemoveLiquidity}
+                onClick={handleAddLiquidity}
+                disabled={!isReady || isAddingLiquidity || !tokenAAmount || !tokenBAmount || parseFloat(tokenAAmount) <= 0 || parseFloat(tokenBAmount) <= 0}
               >
-                {lpTxStatus === "pending" ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
-                    <span>Removing Liquidity...</span>
-                  </div>
-                ) : "Remove Liquidity"}
+                {isAddingLiquidity ? (
+                  <>
+                    <span className="animate-spin mr-2">⟳</span>
+                    Adding Liquidity...
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Add Liquidity
+                  </>
+                )}
               </Button>
             </div>
           </TabsContent>
         </Tabs>
-        
-        {lpTxHash && lpTxStatus === "success" && (
-          <div className="bg-primary/5 p-3 rounded-md border border-primary/10 mt-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Transaction Hash:</p>
-                <p className="text-xs font-mono break-all">{lpTxHash}</p>
-              </div>
-              <a
-                href={getTxUrl(currentChain, lpTxHash)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:text-primary/80 text-xs flex items-center"
-              >
-                View <ExternalLink size={12} className="ml-1" />
-              </a>
-            </div>
-            <div className="flex items-center text-xs text-emerald-600 mt-2">
-              <CheckCircle2 size={12} className="mr-1" />
-              {liquidityTab === "add" ? "Liquidity added successfully" : "Liquidity removed successfully"}
-            </div>
-          </div>
-        )}
-      </FunctionCard>
-    </div>
+      </CardContent>
+      <CardFooter className="text-xs text-muted-foreground">
+        <p>Note: DEX functionality requires sufficient balance and approval for token usage.</p>
+      </CardFooter>
+    </Card>
   );
 };
 

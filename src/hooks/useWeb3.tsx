@@ -1,11 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import Web3 from 'web3';
-import { useAccount, useNetwork, useWalletClient } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
+import { useWalletClient } from 'wagmi';
 
 export const useWeb3 = () => {
   const { address, isConnected } = useAccount();
-  const { chain } = useNetwork();
+  const chainId = useChainId();
   const { data: walletClient } = useWalletClient();
   const [web3, setWeb3] = useState<Web3 | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -87,7 +88,7 @@ export const useWeb3 = () => {
     web3, 
     isReady, 
     address,
-    chainId: chain?.id,
+    chainId,
     isConnected
   };
 };

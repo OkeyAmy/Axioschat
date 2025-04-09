@@ -30,7 +30,7 @@ const getReplicateApiToken = (): string => {
   return "";
 };
 
-// Call Replicate API directly using browser's fetch with proper error handling
+// Function to call the proxy endpoint
 export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> => {
   try {
     const REPLICATE_API_TOKEN = getReplicateApiToken();
@@ -49,35 +49,60 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
       temperature: input.temperature, 
       top_p: input.top_p 
     });
-
-    // Since browser CORS is an issue, we'll use a simple server-based approach
-    // Instead of a real proxy server, simulate a response for demonstration purposes
     
-    // In a real implementation, you would use a server endpoint or serverless function
-    // For now, we'll create a simple AI response based on the query
-    const simulateAIResponse = (query: string): string => {
-      if (query.includes("token") || query.includes("price")) {
-        return "The current Ethereum price is approximately $3,450. Prices for other tokens vary, with Bitcoin around $65,000, Solana at $135, and Binance Coin at $560. Would you like me to check a specific token price?";
-      } else if (query.includes("gas") || query.includes("fee")) {
-        return "Current gas prices on Ethereum are around 30 gwei for a standard transaction. Gas on Polygon is much lower at about 100 gwei but the native token value is much lower, making transactions cost only a few cents.";
-      } else if (query.includes("wallet") || query.includes("connect")) {
-        return "Your wallet appears to be connected. From here, you can send transactions, check balances, or interact with smart contracts. What would you like to do with your wallet?";
-      } else if (query.includes("smart contract") || query.includes("deploy")) {
-        return "Deploying a smart contract requires writing Solidity code, compiling it, and then deploying to your chosen network. You'll need ETH for gas fees. Would you like me to explain more about a specific aspect of smart contract development?";
-      } else {
-        return "I'm your Web3 assistant. I can help with blockchain information, token prices, gas fees, wallet connections, and smart contract interactions. What would you like to know about the blockchain ecosystem?";
+    // Create a request to the proxy endpoint
+    const response = await fetch('/api/replicate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Replicate-API-Token': REPLICATE_API_TOKEN
+      },
+      body: JSON.stringify({
+        version: "3babfa32ab245cf8e047ff7366bcb4d5a2b4f0f108f504c47d5a84e23c02ff5f",
+        input: {
+          query: input.query,
+          tools: input.tools,
+          top_p: input.top_p || 0.9,
+          temperature: input.temperature || 0.7,
+          max_new_tokens: input.max_new_tokens || 3000,
+        }
+      }),
+    });
+    
+    console.log("Proxy response status:", response.status);
+    
+    if (!response.ok) {
+      let errorMessage = `Proxy API Error (${response.status}): `;
+      try {
+        const errorData = await response.json();
+        console.error("Proxy API Error Response:", errorData);
+        errorMessage += errorData.error || "Unknown error from Replicate API";
+      } catch (e) {
+        errorMessage += "Could not parse error response";
       }
-    };
-
-    // For demonstration, we'll simulate a response based on the input
-    const simulatedResponse = simulateAIResponse(input.query);
+      
+      throw new Error(errorMessage);
+    }
     
-    // Add a slight delay to simulate network request
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const responseData = await response.json();
+    console.log("Proxy response data:", responseData);
     
-    return simulatedResponse;
+    if (responseData.error) {
+      throw new Error(responseData.error);
+    }
+    
+    // For real-time APIs that return immediately
+    if (responseData.output) {
+      return Array.isArray(responseData.output) 
+        ? responseData.output.join('') 
+        : responseData.output;
+    }
+    
+    // For APIs that need polling, the proxy should handle this and return the final result
+    return responseData.result || "No response from model";
+    
   } catch (error) {
-    console.error("Error calling Flock Web3 model:", error);
+    console.error("Error calling Flock Web3 model via proxy:", error);
     
     const errorMessage = error instanceof Error 
       ? error.message 
