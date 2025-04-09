@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAccount, useBalance, useConnect, useDisconnect, useConfig, useSwitchChain } from "wagmi";
 import { mainnet, sepolia, base, polygon } from "wagmi/chains";
@@ -11,21 +10,19 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { ArrowUpDown, RefreshCw, Wallet, Zap, Settings, DollarSign, Share2, Key, Lock, FileCode, Repeat, ArrowLeftRight, ExternalLink, CheckCircle2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import WalletRequired from "@/components/WalletRequired";
 import { cn } from "@/lib/utils";
 
-// Transaction status
 type TransactionStatus = "pending" | "success" | "failed" | "none";
 
-// Simple function to validate Ethereum address
 const isValidEthereumAddress = (address: string) => {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 };
 
-// Function to get explorer URL based on chainId
 const getExplorerUrl = (chainId: number) => {
   switch (chainId) {
     case mainnet.id:
@@ -41,7 +38,6 @@ const getExplorerUrl = (chainId: number) => {
   }
 };
 
-// Sample token data for demonstration
 const tokenData = {
   eth: { name: "Ethereum", symbol: "ETH", decimals: 18 },
   usdc: { name: "USD Coin", symbol: "USDC", decimals: 6 },
@@ -50,7 +46,6 @@ const tokenData = {
   wbtc: { name: "Wrapped Bitcoin", symbol: "WBTC", decimals: 8 },
 };
 
-// Sample token addresses by chain
 const tokenAddresses: Record<number, Record<string, string>> = {
   [mainnet.id]: {
     eth: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
@@ -82,7 +77,6 @@ const tokenAddresses: Record<number, Record<string, string>> = {
   },
 };
 
-// Recent transactions sample data (for demo)
 const generateSampleTxs = (chainId: number, address: string | undefined) => {
   if (!address) return [];
   
@@ -116,7 +110,6 @@ const generateSampleTxs = (chainId: number, address: string | undefined) => {
   ];
 };
 
-// Simple Uniswap V2 ABI (excerpt)
 const UNISWAP_ROUTER_ABI = [
   {
     "inputs": [
@@ -158,12 +151,11 @@ const UNISWAP_ROUTER_ABI = [
   }
 ];
 
-// Uniswap Router addresses by chain
 const UNISWAP_ROUTER_ADDRESSES: Record<number, string> = {
-  [mainnet.id]: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", // Uniswap V2
-  [sepolia.id]: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", // For demo - same as mainnet
-  [base.id]: "0x2626664c2603336E57B271c5C0b26F421741e481", // Baseswap
-  [polygon.id]: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff", // QuickSwap
+  [mainnet.id]: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+  [sepolia.id]: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+  [base.id]: "0x2626664c2603336E57B271c5C0b26F421741e481",
+  [polygon.id]: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff",
 };
 
 const Functions = () => {
@@ -173,7 +165,6 @@ const Functions = () => {
   const { disconnect } = useDisconnect();
   const [currentChain, setCurrentChain] = useState<number | undefined>(mainnet.id);
 
-  // Transaction form states
   const [transferAmount, setTransferAmount] = useState("");
   const [transferAddress, setTransferAddress] = useState("");
   const [addressError, setAddressError] = useState("");
@@ -183,40 +174,32 @@ const Functions = () => {
   const [fromToken, setFromToken] = useState("eth");
   const [toToken, setToToken] = useState("usdc");
   
-  // Contract search state
   const [contractAddress, setContractAddress] = useState("");
   const [contractData, setContractData] = useState<any>(null);
   const [isContractLoading, setIsContractLoading] = useState(false);
   
-  // Transaction history
   const [recentTxs, setRecentTxs] = useState<any[]>([]);
   const [isLoadingTxs, setIsLoadingTxs] = useState(false);
 
-  // Balance query
   const { data: balanceData, isLoading: balanceLoading, refetch: refetchBalance } = useBalance({
     address: address,
   });
 
-  // Update transactions when chain or address changes
   useEffect(() => {
     if (isConnected && address && currentChain) {
       loadRecentTransactions();
     }
   }, [currentChain, address, isConnected]);
 
-  // Load recent transactions from the blockchain
   const loadRecentTransactions = () => {
     setIsLoadingTxs(true);
     
-    // In a real app, this would fetch from chain explorer API
-    // For demo, we'll use sample data after a timeout
     setTimeout(() => {
       setRecentTxs(generateSampleTxs(currentChain || mainnet.id, address));
       setIsLoadingTxs(false);
     }, 1000);
   };
 
-  // Validate Ethereum address
   const validateAddress = (address: string) => {
     if (!address) {
       setAddressError("Address is required");
@@ -230,7 +213,6 @@ const Functions = () => {
     return true;
   };
 
-  // Handle send transaction
   const handleTransfer = async () => {
     if (!validateAddress(transferAddress)) return;
     
@@ -241,13 +223,11 @@ const Functions = () => {
         description: `Preparing to send ${transferAmount} ETH to ${transferAddress}`,
       });
       
-      // Simulate transaction success (in a real app, this would call the wallet SDK)
       setTimeout(() => {
         const fakeHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
         setTransactionHash(fakeHash);
         setTxStatus("success");
         
-        // Add to recent transactions
         setRecentTxs([{
           hash: fakeHash,
           type: "Transfer",
@@ -273,7 +253,6 @@ const Functions = () => {
     }
   };
 
-  // Handle token swap
   const handleSwap = async () => {
     try {
       setTxStatus("pending");
@@ -282,15 +261,11 @@ const Functions = () => {
         description: `Preparing to swap ${swapAmount} ${fromToken.toUpperCase()} to ${toToken.toUpperCase()}`,
       });
       
-      // In a real implementation, this would create the actual transaction
-      // with proper Uniswap contract calls
-      
       setTimeout(() => {
         const fakeHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
         setTransactionHash(fakeHash);
         setTxStatus("success");
         
-        // Add to recent transactions
         setRecentTxs([{
           hash: fakeHash,
           type: "Swap",
@@ -316,15 +291,12 @@ const Functions = () => {
     }
   };
 
-  // Handle contract search
   const searchContract = async () => {
     if (!validateAddress(contractAddress)) return;
     
     setIsContractLoading(true);
     
-    // In a real app, this would query the blockchain
     setTimeout(() => {
-      // Simulate contract data for demo
       setContractData({
         address: contractAddress,
         name: "Sample Token",
@@ -342,7 +314,6 @@ const Functions = () => {
     }, 1500);
   };
 
-  // Handle network switch
   const handleNetworkSwitch = (networkId: string) => {
     const chainId = parseInt(networkId);
     setCurrentChain(chainId);
@@ -351,13 +322,11 @@ const Functions = () => {
     }
   };
 
-  // Generate transaction link
   const getTxLink = (hash: string) => {
     const explorerUrl = getExplorerUrl(currentChain || mainnet.id);
     return `${explorerUrl}/tx/${hash}`;
   };
 
-  // Generate address link
   const getAddressLink = (address: string) => {
     const explorerUrl = getExplorerUrl(currentChain || mainnet.id);
     return `${explorerUrl}/address/${address}`;
