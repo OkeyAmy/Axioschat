@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Wallet } from "lucide-react";
-import { useAccount, useConnect } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 const WalletRequired = () => {
@@ -17,7 +17,7 @@ const WalletRequired = () => {
         </div>
         <CardTitle>Connect Your Wallet</CardTitle>
         <CardDescription>
-          You need to connect a Web3 wallet to use the AI chat.
+          Please connect your Web3 wallet to use the AI chat.
         </CardDescription>
       </CardHeader>
       <CardContent>

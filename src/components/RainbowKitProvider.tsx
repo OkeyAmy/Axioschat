@@ -5,7 +5,6 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import {
   RainbowKitProvider as RKProvider,
-  getDefaultWallets,
   darkTheme,
   lightTheme,
   connectorsForWallets
@@ -47,12 +46,11 @@ const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
     wallets: [
-      injectedWallet({ chains }),
-      metaMaskWallet({ projectId, chains }),
-      walletConnectWallet({ projectId, chains }),
+      injectedWallet,
+      metaMaskWallet,
+      walletConnectWallet,
       coinbaseWallet({ 
         appName: 'NovachatV2',
-        chains 
       }),
     ],
   },
