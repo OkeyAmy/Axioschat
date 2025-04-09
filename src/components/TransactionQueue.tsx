@@ -11,9 +11,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface TransactionQueueProps {
   chainId?: number;
   inPanel?: boolean;
+  className?: string;
 }
 
-const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId = 1, inPanel = false }) => {
+const TransactionQueue: React.FC<TransactionQueueProps> = ({ 
+  chainId = 1, 
+  inPanel = false,
+  className
+}) => {
   const { 
     queue, 
     removeFromQueue, 
@@ -34,7 +39,7 @@ const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId = 1, inPane
   if (queue.length === 0) {
     if (inPanel) {
       return (
-        <div className="text-center py-4 text-sm text-muted-foreground">
+        <div className={cn("text-center py-4 text-sm text-muted-foreground", className)}>
           No pending transactions
         </div>
       );
@@ -45,7 +50,7 @@ const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId = 1, inPane
   // If displayed in panel, render inline
   if (inPanel) {
     return (
-      <div className="flex flex-col gap-2 max-h-full overflow-hidden">
+      <div className={cn("flex flex-col gap-2 max-h-full overflow-hidden", className)}>
         <ScrollArea className="max-h-[200px]">
           <div className="space-y-2 pr-3">
             {queue.map((tx) => (
@@ -117,7 +122,7 @@ const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId = 1, inPane
 
   // Default floating version
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)]">
+    <div className={cn("fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)]", className)}>
       <ScrollArea className="max-h-[60vh]">
         <div className="flex flex-col gap-2 p-1">
           {queue.map((tx) => (

@@ -40,67 +40,39 @@ export const getExplorerUrl = (chainId: number) => {
   return explorers[chainId] || "https://etherscan.io";
 };
 
-// Get transaction URL on block explorer
+export const getChainBlockExplorer = (chainId: number): string => {
+  const baseUrl = getExplorerUrl(chainId);
+  return baseUrl;
+};
+
 export const getTxUrl = (chainId: number, txHash: string): string => {
-  // Convert chainId to a number if it's a bigint
-  const chainIdNumber = typeof chainId === 'bigint' ? Number(chainId) : chainId;
-  
-  switch (chainIdNumber) {
-    case 1: // Ethereum Mainnet
-      return `https://etherscan.io/tx/${txHash}`;
-    case 56: // Binance Smart Chain
-      return `https://bscscan.com/tx/${txHash}`;
-    case 137: // Polygon
-      return `https://polygonscan.com/tx/${txHash}`;
-    case 42161: // Arbitrum
-      return `https://arbiscan.io/tx/${txHash}`;
-    case 10: // Optimism
-      return `https://optimistic.etherscan.io/tx/${txHash}`;
-    case 8453: // Base
-      return `https://basescan.org/tx/${txHash}`;
-    case 43114: // Avalanche
-      return `https://snowtrace.io/tx/${txHash}`;
-    case 250: // Fantom
-      return `https://ftmscan.com/tx/${txHash}`;
-    case 2222: // Educhain
-      return `https://explorer.educhain.io/tx/${txHash}`;
-    // Add more chains as needed
-    default:
-      // For Ethereum testnets and others
-      if (chainIdNumber === 5) return `https://goerli.etherscan.io/tx/${txHash}`;
-      if (chainIdNumber === 11155111) return `https://sepolia.etherscan.io/tx/${txHash}`;
-      return `https://etherscan.io/tx/${txHash}`; // Default to Ethereum
-  }
+  const baseUrl = getChainBlockExplorer(chainId);
+  return `${baseUrl}/tx/${txHash}`;
 };
 
-// Get address URL on block explorer
-export const getAddressUrl = (chainId: number, address: string) => {
-  const explorerUrl = getExplorerUrl(chainId);
-  return `${explorerUrl}/address/${address}`;
+export const getAddressUrl = (chainId: number, address: string): string => {
+  const baseUrl = getChainBlockExplorer(chainId);
+  return `${baseUrl}/address/${address}`;
 };
 
-// Get contract URL on block explorer
 export const getContractUrl = (chainId: number, address: string) => {
   const explorerUrl = getExplorerUrl(chainId);
   return `${explorerUrl}/token/${address}`;
 };
 
-// Get recommended gas price based on chain
 export const getRecommendedGasPrice = async (web3: Web3, chainId: number): Promise<string> => {
   try {
-    // Default gas prices in Gwei
     const defaultGasPrices: Record<number, string> = {
-      1: "20", // Ethereum
-      137: "50", // Polygon
-      10: "0.1", // Optimism
-      42161: "0.1", // Arbitrum
-      8453: "0.1", // Base
-      7777777: "0.1", // Zora
-      56: "5", // BSC
-      11155111: "1" // EduChain
+      1: "20",
+      137: "50",
+      10: "0.1",
+      42161: "0.1",
+      8453: "0.1",
+      7777777: "0.1",
+      56: "5",
+      11155111: "1"
     };
     
-    // Try to get current gas price from the network
     let gasPrice;
     try {
       gasPrice = await web3.eth.getGasPrice();
@@ -110,30 +82,23 @@ export const getRecommendedGasPrice = async (web3: Web3, chainId: number): Promi
     }
     
     if (gasPrice) {
-      // Convert from Wei to Gwei for display and add 10%
-      // Fix TS2352 error by converting bigint to string first
       const gasPriceGwei = parseFloat(web3.utils.fromWei(gasPrice.toString(), 'gwei'));
       return web3.utils.toWei((gasPriceGwei * 1.1).toFixed(2), 'gwei');
     }
     
-    // Fallback to default if network request fails
     return web3.utils.toWei(defaultGasPrices[chainId] || "20", 'gwei');
   } catch (error) {
     console.error("Error getting gas price:", error);
-    // Fallback to chain defaults
-    const defaultGwei = "20"; // Default to Ethereum if chain not in our list
-    return web3.utils.toWei(defaultGwei, 'gwei');
+    return web3.utils.toWei(defaultGasPrices[chainId] || "20", 'gwei');
   }
 };
 
-// Send transaction
 export const sendTransaction = async (web3: Web3, options: TxOptions): Promise<string> => {
   try {
     if (!web3) {
       throw new Error("Web3 instance not available");
     }
 
-    // Build transaction
     const tx: any = {
       from: options.from,
       to: options.to,
@@ -141,11 +106,9 @@ export const sendTransaction = async (web3: Web3, options: TxOptions): Promise<s
       data: options.data || '0x',
     };
 
-    // Add gas parameters if provided
     if (options.gasLimit) {
       tx.gas = options.gasLimit;
     } else {
-      // Estimate gas if not provided
       try {
         const estimatedGas = await web3.eth.estimateGas({
           from: options.from,
@@ -153,12 +116,11 @@ export const sendTransaction = async (web3: Web3, options: TxOptions): Promise<s
           value: tx.value,
           data: tx.data
         });
-        // Add 20% buffer to gas estimate
         const estimatedGasNum = parseInt(estimatedGas.toString());
         tx.gas = Math.floor(estimatedGasNum * 1.2);
       } catch (error) {
         console.warn("Gas estimation failed, using default:", error);
-        tx.gas = 100000; // Default gas limit
+        tx.gas = 100000;
       }
     }
 
@@ -169,7 +131,7 @@ export const sendTransaction = async (web3: Web3, options: TxOptions): Promise<s
     if (options.maxFeePerGas) {
       tx.maxFeePerGas = options.maxFeePerGas;
       tx.maxPriorityFeePerGas = options.maxPriorityFeePerGas || 
-        web3.utils.toWei("1.5", 'gwei'); // Default priority fee
+        web3.utils.toWei("1.5", 'gwei');
     }
 
     console.log("Sending transaction:", tx);
@@ -189,7 +151,6 @@ export const sendTransaction = async (web3: Web3, options: TxOptions): Promise<s
   }
 };
 
-// Get token balance
 export const getTokenBalance = async (
   web3: Web3,
   tokenAddress: string,
@@ -216,7 +177,6 @@ export const getTokenBalance = async (
       return "0";
     }
     
-    // Convert based on token decimals
     const balanceNumber = Number(parseFloat(balance.toString()) / 10 ** decimals);
     return web3.utils.fromWei(balanceNumber.toString(), 'ether');
   } catch (error) {
@@ -225,7 +185,6 @@ export const getTokenBalance = async (
   }
 };
 
-// Approve token spending
 export const approveToken = async (
   web3: Web3,
   tokenAddress: string,
@@ -251,15 +210,13 @@ export const approveToken = async (
     const contract = new web3.eth.Contract(tokenABI as any, tokenAddress);
     const amountWei = web3.utils.toWei(amount, 'ether');
     
-    // Create transaction to approve tokens
     const tx = {
       from,
       to: tokenAddress,
       data: contract.methods.approve(spenderAddress, amountWei).encodeABI(),
-      gasPrice: gasPrice || await getRecommendedGasPrice(web3, 1) // Default to ETH gas price
+      gasPrice: gasPrice || await getRecommendedGasPrice(web3, 1)
     };
 
-    // Send transaction
     const receipt = await web3.eth.sendTransaction(tx);
     return receipt.transactionHash as string;
   } catch (error: any) {
@@ -273,7 +230,6 @@ export const approveToken = async (
   }
 };
 
-// Fetch recent transactions from blockchain (using web3)
 export const fetchRecentTransactions = async (
   web3: Web3,
   address: string,
@@ -282,28 +238,23 @@ export const fetchRecentTransactions = async (
   try {
     if (!web3 || !address) return [];
     
-    // Get latest block number
     const latestBlock = await web3.eth.getBlockNumber();
     const transactions = [];
     
-    // Look through last blockRange blocks
     const startBlock = Math.max(0, Number(latestBlock) - blockRange);
     
-    // Get blocks in batches to find transactions
-    for (let i = 0; i < 5; i++) { // Limit to 5 iterations to prevent too much processing
+    for (let i = 0; i < 5; i++) {
       const blockNumber = Number(latestBlock) - i;
       if (blockNumber < 0) break;
       
       try {
         const block = await web3.eth.getBlock(blockNumber, true);
         if (block && block.transactions) {
-          // Find transactions involving the address
           const addressTransactions = block.transactions.filter((tx: any) => {
             return (tx.from && tx.from.toLowerCase() === address.toLowerCase()) || 
                    (tx.to && tx.to.toLowerCase() === address.toLowerCase());
           });
           
-          // Map transactions to our format
           const formattedTxs = addressTransactions.map((tx: any) => ({
             hash: tx.hash,
             from: tx.from,
@@ -329,7 +280,6 @@ export const fetchRecentTransactions = async (
   }
 };
 
-// Swap tokens on Uniswap
 export const swapTokensOnUniswap = async (
   web3: Web3,
   fromAddress: string,
@@ -342,7 +292,6 @@ export const swapTokensOnUniswap = async (
   gasPrice?: string
 ): Promise<string> => {
   try {
-    // Uniswap Router ABI (simplified for the specific methods we need)
     const uniswapRouterABI = [
       {
         inputs: [
@@ -387,25 +336,21 @@ export const swapTokensOnUniswap = async (
     const router = new web3.eth.Contract(uniswapRouterABI as any, routerAddress);
     
     let txHash: string;
-    const deadlineTimestamp = Math.floor(Date.now() / 1000) + (deadline * 60); // deadline in minutes from now
+    const deadlineTimestamp = Math.floor(Date.now() / 1000) + (deadline * 60);
     const transferGasPrice = gasPrice || await getRecommendedGasPrice(web3, 1);
     
-    // Check if we need to approve tokens first (only for non-ETH tokens)
     if (!isExactETH && path[0].toLowerCase() !== '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()) {
-      // Approve tokens to be spent by the router
       await approveToken(
         web3,
-        path[0], // token address
-        routerAddress, // router address
-        amountIn, // amount to approve
-        fromAddress, // owner address
+        path[0],
+        routerAddress,
+        amountIn,
+        fromAddress,
         transferGasPrice
       );
     }
     
-    // Execute swap based on token direction
     if (isExactETH) {
-      // ETH to Token
       const tx = await router.methods.swapExactETHForTokens(
         amountOutMin,
         path,
@@ -418,7 +363,6 @@ export const swapTokensOnUniswap = async (
       });
       txHash = tx.transactionHash;
     } else if (path[path.length - 1].toLowerCase() === '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()) {
-      // Token to ETH
       const tx = await router.methods.swapExactTokensForETH(
         web3.utils.toWei(amountIn, 'ether'),
         amountOutMin,
@@ -431,7 +375,6 @@ export const swapTokensOnUniswap = async (
       });
       txHash = tx.transactionHash;
     } else {
-      // Token to Token
       const tx = await router.methods.swapExactTokensForTokens(
         web3.utils.toWei(amountIn, 'ether'),
         amountOutMin,
@@ -457,7 +400,6 @@ export const swapTokensOnUniswap = async (
   }
 };
 
-// Add liquidity to Uniswap pool
 export const addLiquidity = async (
   web3: Web3,
   fromAddress: string,
@@ -472,7 +414,6 @@ export const addLiquidity = async (
   gasPrice?: string
 ): Promise<string> => {
   try {
-    // Uniswap Router ABI for addLiquidity and addLiquidityETH
     const uniswapRouterABI = [
       {
         inputs: [
@@ -523,7 +464,6 @@ export const addLiquidity = async (
     
     let txHash: string;
     
-    // Approve tokens if needed
     if (!isTokenAEth) {
       await approveToken(
         web3,
@@ -546,9 +486,7 @@ export const addLiquidity = async (
       );
     }
     
-    // Add liquidity based on token types
     if (isTokenAEth) {
-      // ETH + Token
       const tx = await router.methods.addLiquidityETH(
         tokenB,
         web3.utils.toWei(amountBDesired, 'ether'),
@@ -563,7 +501,6 @@ export const addLiquidity = async (
       });
       txHash = tx.transactionHash;
     } else if (isTokenBEth) {
-      // Token + ETH
       const tx = await router.methods.addLiquidityETH(
         tokenA,
         web3.utils.toWei(amountADesired, 'ether'),
@@ -578,7 +515,6 @@ export const addLiquidity = async (
       });
       txHash = tx.transactionHash;
     } else {
-      // Token + Token
       const tx = await router.methods.addLiquidity(
         tokenA,
         tokenB,
@@ -607,7 +543,6 @@ export const addLiquidity = async (
   }
 };
 
-// Remove liquidity from Uniswap pool
 export const removeLiquidity = async (
   web3: Web3,
   fromAddress: string,
@@ -621,7 +556,6 @@ export const removeLiquidity = async (
   gasPrice?: string
 ): Promise<string> => {
   try {
-    // Uniswap Router ABI for removeLiquidity and removeLiquidityETH
     const uniswapRouterABI = [
       {
         inputs: [
@@ -669,13 +603,7 @@ export const removeLiquidity = async (
     
     let txHash: string;
     
-    // TODO: Need to approve LP token first
-    // const lpTokenAddress = ...; // Would need to calculate the pair address
-    // await approveToken(web3, lpTokenAddress, routerAddress, liquidity, fromAddress);
-    
-    // Remove liquidity based on token types
     if (isTokenAEth) {
-      // ETH + Token
       const tx = await router.methods.removeLiquidityETH(
         tokenB,
         web3.utils.toWei(liquidity, 'ether'),
@@ -689,7 +617,6 @@ export const removeLiquidity = async (
       });
       txHash = tx.transactionHash;
     } else if (isTokenBEth) {
-      // Token + ETH
       const tx = await router.methods.removeLiquidityETH(
         tokenA,
         web3.utils.toWei(liquidity, 'ether'),
@@ -703,7 +630,6 @@ export const removeLiquidity = async (
       });
       txHash = tx.transactionHash;
     } else {
-      // Token + Token
       const tx = await router.methods.removeLiquidity(
         tokenA,
         tokenB,
@@ -731,13 +657,11 @@ export const removeLiquidity = async (
   }
 };
 
-// Get contract information
 export const getContractInfo = async (
   web3: Web3,
   contractAddress: string
 ): Promise<any> => {
   try {
-    // Basic ERC20 token interface
     const erc20ABI = [
       { inputs: [], name: "name", outputs: [{ name: "", type: "string" }], stateMutability: "view", type: "function" },
       { inputs: [], name: "symbol", outputs: [{ name: "", type: "string" }], stateMutability: "view", type: "function" },
@@ -799,7 +723,6 @@ export const getContractInfo = async (
       };
     } catch (error) {
       console.error("Error reading ERC20 interface:", error);
-      // Try to get contract functions from ABI
       return {
         address: contractAddress,
         name: "Unknown Contract",
@@ -816,7 +739,6 @@ export const getContractInfo = async (
   }
 };
 
-// Get contract function from contract
 export const callContractFunction = async (
   web3: Web3,
   contractAddress: string,
@@ -827,27 +749,20 @@ export const callContractFunction = async (
   gasPrice?: string
 ): Promise<any> => {
   try {
-    // We need the ABI for the function
-    // This is a simplified example and would need the actual contract ABI
-    
-    // Create a basic contract instance with a single function
     const functionABI = {
       name: functionName,
       type: "function",
-      inputs: [], // This would need to be populated based on the function
+      inputs: [],
       outputs: []
     };
     
     const contract = new web3.eth.Contract([functionABI] as any, contractAddress);
     
-    // Check if the function is a read-only (view/pure) function
-    const isReadFunction = false; // This would need to be determined from the ABI
+    const isReadFunction = false;
     
     if (isReadFunction) {
-      // Call the read function
       return await contract.methods[functionName](...functionInputs).call({ from: fromAddress });
     } else {
-      // Send a transaction for a state-changing function
       const transferGasPrice = gasPrice || await getRecommendedGasPrice(web3, 1);
       
       const tx = await contract.methods[functionName](...functionInputs).send({
@@ -864,18 +779,14 @@ export const callContractFunction = async (
   }
 };
 
-// Compile a solidity contract
 export const compileContract = async (
   sourceCode: string
 ): Promise<any> => {
   try {
-    // We would typically use solc to compile the contract
-    // For now, we'll just return a mock response
-    
     return {
       success: true,
-      bytecode: "0x...", // Compiled bytecode
-      abi: [], // Contract ABI
+      bytecode: "0x...",
+      abi: [],
     };
   } catch (error) {
     console.error("Compilation error:", error);
@@ -883,7 +794,6 @@ export const compileContract = async (
   }
 };
 
-// Deploy a contract
 export const deployContract = async (
   web3: Web3,
   fromAddress: string,
@@ -901,10 +811,8 @@ export const deployContract = async (
       arguments: constructorArgs
     });
     
-    // Estimate gas
     const gas = await deployTx.estimateGas({ from: fromAddress });
     
-    // Deploy
     const deployedContract = await deployTx.send({
       from: fromAddress,
       gas: gas.toString(),
@@ -918,13 +826,10 @@ export const deployContract = async (
   }
 };
 
-// Get contract ABI from Etherscan (or similar explorer)
 export const getContractABI = async (
   chainId: number,
   contractAddress: string
 ): Promise<any[]> => {
-  // This would typically require an explorer API key
-  // For now, return a basic ERC20 ABI as a placeholder
   return [
     { inputs: [], name: "name", outputs: [{ name: "", type: "string" }], stateMutability: "view", type: "function" },
     { inputs: [], name: "symbol", outputs: [{ name: "", type: "string" }], stateMutability: "view", type: "function" },
@@ -938,7 +843,10 @@ export const getContractABI = async (
   ];
 };
 
-// Fix the bigint to number conversion
 export const convertEstimatedGas = (gas: bigint): number => {
   return Number(gas);
+};
+
+export const formatGasPrice = (gasPrice: bigint): string => {
+  return (Number(gasPrice.toString()) / 1e9).toFixed(2);
 };

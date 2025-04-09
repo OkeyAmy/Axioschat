@@ -43,8 +43,20 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
       return "Error: Please provide a Replicate API token in the settings";
     }
 
-    console.log("Calling Replicate API with token:", REPLICATE_API_TOKEN.substring(0, 5) + "...");
-    console.log("Input:", { query: input.query, tools: "JSON tools string", top_p: input.top_p, temperature: input.temperature });
+    console.log("Calling Replicate API with input:", { query: input.query.substring(0, 50) + "...", temperature: input.temperature, top_p: input.top_p });
+    
+    const body = {
+      version: "3babfa32ab245cf8e047ff7366bcb4d5a2b4f0f108f504c47d5a84e23c02ff5f",
+      input: {
+        query: input.query,
+        tools: input.tools,
+        top_p: input.top_p || 0.9,
+        temperature: input.temperature || 0.7,
+        max_new_tokens: input.max_new_tokens || 3000,
+      },
+    };
+    
+    console.log("Request body:", JSON.stringify(body, null, 2));
 
     const response = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
@@ -52,25 +64,26 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
         "Content-Type": "application/json",
         "Authorization": `Token ${REPLICATE_API_TOKEN}`,
       },
-      body: JSON.stringify({
-        version: "3babfa32ab245cf8e047ff7366bcb4d5a2b4f0f108f504c47d5a84e23c02ff5f",
-        input: {
-          query: input.query,
-          tools: input.tools,
-          top_p: input.top_p || 0.9,
-          temperature: input.temperature || 0.7,
-          max_new_tokens: input.max_new_tokens || 3000,
-        },
-      }),
+      body: JSON.stringify(body),
     });
 
+    console.log("Response status:", response.status);
+    
+    const responseData = await response.json();
+    console.log("Response data:", responseData);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Replicate API Error:", errorData);
-      throw new Error(errorData.detail || "Failed to call Flock Web3 model");
+      let errorMessage = "Failed to call Flock Web3 model";
+      if (responseData.detail) {
+        errorMessage = `API Error: ${responseData.detail}`;
+      } else if (responseData.error) {
+        errorMessage = `API Error: ${responseData.error}`;
+      }
+      console.error("Replicate API Error:", responseData);
+      throw new Error(errorMessage);
     }
 
-    const prediction: ReplicateResponse = await response.json();
+    const prediction: ReplicateResponse = responseData;
     console.log("Prediction response:", prediction);
     
     // Check if we need to poll for results
@@ -102,6 +115,8 @@ const pollForCompletion = async (predictionId: string): Promise<string> => {
     await new Promise(resolve => setTimeout(resolve, delay));
     
     try {
+      console.log(`Poll attempt ${attempt + 1} for prediction ${predictionId}...`);
+      
       const response = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
         headers: {
           "Authorization": `Token ${REPLICATE_API_TOKEN}`,
@@ -109,15 +124,23 @@ const pollForCompletion = async (predictionId: string): Promise<string> => {
         },
       });
       
+      console.log(`Poll attempt ${attempt + 1} response status:`, response.status);
+      
+      const responseData = await response.json();
+      console.log(`Poll attempt ${attempt + 1} response data:`, responseData);
+      
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = responseData;
         throw new Error(errorData.detail || "Failed to poll prediction status");
       }
       
-      const prediction: ReplicateResponse = await response.json();
-      console.log(`Poll attempt ${attempt + 1}:`, prediction.status);
+      const prediction: ReplicateResponse = responseData;
+      console.log(`Poll attempt ${attempt + 1} status:`, prediction.status);
       
       if (prediction.status === "succeeded") {
+        if (Array.isArray(prediction.output)) {
+          return prediction.output.join('') || "No output from model";
+        }
         return prediction.output || "No output from model";
       } else if (prediction.status === "failed" || prediction.status === "canceled") {
         throw new Error(prediction.error || "Prediction failed");

@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Shuffle, 
-  Wallet
+  Wallet,
+  ArrowLeftCircle
 } from 'lucide-react';
 import SuggestedPromptsPanel from '@/components/SuggestedPromptsPanel';
 import TransactionQueue from '@/components/TransactionQueue';
@@ -447,7 +448,17 @@ const Web3Intro: React.FC = () => {
             </Button>
           ) : (
             <div className="p-4 h-full flex flex-col">
-              <h2 className="text-xl font-bold mb-4">DeFi Topics</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">DeFi Topics</h2>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={toggleHistoryPanel}
+                  className="h-8 w-8"
+                >
+                  <ArrowLeftCircle className="h-4 w-4" />
+                </Button>
+              </div>
               <ScrollArea className="flex-1 h-[calc(100vh-16rem)]">
                 <div className="space-y-2 pr-4">
                   {defiSections.map((section) => (

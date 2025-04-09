@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -210,25 +209,12 @@ const Chat = () => {
                 </Button>
               ) : (
                 <div className="flex flex-col h-full overflow-hidden border rounded-lg">
-                  <div className="flex items-center justify-between p-2 border-b">
-                    <h3 className="text-sm font-medium">Chat History</h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={toggleHistoryPanel}
-                      className="h-7 w-7"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <ChatHistory 
-                      onSelectChat={handleSelectChat} 
-                      onNewChat={handleNewChat}
-                      activeChat={activeChat}
-                      currentChain={currentChain}
-                    />
-                  </div>
+                  <ChatHistory 
+                    onSelectChat={handleSelectChat} 
+                    onNewChat={handleNewChat}
+                    activeChat={activeChat}
+                    currentChain={currentChain}
+                  />
                 </div>
               )}
             </div>
@@ -373,7 +359,7 @@ const Chat = () => {
         )}
         
         {/* Transaction Queue */}
-        <TransactionQueue chainId={currentChain} className="mt-4" />
+        <TransactionQueue chainId={currentChain} />
       </main>
     </div>
   );

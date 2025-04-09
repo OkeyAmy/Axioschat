@@ -134,7 +134,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
               <Separator className="my-2 mx-2" />
               <div className="px-2 mb-2">
                 <h3 className="text-xs font-medium mb-2">Transaction Queue</h3>
-                <div className="h-[calc(20vh-2rem)] overflow-hidden">
+                <div className="h-[180px] overflow-hidden">
                   <TransactionQueue chainId={currentChain} inPanel={true} />
                 </div>
               </div>
