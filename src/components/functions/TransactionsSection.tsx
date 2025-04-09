@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { ArrowUpRight, Search } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { estimateGas, sendTransaction } from '@/utils/blockchain';
 import useWeb3 from '@/hooks/useWeb3';
-import useTransactionQueue from '@/hooks/useTransactionQueue';
+import { useTransactionQueue } from '@/hooks/useTransactionQueue';
 
 const TransactionsSection: React.FC = () => {
   const { web3, isReady, address, chainId } = useWeb3();

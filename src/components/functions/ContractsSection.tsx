@@ -1,15 +1,74 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Deploy, FileCode, FileText, Send } from "lucide-react";
+import { FileCode, FileText, Send, HardDrive } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { deployContract, sendContractTransaction, estimateContractGas } from '@/utils/blockchain';
 import useWeb3 from '@/hooks/useWeb3';
-import useTransactionQueue from '@/hooks/useTransactionQueue';
+import { useTransactionQueue } from '@/hooks/useTransactionQueue';
+
+// Contract deployment function
+const deployContract = async (web3: any, from: string, abi: any[], bytecode: string, args: any[] = []) => {
+  try {
+    const contract = new web3.eth.Contract(abi);
+    const deployTx = contract.deploy({
+      data: bytecode,
+      arguments: args
+    });
+    
+    const gas = await deployTx.estimateGas({ from });
+    
+    const deployedContract = await deployTx.send({
+      from,
+      gas: Math.floor(Number(gas) * 1.1) // Add 10% buffer
+    });
+    
+    return {
+      contractAddress: deployedContract.options.address,
+      transactionHash: deployedContract.transactionHash
+    };
+  } catch (error) {
+    console.error('Contract deployment error:', error);
+    throw error;
+  }
+};
+
+// Function to send contract transaction
+const sendContractTransaction = async (web3: any, from: string, contractAddress: string, abi: any[], method: string, args: any[] = [], value: string = '0') => {
+  try {
+    const contract = new web3.eth.Contract(abi, contractAddress);
+    const tx = contract.methods[method](...args);
+    
+    const gas = await tx.estimateGas({ from, value });
+    
+    const receipt = await tx.send({
+      from,
+      gas: Math.floor(Number(gas) * 1.1),
+      value
+    });
+    
+    return receipt;
+  } catch (error) {
+    console.error('Contract transaction error:', error);
+    throw error;
+  }
+};
+
+// Function to estimate contract gas
+const estimateContractGas = async (web3: any, from: string, contractAddress: string, abi: any[], method: string, args: any[] = [], value: string = '0') => {
+  try {
+    const contract = new web3.eth.Contract(abi, contractAddress);
+    const tx = contract.methods[method](...args);
+    
+    const gas = await tx.estimateGas({ from, value });
+    return gas.toString();
+  } catch (error) {
+    console.error('Gas estimation error:', error);
+    throw error;
+  }
+};
 
 const ContractsSection: React.FC = () => {
   const { web3, isReady, address, chainId } = useWeb3();
@@ -19,7 +78,7 @@ const ContractsSection: React.FC = () => {
   const [functionName, setFunctionName] = useState<string>('');
   const [functionArgs, setFunctionArgs] = useState<string>('');
   const [functionValue, setFunctionValue] = useState<string>('0');
-  const [abi, setAbi] = useState<string>('');
+  const [abi, setAbi] useState<string>('');
   const [bytecode, setBytecode] = useState<string>('');
   const [constructorArgs, setConstructorArgs] = useState<string>('');
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
@@ -313,7 +372,7 @@ const ContractsSection: React.FC = () => {
               Interact
             </TabsTrigger>
             <TabsTrigger value="deploy">
-              <Deploy className="h-4 w-4 mr-2" />
+              <HardDrive className="h-4 w-4 mr-2" />
               Deploy
             </TabsTrigger>
           </TabsList>

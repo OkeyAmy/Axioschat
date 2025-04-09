@@ -22,6 +22,11 @@ export async function handler(req: Request) {
     // Parse the request body
     const requestData = await req.json();
 
+    console.log("Forwarding request to Replicate API:", {
+      model: requestData.version,
+      input: requestData.input
+    });
+
     // Forward the request to Replicate API
     const response = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
@@ -34,6 +39,7 @@ export async function handler(req: Request) {
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("Replicate API error:", errorData);
       return new Response(JSON.stringify({ 
         error: errorData.detail || `Replicate API error: ${response.status}`
       }), {
@@ -43,6 +49,7 @@ export async function handler(req: Request) {
     }
 
     const prediction = await response.json();
+    console.log("Replicate API response:", prediction);
     
     // For predictions that need polling
     if (prediction.status === "starting" || prediction.status === "processing") {
@@ -61,6 +68,7 @@ export async function handler(req: Request) {
         
         if (!pollResponse.ok) {
           const errorData = await pollResponse.json();
+          console.error("Polling error:", errorData);
           return new Response(JSON.stringify({ 
             error: errorData.detail || `Polling error: ${pollResponse.status}`
           }), {
@@ -70,6 +78,7 @@ export async function handler(req: Request) {
         }
         
         const updatedPrediction = await pollResponse.json();
+        console.log("Poll response:", updatedPrediction);
         
         if (updatedPrediction.status === "succeeded") {
           return new Response(JSON.stringify(updatedPrediction), {

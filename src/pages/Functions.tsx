@@ -14,6 +14,15 @@ import ContractsSection from "@/components/functions/ContractsSection";
 import TransactionQueue from "@/components/TransactionQueue";
 import { TransactionQueueProvider } from "@/hooks/useTransactionQueue";
 
+// Define prop interfaces for the components
+interface ChainProps {
+  currentChain: number;
+}
+
+interface ChainSectionProps extends ChainProps {
+  setCurrentChain: (chainId: number) => void;
+}
+
 const Functions = () => {
   const { isConnected } = useAccount();
   const networkChainId = useChainId() || mainnet.id;
@@ -82,15 +91,15 @@ const Functions = () => {
                 </TabsContent>
                 
                 <TabsContent value="transactions" className="space-y-6">
-                  <TransactionsSection currentChain={currentChain} />
+                  <TransactionsSection />
                 </TabsContent>
                 
                 <TabsContent value="dex" className="space-y-6">
-                  <DexSection currentChain={currentChain} />
+                  <DexSection />
                 </TabsContent>
                 
                 <TabsContent value="contracts" className="min-h-[400px]">
-                  <ContractsSection currentChain={currentChain} />
+                  <ContractsSection />
                 </TabsContent>
               </Tabs>
             </div>

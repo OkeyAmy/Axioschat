@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +7,120 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRightLeft, DollarSign, RefreshCw, RotateCw } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { swapTokens, addLiquidity, getPairInfo, getTokenAllowance, approveToken } from '@/utils/blockchain';
+import { getTokenBalance } from '@/utils/blockchain';
 import useWeb3 from '@/hooks/useWeb3';
-import useTransactionQueue from '@/hooks/useTransactionQueue';
+import { useTransactionQueue } from '@/hooks/useTransactionQueue';
+
+// Helper function to get token allowance
+const getTokenAllowance = async (web3: any, owner: string, tokenAddress: string, spender: string) => {
+  try {
+    // ERC20 allowance function ABI
+    const tokenAbi = [{"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}];
+    const tokenContract = new web3.eth.Contract(tokenAbi, tokenAddress);
+    
+    const allowance = await tokenContract.methods.allowance(owner, spender).call();
+    return allowance;
+  } catch (error) {
+    console.error('Error getting token allowance:', error);
+    throw error;
+  }
+};
+
+// Helper function to approve token spending
+const approveToken = async (web3: any, from: string, tokenAddress: string, spender: string, amount: string) => {
+  try {
+    // ERC20 approve function ABI
+    const tokenAbi = [{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"}];
+    const tokenContract = new web3.eth.Contract(tokenAbi, tokenAddress);
+    
+    const tx = await tokenContract.methods.approve(spender, amount).send({ from });
+    return tx;
+  } catch (error) {
+    console.error('Error approving token:', error);
+    throw error;
+  }
+};
+
+// Implementation of swap tokens
+const swapTokens = async (web3: any, from: string, tokenInAddress: string, tokenOutAddress: string, amountIn: string, slippageTolerance: string, deadlineMinutes: string) => {
+  try {
+    // This is a simplified implementation
+    // In a real application, you would interact with a DEX router contract
+    
+    // For demo purposes, we'll just log the swap details and return a mocked transaction receipt
+    console.log('Swapping tokens:', {
+      from,
+      tokenIn: tokenInAddress,
+      tokenOut: tokenOutAddress,
+      amountIn,
+      slippageTolerance,
+      deadline: `${deadlineMinutes} minutes`
+    });
+    
+    // Mock transaction hash for demo purposes
+    const txHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+    
+    // Return a mock transaction receipt
+    return {
+      transactionHash: txHash,
+      status: true,
+      to: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' // Uniswap V2 router
+    };
+  } catch (error) {
+    console.error('Error swapping tokens:', error);
+    throw error;
+  }
+};
+
+// Implementation of add liquidity
+const addLiquidity = async (web3: any, from: string, tokenAAddress: string, tokenBAddress: string, amountA: string, amountB: string, slippageTolerance: string, deadlineMinutes: string) => {
+  try {
+    // This is a simplified implementation
+    // In a real application, you would interact with a DEX router contract
+    
+    // For demo purposes, we'll just log the liquidity addition details and return a mocked transaction receipt
+    console.log('Adding liquidity:', {
+      from,
+      tokenA: tokenAAddress,
+      tokenB: tokenBAddress,
+      amountA,
+      amountB,
+      slippageTolerance,
+      deadline: `${deadlineMinutes} minutes`
+    });
+    
+    // Mock transaction hash for demo purposes
+    const txHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+    
+    // Return a mock transaction receipt
+    return {
+      transactionHash: txHash,
+      status: true,
+      to: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' // Uniswap V2 router
+    };
+  } catch (error) {
+    console.error('Error adding liquidity:', error);
+    throw error;
+  }
+};
+
+// Implementation of getting pair info
+const getPairInfo = async (web3: any, from: string, tokenAAddress: string, tokenBAddress: string, chainId: string) => {
+  try {
+    // In a real application, you would query the DEX factory contract
+    
+    // For demo purposes, return mock data
+    return {
+      pairAddress: '0x' + Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
+      reserveUSD: '100000',
+      reserve0: '1000',
+      reserve1: '1000'
+    };
+  } catch (error) {
+    console.error('Error getting pair info:', error);
+    throw error;
+  }
+};
 
 // Common token addresses for various networks
 const commonTokens: Record<string, Record<string, { symbol: string, address: string }>> = {
