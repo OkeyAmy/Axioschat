@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+// This query client is for non-wagmi related queries
 const queryClient = new QueryClient();
 
 const App = () => (

@@ -8,12 +8,21 @@ import {
   getDefaultWallets,
   darkTheme,
   lightTheme,
-  connectorsForWallets,
 } from "@rainbow-me/rainbowkit"
-import { configureChains, createConfig, WagmiConfig } from "wagmi"
-import { mainnet, polygon, optimism, arbitrum, base, zora } from "wagmi/chains"
-import { publicProvider } from "wagmi/providers/public"
-import { alchemyProvider } from "wagmi/providers/alchemy"
+import { 
+  http, 
+  createConfig, 
+  WagmiProvider
+} from "wagmi"
+import {
+  mainnet,
+  polygon,
+  optimism,
+  arbitrum,
+  base,
+  zora
+} from "wagmi/chains"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useTheme } from "@/components/ThemeProvider"
 import "@rainbow-me/rainbowkit/styles.css"
 
@@ -21,30 +30,21 @@ interface RainbowKitWrapperProps {
   children: React.ReactNode
 }
 
-const { chains, publicClient } = configureChains(
-  [mainnet, polygon, optimism, arbitrum, base, zora],
-  [
-    // Use Alchemy as primary provider if API key is available
-    process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
-      ? alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })
-      : publicProvider(),
-    publicProvider(),
-  ],
-)
-
-const { wallets } = getDefaultWallets({
-  appName: "NovachatV2",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "YOUR_PROJECT_ID",
-  chains,
+// Create wagmi config
+const config = createConfig({
+  chains: [mainnet, polygon, optimism, arbitrum, base, zora],
+  transports: {
+    [mainnet.id]: http(),
+    [polygon.id]: http(),
+    [optimism.id]: http(),
+    [arbitrum.id]: http(),
+    [base.id]: http(),
+    [zora.id]: http(),
+  },
 })
 
-const connectors = connectorsForWallets([...wallets])
-
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
-})
+// Create query client
+const queryClient = new QueryClient()
 
 export const RainbowKitProvider: React.FC<RainbowKitWrapperProps> = ({ children }) => {
   const { theme } = useTheme()
@@ -58,11 +58,13 @@ export const RainbowKitProvider: React.FC<RainbowKitWrapperProps> = ({ children 
   if (!mounted) return null
 
   return (
-    <WagmiConfig config={wagmiConfig}>
-      <RKProvider chains={chains} theme={theme === "dark" ? darkTheme() : lightTheme()} modalSize="compact">
-        {children}
-      </RKProvider>
-    </WagmiConfig>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RKProvider theme={theme === "dark" ? darkTheme() : lightTheme()} modalSize="compact">
+          {children}
+        </RKProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   )
 }
 
