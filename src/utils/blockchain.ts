@@ -84,8 +84,8 @@ export const getRecommendedGasPrice = async (web3: Web3, chainId: number): Promi
     
     if (gasPrice) {
       // Convert from Wei to Gwei for display and add 10%
-      // Fix TS2352 error by explicitly converting bigint to number via Number()
-      const gasPriceGwei = parseFloat(web3.utils.fromWei(Number(gasPrice).toString(), 'gwei'));
+      // Fix TS2352 error by converting bigint to string first
+      const gasPriceGwei = parseFloat(web3.utils.fromWei(gasPrice.toString(), 'gwei'));
       return web3.utils.toWei((gasPriceGwei * 1.1).toFixed(2), 'gwei');
     }
     

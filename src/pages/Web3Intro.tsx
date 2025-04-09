@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -59,9 +58,9 @@ const Web3Intro: React.FC = () => {
   const [useLocalAI, setUseLocalAI] = useState(true);
   const [localEndpoint, setLocalEndpoint] = useState("http://localhost:11434");
   const [showEndpointSettings, setShowEndpointSettings] = useState(false);
+  const [currentChain, setCurrentChain] = useState(1);
   const { apiKeys, updateApiKey } = useApiKeys();
 
-  // Shared functionality with Chat component
   const handleSendMessage = async () => {
     if (!messageInput.trim()) return;
     
@@ -75,7 +74,6 @@ const Web3Intro: React.FC = () => {
       const currentSection = defiSections.find(section => section.id === activeSection);
       
       if (useLocalAI) {
-        // Use local Llama 3.2 API
         try {
           const response = await fetch(`${localEndpoint}/api/chat`, {
             method: 'POST',
@@ -103,7 +101,6 @@ const Web3Intro: React.FC = () => {
           aiResponse = `I couldn't connect to the local model. ${error instanceof Error ? error.message : "Unknown error"}`;
         }
       } else {
-        // Use Flock Web3 model via Replicate
         if (!apiKeys.replicate) {
           aiResponse = "Please provide a Replicate API key in the settings to use the Flock Web3 model.";
         } else {
@@ -167,7 +164,6 @@ const Web3Intro: React.FC = () => {
     setMessageInput(question);
   };
 
-  // Handle window resize for responsive layout
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1400) {
@@ -178,17 +174,13 @@ const Web3Intro: React.FC = () => {
       }
     };
 
-    // Initial check
     handleResize();
     
-    // Add event listener
     window.addEventListener('resize', handleResize);
     
-    // Clean up
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // DeFi sections data
   const defiSections: DeFiSection[] = [
     {
       id: 'intro',
@@ -434,7 +426,6 @@ const Web3Intro: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Section Navigation */}
         <div className={cn(
           "border-r bg-card/50 flex-shrink-0 transition-all duration-300 overflow-hidden flex flex-col",
           isHistoryCollapsed ? "w-0" : "w-1/4 md:w-1/5"
@@ -458,21 +449,18 @@ const Web3Intro: React.FC = () => {
             </ScrollArea>
           </div>
 
-          {/* Transaction Queue in bottom half */}
           {!isHistoryCollapsed && (
             <div className="border-t pt-4 p-4 h-1/3 overflow-hidden">
               <h3 className="font-medium text-sm mb-2">Transaction Queue</h3>
               <div className="overflow-y-auto h-[calc(100%-2rem)]">
-                <TransactionQueue />
+                <TransactionQueue chainId={currentChain} inPanel={true} />
               </div>
             </div>
           )}
         </div>
 
-        {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-hidden flex flex-col">
-            {/* Messages display */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {messages.map((message, index) => (
@@ -500,7 +488,6 @@ const Web3Intro: React.FC = () => {
               </div>
             </ScrollArea>
 
-            {/* Active Section Info Display */}
             {activeSection && (
               <div className="border-t p-4 bg-card/50">
                 <Tabs defaultValue="overview">
@@ -559,7 +546,6 @@ const Web3Intro: React.FC = () => {
               </div>
             )}
 
-            {/* Input area with settings */}
             <div className="border-t p-4 bg-background">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center space-x-4">
@@ -631,7 +617,6 @@ const Web3Intro: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Panel - Suggested Prompts */}
         <div className={cn(
           "flex-shrink-0 transition-all duration-300 p-4 overflow-hidden",
           isSuggestionsCollapsed ? "w-0" : "w-1/4 md:w-1/5"

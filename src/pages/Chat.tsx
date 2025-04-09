@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -20,7 +19,6 @@ import ApiKeyInput from "@/components/ApiKeyInput";
 import useApiKeys from "@/hooks/useApiKeys";
 import { callFlockWeb3, createDefaultWeb3Tools, FlockWeb3Request } from "@/services/replicateService";
 
-// Define the message type to avoid TypeScript errors
 type Message = {
   role: "user" | "assistant";
   content: string;
@@ -38,7 +36,6 @@ const Chat = () => {
   const [isPromptsPanelCollapsed, setIsPromptsPanelCollapsed] = useState(false);
   const [currentChain, setCurrentChain] = useState(mainnet.id);
   
-  // State for endpoints
   const [localEndpoint, setLocalEndpoint] = useState("http://localhost:11434");
   const [showEndpointSettings, setShowEndpointSettings] = useState(false);
   const { apiKeys, updateApiKey, isLoaded } = useApiKeys();
@@ -46,14 +43,12 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
-  // Scroll to the bottom when messages update
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Check window width and collapse panels on smaller screens
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1400) {
@@ -64,29 +59,23 @@ const Chat = () => {
       }
     };
 
-    // Initial check
     handleResize();
 
-    // Add event listener
     window.addEventListener('resize', handleResize);
     
-    // Clean up
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
     
-    // Create a new user message
     const userMessage: Message = {
       role: "user",
       content: input,
       id: Date.now().toString(),
     };
     
-    // Add user message to state
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setInput("");
     setLoading(true);
@@ -95,7 +84,6 @@ const Chat = () => {
       let aiResponse: string;
       
       if (useLocalAI) {
-        // Local Llama 3.2 API call
         const response = await fetch(`${localEndpoint}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -112,7 +100,6 @@ const Chat = () => {
         const data = await response.json();
         aiResponse = data.message?.content || "No response from local model";
       } else {
-        // Flock Web3 model via Replicate
         if (!apiKeys.replicate) {
           aiResponse = "Please provide a Replicate API key in the settings to use the Flock Web3 model.";
         } else {
@@ -128,7 +115,6 @@ const Chat = () => {
         }
       }
       
-      // Create AI message
       const aiMessage: Message = {
         role: "assistant",
         content: aiResponse,
@@ -146,7 +132,6 @@ const Chat = () => {
       console.error("Error getting response:", error);
       setLoading(false);
       
-      // Add error message
       const errorMessage: Message = {
         role: "assistant",
         content: `Error: ${error instanceof Error ? error.message : "Failed to get a response from the AI."}`,
@@ -163,14 +148,10 @@ const Chat = () => {
     }
   };
 
-  // Handle suggested question
   const handleSuggestedQuestion = (question: string) => {
     setInput(question);
-    // Optional: Auto-submit the question
-    // handleSubmit({ preventDefault: () => {} } as React.FormEvent);
   };
   
-  // Clear chat history
   const clearChat = () => {
     setMessages([]);
     toast({
@@ -179,10 +160,8 @@ const Chat = () => {
     });
   };
 
-  // Handle selecting a chat from history
   const handleSelectChat = (chatId: number, chatMessages: Array<{ role: string; content: string }>) => {
     setActiveChat(chatId);
-    // Convert chat history messages to the right format
     const formattedMessages = chatMessages.map((msg, index) => ({
       role: msg.role as "user" | "assistant",
       content: msg.content,
@@ -191,7 +170,6 @@ const Chat = () => {
     setMessages(formattedMessages);
   };
 
-  // Start a new chat
   const handleNewChat = () => {
     setActiveChat(null);
     setMessages([]);
@@ -208,7 +186,6 @@ const Chat = () => {
           </div>
         ) : (
           <div className="grid grid-cols-[auto_1fr_auto] gap-6 flex-1 h-full overflow-hidden">
-            {/* Chat History Sidebar - Dynamic width based on collapse state */}
             <div className={cn(
               "transition-all duration-300 flex flex-col",
               isHistoryPanelCollapsed ? "w-14" : "w-[280px]"
@@ -222,18 +199,16 @@ const Chat = () => {
                 />
               </div>
               
-              {/* Transaction Queue in bottom half */}
               {!isHistoryPanelCollapsed && (
                 <div className="mt-4 border-t pt-4 h-1/3 overflow-hidden">
                   <h3 className="font-medium text-sm mb-2 px-2">Transaction Queue</h3>
                   <div className="overflow-y-auto h-[calc(100%-2rem)]">
-                    <TransactionQueue />
+                    <TransactionQueue chainId={currentChain} inPanel={true} />
                   </div>
                 </div>
               )}
             </div>
             
-            {/* Main Chat Area - Dynamic width based on panels state */}
             <div className="flex flex-col rounded-lg border overflow-hidden h-full">
               <div className="border-b px-4 py-2 flex justify-between items-center">
                 <div className="flex items-center">
@@ -373,7 +348,6 @@ const Chat = () => {
               </div>
             </div>
             
-            {/* Suggested Prompts Panel - Dynamic width based on collapse state */}
             <div className={cn(
               "transition-all duration-300",
               isPromptsPanelCollapsed ? "w-14" : "w-[300px]"

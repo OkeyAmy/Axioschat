@@ -16,10 +16,24 @@ export interface FlockWeb3Request {
   max_new_tokens?: number;
 }
 
-const REPLICATE_API_TOKEN = ""; // User will need to provide this
+// Get Replicate API token from localStorage
+const getReplicateApiToken = (): string => {
+  try {
+    const apiKeys = localStorage.getItem('apiKeys');
+    if (apiKeys) {
+      const parsed = JSON.parse(apiKeys);
+      return parsed.replicate || "";
+    }
+  } catch (error) {
+    console.error("Error retrieving Replicate API token:", error);
+  }
+  return "";
+};
 
 export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> => {
   try {
+    const REPLICATE_API_TOKEN = getReplicateApiToken();
+    
     if (!REPLICATE_API_TOKEN) {
       toast({
         title: "API Token Missing",
@@ -70,6 +84,7 @@ export const callFlockWeb3 = async (input: FlockWeb3Request): Promise<string> =>
 const pollForCompletion = async (predictionId: string): Promise<string> => {
   const maxAttempts = 50;
   const delay = 1000; // 1 second delay between polls
+  const REPLICATE_API_TOKEN = getReplicateApiToken();
   
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise(resolve => setTimeout(resolve, delay));
@@ -123,6 +138,110 @@ export const createDefaultWeb3Tools = (): string => {
           "chain": {
             "type": "string",
             "description": "The blockchain to get gas price for (e.g., ethereum, binance)"
+          }
+        }
+      },
+      "send_token": {
+        "description": "Send tokens to an address",
+        "parameters": {
+          "token_address": {
+            "type": "string",
+            "description": "The token address (use 'native' for ETH, BNB, etc.)"
+          },
+          "to_address": {
+            "type": "string",
+            "description": "The recipient address"
+          },
+          "amount": {
+            "type": "string",
+            "description": "The amount to send"
+          }
+        }
+      },
+      "swap_tokens": {
+        "description": "Swap tokens on a decentralized exchange",
+        "parameters": {
+          "token_in": {
+            "type": "string",
+            "description": "The input token address or symbol"
+          },
+          "token_out": {
+            "type": "string",
+            "description": "The output token address or symbol"
+          },
+          "amount_in": {
+            "type": "string",
+            "description": "The input amount"
+          }
+        }
+      },
+      "add_liquidity": {
+        "description": "Add liquidity to a DEX pool",
+        "parameters": {
+          "token_a": {
+            "type": "string",
+            "description": "First token address or symbol"
+          },
+          "token_b": {
+            "type": "string",
+            "description": "Second token address or symbol"
+          },
+          "amount_a": {
+            "type": "string",
+            "description": "Amount of first token"
+          },
+          "amount_b": {
+            "type": "string",
+            "description": "Amount of second token"
+          }
+        }
+      },
+      "get_token_balance": {
+        "description": "Get token balance for an address",
+        "parameters": {
+          "token_address": {
+            "type": "string",
+            "description": "The token address (use 'native' for ETH, BNB, etc.)"
+          },
+          "wallet_address": {
+            "type": "string",
+            "description": "The wallet address to check balance for"
+          }
+        }
+      }
+    },
+    "transaction_tools": {
+      "explain_transaction": {
+        "description": "Explain a blockchain transaction",
+        "parameters": {
+          "transaction_hash": {
+            "type": "string",
+            "description": "The transaction hash to explain"
+          },
+          "chain_id": {
+            "type": "string",
+            "description": "The chain ID (e.g., 1 for Ethereum, 56 for BSC)"
+          }
+        }
+      },
+      "estimate_gas": {
+        "description": "Estimate gas cost for a transaction",
+        "parameters": {
+          "from_address": {
+            "type": "string",
+            "description": "The sender address"
+          },
+          "to_address": {
+            "type": "string",
+            "description": "The recipient address"
+          },
+          "data": {
+            "type": "string",
+            "description": "The transaction data (hex)"
+          },
+          "value": {
+            "type": "string",
+            "description": "The transaction value in wei"
           }
         }
       }

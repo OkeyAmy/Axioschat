@@ -9,11 +9,11 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TransactionQueueProps {
-  chainId: number;
+  chainId?: number;
   inPanel?: boolean;
 }
 
-const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId, inPanel = false }) => {
+const TransactionQueue: React.FC<TransactionQueueProps> = ({ chainId = 1, inPanel = false }) => {
   const { 
     queue, 
     removeFromQueue, 
