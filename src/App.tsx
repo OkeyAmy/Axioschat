@@ -8,6 +8,7 @@ import RainbowKitProvider from "@/components/RainbowKitProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Landing from "./pages/Landing";
 import Chat from "./pages/Chat";
+import Functions from "./pages/Functions";
 import NotFound from "./pages/NotFound";
 
 // This query client is for non-wagmi related queries
@@ -30,6 +31,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/chat" element={<Chat />} />
+                <Route path="/functions" element={<Functions />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

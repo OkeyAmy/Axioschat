@@ -35,6 +35,7 @@ const Chat = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const initialQuestion = searchParams.get("question");
@@ -49,6 +50,22 @@ const Chat = () => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Prioritize the chat content on smaller screens
+      if (window.innerWidth < 1024) {
+        setLeftPanelCollapsed(true);
+        setRightPanelCollapsed(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Run once on mount
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const handleChatHistoryCollapse = (mutation: MutationRecord) => {
@@ -100,7 +117,9 @@ const Chat = () => {
     const userMessage = predefinedInput || input.trim();
     if (!userMessage || isLoading) return;
     
-    setMessages(prev => [...prev, { role: "user", content: userMessage, id: generateMessageId() }]);
+    // Create a new messages array with the new user message
+    const newMessages = [...messages, { role: "user", content: userMessage, id: generateMessageId() }];
+    setMessages(newMessages);
     setInput("");
     setIsLoading(true);
 
@@ -234,12 +253,12 @@ const Chat = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-6 mt-4 mb-4">
+      <main className="flex-1 container mx-auto px-4 py-8">
         {!isConnected ? (
           <WalletRequired />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-12rem)]">
-            <div className="lg:col-span-3 md:block hidden" data-sidebar="chat-history">
+          <div ref={chatContainerRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-14rem)] overflow-hidden">
+            <div className="lg:col-span-3 md:block hidden h-full" data-sidebar="chat-history">
               <ChatHistory 
                 onSelectChat={handleSelectChat}
                 onNewChat={handleNewChat}
@@ -248,11 +267,11 @@ const Chat = () => {
             </div>
             
             <div className={cn(
-              "transition-all duration-300",
+              "transition-all duration-300 h-full",
               leftPanelCollapsed && rightPanelCollapsed ? "lg:col-span-12" : 
               (leftPanelCollapsed || rightPanelCollapsed) ? "lg:col-span-9" : "lg:col-span-6"
             )}>
-              <Card className="w-full h-full border shadow-md flex flex-col bg-card/80 backdrop-blur-sm animate-in fade-in-50">
+              <Card className="w-full h-full border shadow-md flex flex-col bg-card/80 backdrop-blur-sm animate-in fade-in-50 overflow-hidden">
                 <CardHeader className="pb-2 flex flex-row items-center justify-between bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-lg">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
@@ -340,8 +359,7 @@ const Chat = () => {
                 <CardContent className="flex-1 overflow-hidden p-0">
                   <ScrollArea 
                     ref={scrollAreaRef} 
-                    className="h-[calc(100%-2rem)] px-4 pt-4"
-                    style={{ maxHeight: "calc(100vh - 20rem)" }}
+                    className="h-full px-4 pt-4 pb-2"
                   >
                     {messages.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center p-8 animate-in fade-in-50">
@@ -370,7 +388,7 @@ const Chat = () => {
                             </div>
                           </div>
                         )}
-                        <div ref={messagesEndRef} />
+                        <div ref={messagesEndRef} className="h-4" />
                       </div>
                     )}
                   </ScrollArea>
@@ -404,7 +422,7 @@ const Chat = () => {
               </Card>
             </div>
             
-            <div className="lg:col-span-3 md:block hidden" data-sidebar="prompts-panel">
+            <div className="lg:col-span-3 md:block hidden h-full" data-sidebar="prompts-panel">
               <SuggestedPromptsPanel onSelectQuestion={handleSelectQuestion} />
             </div>
           </div>

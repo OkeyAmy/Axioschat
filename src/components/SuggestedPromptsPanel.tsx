@@ -91,7 +91,7 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({ onSelectQ
                       <Button 
                         key={prompt} 
                         variant="outline" 
-                        className="justify-start text-sm h-auto py-3 px-4 font-normal bg-secondary/40 border-secondary/30 hover:bg-secondary/60 transition-all duration-300 animate-in slide-in-from-right-4 line-clamp-2 text-left"
+                        className="justify-start text-sm h-auto py-3 px-4 font-normal bg-secondary/40 border-secondary/30 hover:bg-secondary/60 transition-all duration-300 animate-in slide-in-from-right-4 break-words text-left"
                         style={{ animationDelay: `${(categoryIndex * 100) + (promptIndex * 50)}ms` }}
                         onClick={() => onSelectQuestion(prompt)}
                       >

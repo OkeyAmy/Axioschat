@@ -1,13 +1,15 @@
 
 "use client"
 import { Switch } from "@/components/ui/switch"
-import { Moon, Sun, LayoutDashboard } from "lucide-react"
+import { Moon, Sun, LayoutDashboard, MessageCircle, Zap } from "lucide-react"
 import { useTheme } from "@/components/ThemeProvider"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { useAccount } from "wagmi"
 import { Link, useLocation } from "react-router-dom"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
+import { cn } from "@/lib/utils"
 
 const Header = () => {
   const { theme, setTheme } = useTheme()
@@ -17,14 +19,62 @@ const Header = () => {
   return (
     <header className="border-b bg-card/80 backdrop-blur-lg sticky top-0 z-10 shadow-sm animate-in fade-in-10">
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <Link to="/" className="flex items-center gap-2 transition-colors hover:opacity-90">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-            <LayoutDashboard className="h-5 w-5 text-primary" />
-          </div>
-          <h1 className="font-bold text-xl bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-            NovachatV2
-          </h1>
-        </Link>
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center gap-2 transition-colors hover:opacity-90">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+              <LayoutDashboard className="h-5 w-5 text-primary" />
+            </div>
+            <h1 className="font-bold text-xl bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+              NovachatV2
+            </h1>
+          </Link>
+
+          <NavigationMenu className="hidden md:flex">
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <Link to="/">
+                  <NavigationMenuLink 
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      location.pathname === "/" && "bg-accent/50"
+                    )}
+                  >
+                    Home
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link to="/chat">
+                  <NavigationMenuLink 
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      location.pathname === "/chat" && "bg-accent/50",
+                      "flex items-center gap-1"
+                    )}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    Chat
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link to="/functions">
+                  <NavigationMenuLink 
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      location.pathname === "/functions" && "bg-accent/50",
+                      "flex items-center gap-1"
+                    )}
+                  >
+                    <Zap className="w-4 h-4 mr-1" />
+                    Functions
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-secondary/20 p-1.5 px-2 rounded-full transition-colors">
             {theme === "dark" ? <Moon size={14} /> : <Sun size={14} />}
@@ -62,7 +112,7 @@ const Header = () => {
                   {(() => {
                     if (!connected) {
                       return (
-                        <Button onClick={openConnectModal} type="button" className="bg-primary/90 hover:bg-primary transition-colors">
+                        <Button onClick={openConnectModal} type="button" className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors">
                           Connect Wallet
                         </Button>
                       );
