@@ -23,6 +23,7 @@ declare global {
       execute: (id: string) => Promise<void>;
       remove: (id: string) => void;
       clear: () => void;
+      getQueue: () => any[];
     };
   }
 }

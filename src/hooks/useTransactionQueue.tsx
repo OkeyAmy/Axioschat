@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useContext, createContext, ReactNode } from 'react';
+import { useState, useCallback, useContext, createContext, ReactNode, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { QueuedTransaction } from '@/utils/blockchain';
 import { toast } from '@/components/ui/use-toast';
@@ -78,6 +78,36 @@ export const TransactionQueueProvider = ({ children }: { children: ReactNode }) 
       setIsProcessing(false);
     }
   }, [queue, isProcessing, updateTransaction, removeFromQueue]);
+
+  // Make the transaction queue available globally
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.transactionQueue = {
+        add: (tx: Omit<QueuedTransaction, 'id' | 'status'>) => addToQueue(tx),
+        execute: async (id: string) => {
+          const tx = queue.find(tx => tx.id === id);
+          if (tx && tx.status === 'pending') {
+            setIsProcessing(true);
+            updateTransaction(id, { status: 'processing' });
+            try {
+              await tx.execute();
+              updateTransaction(id, { status: 'success' });
+            } catch (error: any) {
+              updateTransaction(id, { 
+                status: 'failed', 
+                error: error.message || "Transaction failed" 
+              });
+            } finally {
+              setIsProcessing(false);
+            }
+          }
+        },
+        remove: removeFromQueue,
+        clear: clearQueue,
+        getQueue: () => queue
+      };
+    }
+  }, [queue, addToQueue, removeFromQueue, clearQueue, updateTransaction]);
 
   return (
     <TransactionQueueContext.Provider value={{

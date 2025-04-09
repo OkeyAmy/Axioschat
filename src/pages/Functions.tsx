@@ -25,6 +25,14 @@ const Functions = () => {
       setCurrentChain(networkChainId);
     }
   }, [networkChainId]);
+  
+  // Make current chain available globally
+  useEffect(() => {
+    // Expose the transaction queue to the window object for potential access from the chat
+    if (window.web3Context) {
+      window.web3Context.currentChain = currentChain;
+    }
+  }, [currentChain]);
 
   return (
     <TransactionQueueProvider>

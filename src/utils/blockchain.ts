@@ -1,3 +1,4 @@
+
 import Web3 from 'web3';
 import { toast } from "@/components/ui/use-toast";
 
@@ -32,7 +33,9 @@ export const getExplorerUrl = (chainId: number) => {
     10: "https://optimistic.etherscan.io",
     42161: "https://arbiscan.io",
     8453: "https://basescan.org",
-    7777777: "https://explorer.zora.energy"
+    7777777: "https://explorer.zora.energy",
+    56: "https://bscscan.com",
+    11155111: "https://sepolia-explorer.edu-chain.org"
   };
   
   return explorers[chainId] || "https://etherscan.io";
@@ -66,11 +69,20 @@ export const getRecommendedGasPrice = async (web3: Web3, chainId: number): Promi
       10: "0.1", // Optimism
       42161: "0.1", // Arbitrum
       8453: "0.1", // Base
-      7777777: "0.1" // Zora
+      7777777: "0.1", // Zora
+      56: "5", // BSC
+      11155111: "1" // EduChain
     };
     
     // Try to get current gas price from the network
-    const gasPrice = await web3.eth.getGasPrice();
+    let gasPrice;
+    try {
+      gasPrice = await web3.eth.getGasPrice();
+    } catch (error) {
+      console.error("Error getting gas price, using default:", error);
+      return web3.utils.toWei(defaultGasPrices[chainId] || "20", 'gwei');
+    }
+    
     if (gasPrice) {
       // Convert from Wei to Gwei for display and add 10%
       const gasPriceGwei = parseFloat(web3.utils.fromWei(gasPrice, 'gwei'));
@@ -115,7 +127,8 @@ export const sendTransaction = async (web3: Web3, options: TxOptions): Promise<s
           data: tx.data
         });
         // Add 20% buffer to gas estimate
-        tx.gas = Math.floor(Number(parseInt(estimatedGas.toString())) * 1.2);
+        const estimatedGasNum = parseInt(estimatedGas.toString());
+        tx.gas = Math.floor(estimatedGasNum * 1.2);
       } catch (error) {
         console.warn("Gas estimation failed, using default:", error);
         tx.gas = 100000; // Default gas limit
@@ -168,10 +181,16 @@ export const getTokenBalance = async (
     ];
 
     const contract = new web3.eth.Contract(minABI as any, tokenAddress);
-    const balance = await contract.methods.balanceOf(walletAddress).call();
+    let balance;
+    try {
+      balance = await contract.methods.balanceOf(walletAddress).call();
+    } catch (error) {
+      console.error("Error calling balanceOf:", error);
+      return "0";
+    }
     
     // Convert based on token decimals
-    return web3.utils.fromWei(balance !== null ? balance.toString() : '0', 'ether');
+    return web3.utils.fromWei(balance ? balance.toString() : '0', 'ether');
   } catch (error) {
     console.error("Error fetching token balance:", error);
     return "0";
@@ -702,10 +721,38 @@ export const getContractInfo = async (
     const contract = new web3.eth.Contract(erc20ABI as any, contractAddress);
     
     try {
-      const name = await contract.methods.name().call();
-      const symbol = await contract.methods.symbol().call();
-      const decimals = await contract.methods.decimals().call();
-      const totalSupply = await contract.methods.totalSupply().call();
+      let name = "";
+      let symbol = "";
+      let decimals = "18";
+      let totalSupply = "0";
+      
+      try {
+        name = await contract.methods.name().call();
+      } catch (error) {
+        console.error("Error reading name:", error);
+        name = "Unknown";
+      }
+      
+      try {
+        symbol = await contract.methods.symbol().call();
+      } catch (error) {
+        console.error("Error reading symbol:", error);
+        symbol = "???";
+      }
+      
+      try {
+        decimals = await contract.methods.decimals().call();
+      } catch (error) {
+        console.error("Error reading decimals:", error);
+        decimals = "18";
+      }
+      
+      try {
+        totalSupply = await contract.methods.totalSupply().call();
+      } catch (error) {
+        console.error("Error reading totalSupply:", error);
+        totalSupply = "0";
+      }
       
       return {
         address: contractAddress,
@@ -832,7 +879,7 @@ export const deployContract = async (
     // Deploy
     const deployedContract = await deployTx.send({
       from: fromAddress,
-      gas,
+      gas: gas.toString(),
       gasPrice: transferGasPrice
     });
     
