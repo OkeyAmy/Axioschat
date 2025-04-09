@@ -137,15 +137,20 @@ export const fetchRecentTransactions = async (web3: any, address: string, chainI
         const addrLower = address.toLowerCase()
 
         if (txFrom === addrLower || txTo === addrLower) {
-          // Convert any BigInt values to strings
+          // Convert any BigInt values to strings before operations
           const txValue = typeof tx.value === "bigint" ? tx.value.toString() : tx.value.toString()
+
+          // Make sure to convert the block timestamp to a number before multiplication
+          const blockTimestamp = typeof block.timestamp === "bigint" 
+            ? Number(block.timestamp) 
+            : Number(block.timestamp)
 
           transactions.push({
             hash: tx.hash,
             from: tx.from,
             to: tx.to,
             value: web3.utils.fromWei(txValue, "ether"),
-            timestamp: new Date(Number(block.timestamp) * 1000).toLocaleString(),
+            timestamp: new Date(blockTimestamp * 1000).toLocaleString(),
             status: "success", // We'd need an additional call to get actual status
           })
         }

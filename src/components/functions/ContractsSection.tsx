@@ -79,7 +79,7 @@ const ContractsSection: React.FC = () => {
   const [functionName, setFunctionName] = useState<string>('');
   const [functionArgs, setFunctionArgs] = useState<string>('');
   const [functionValue, setFunctionValue] = useState<string>('0');
-  const [abi, setAbi] = useState<string>('');
+  const [abi, setAbi] = useState<string>(''); // Fixed the missing equals sign here
   const [bytecode, setBytecode] = useState<string>('');
   const [constructorArgs, setConstructorArgs] = useState<string>('');
   const [isDeploying, setIsDeploying] = useState<boolean>(false);

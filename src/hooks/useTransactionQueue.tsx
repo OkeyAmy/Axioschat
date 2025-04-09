@@ -13,8 +13,7 @@ interface TransactionQueueContextProps {
   clearQueue: () => void
   executeNext: () => Promise<void>
   isProcessing: boolean
-  // Add this property to fix the TypeScript error
-  addTransaction: (transaction: any) => void
+  addTransaction: (transaction: any) => string
 }
 
 const TransactionQueueContext = createContext<TransactionQueueContextProps | undefined>(undefined)
@@ -45,7 +44,6 @@ export const TransactionQueueProvider = ({ children }: { children: ReactNode }) 
     setQueue([])
   }, [])
 
-  // Add a simplified addTransaction method for backward compatibility
   const addTransaction = useCallback(
     (transaction: any) => {
       const id = uuidv4()
@@ -111,7 +109,6 @@ export const TransactionQueueProvider = ({ children }: { children: ReactNode }) 
     }
   }, [queue, isProcessing, updateTransaction, removeFromQueue])
 
-  // Make the transaction queue available globally
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.transactionQueue = {
@@ -151,7 +148,7 @@ export const TransactionQueueProvider = ({ children }: { children: ReactNode }) 
         clearQueue,
         executeNext,
         isProcessing,
-        addTransaction, // Add the new method to the context
+        addTransaction,
       }}
     >
       {children}
