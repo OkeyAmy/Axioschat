@@ -1,6 +1,5 @@
 
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ChatHistory from "@/components/ChatHistory";
 import ChatMessages from "@/components/ChatMessages";
@@ -29,7 +28,7 @@ const Chat = () => {
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [useLocalAI, setUseLocalAI] = useState(true);
+  const [useLocalAI, setUseLocalAI] = useState(false); // Default to false since local doesn't work easily
   const [activeChat, setActiveChat] = useState<number | null>(null);
   const [isHistoryPanelCollapsed, setIsHistoryPanelCollapsed] = useState(window.innerWidth < 1200);
   const [isPromptsPanelCollapsed, setIsPromptsPanelCollapsed] = useState(window.innerWidth < 1400);
@@ -83,21 +82,26 @@ const Chat = () => {
       let aiResponse: string;
       
       if (useLocalAI) {
-        const response = await fetch(`${localEndpoint}/api/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'llama3.2',
-            messages: [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: userMessage.content }],
-          }),
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Error from local API: ${response.status} ${response.statusText}`);
+        try {
+          const response = await fetch(`${localEndpoint}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'llama3.2',
+              messages: [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content: userMessage.content }],
+            }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Error from local API: ${response.status} ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          aiResponse = data.message?.content || "No response from local model";
+        } catch (error) {
+          console.error("Error from local API:", error);
+          aiResponse = "Error connecting to local AI model. Please check if the server is running at " + localEndpoint;
         }
-        
-        const data = await response.json();
-        aiResponse = data.message?.content || "No response from local model";
       } else {
         if (!apiKeys.replicate) {
           aiResponse = "Please provide a Replicate API key in the settings to use the Flock Web3 model.";
@@ -174,6 +178,24 @@ const Chat = () => {
     setMessages([]);
   };
 
+  // Calculate content area width based on panel states
+  const getContentWidth = () => {
+    const baseClasses = "flex flex-col rounded-lg border h-full max-h-full overflow-hidden transition-all duration-300";
+    
+    // Both panels are expanded
+    if (!isHistoryPanelCollapsed && !isPromptsPanelCollapsed) {
+      return cn(baseClasses, "flex-1");
+    }
+    
+    // One panel is collapsed
+    if (isHistoryPanelCollapsed !== isPromptsPanelCollapsed) {
+      return cn(baseClasses, "flex-[2]");
+    }
+    
+    // Both panels are collapsed
+    return cn(baseClasses, "flex-[4]");
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <Header />
@@ -201,10 +223,7 @@ const Chat = () => {
             </div>
             
             {/* Main Chat Area */}
-            <div className={cn(
-              "flex flex-col rounded-lg border h-full max-h-full overflow-hidden",
-              "transition-all duration-300"
-            )}>
+            <div className={getContentWidth()}>
               <div className="border-b px-4 py-2 flex justify-between items-center flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-primary" />

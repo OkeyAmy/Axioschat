@@ -4,43 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquarePlus, RotateCcw, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Mock conversation history data
-const mockHistory = [
-  {
-    id: 1,
-    title: "Smart Contract Creation",
-    last_message: "How do I create an ERC-20 token?",
-    timestamp: "2023-12-01T10:00:00Z",
-    chain_id: 1,
-    messages: [
-      { role: "user", content: "How do I create an ERC-20 token?" },
-      { role: "assistant", content: "To create an ERC-20 token, you need to implement the standard ERC-20 interface..." }
-    ]
-  },
-  {
-    id: 2,
-    title: "Gas Optimization",
-    last_message: "What are the best practices for optimizing gas usage in Solidity?",
-    timestamp: "2023-12-02T14:30:00Z",
-    chain_id: 1,
-    messages: [
-      { role: "user", content: "What are the best practices for optimizing gas usage in Solidity?" },
-      { role: "assistant", content: "There are several approaches to optimize gas usage in Solidity contracts..." }
-    ]
-  },
-  {
-    id: 3,
-    title: "DeFi Integration",
-    last_message: "How can I integrate my dApp with Uniswap?",
-    timestamp: "2023-12-03T09:15:00Z",
-    chain_id: 1,
-    messages: [
-      { role: "user", content: "How can I integrate my dApp with Uniswap?" },
-      { role: "assistant", content: "To integrate with Uniswap, you can use their SDK or interact directly with their contracts..." }
-    ]
-  }
-];
+import useWeb3 from "@/hooks/useWeb3";
+import { fetchRecentTransactions } from "@/utils/blockchain";
 
 interface ChatHistoryProps {
   onSelectChat: (chatId: number, messages: Array<{ role: string; content: string }>) => void;
@@ -60,21 +25,83 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
   defaultCollapsed = false
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
-  const [filteredHistory, setFilteredHistory] = useState(mockHistory);
+  const [history, setHistory] = useState<any[]>([]);
+  const [filteredHistory, setFilteredHistory] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const { web3, address, isReady } = useWeb3();
+  
+  // Mock conversations for demo
+  const mockHistory = [
+    {
+      id: 1,
+      title: "Smart Contract Creation",
+      last_message: "How do I create an ERC-20 token?",
+      timestamp: "2023-12-01T10:00:00Z",
+      chain_id: 1,
+      messages: [
+        { role: "user", content: "How do I create an ERC-20 token?" },
+        { role: "assistant", content: "To create an ERC-20 token, you need to implement the standard ERC-20 interface..." }
+      ]
+    },
+    {
+      id: 2,
+      title: "Gas Optimization",
+      last_message: "What are the best practices for optimizing gas usage in Solidity?",
+      timestamp: "2023-12-02T14:30:00Z",
+      chain_id: 1,
+      messages: [
+        { role: "user", content: "What are the best practices for optimizing gas usage in Solidity?" },
+        { role: "assistant", content: "There are several approaches to optimize gas usage in Solidity contracts..." }
+      ]
+    },
+    {
+      id: 3,
+      title: "DeFi Integration",
+      last_message: "How can I integrate my dApp with Uniswap?",
+      timestamp: "2023-12-03T09:15:00Z",
+      chain_id: 1,
+      messages: [
+        { role: "user", content: "How can I integrate my dApp with Uniswap?" },
+        { role: "assistant", content: "To integrate with Uniswap, you can use their SDK or interact directly with their contracts..." }
+      ]
+    }
+  ];
+
+  useEffect(() => {
+    // Set initial history
+    setHistory(mockHistory);
+  }, []);
   
   useEffect(() => {
+    // Filter history by chain id
     if (currentChain) {
-      setFilteredHistory(mockHistory.filter(chat => chat.chain_id === currentChain));
+      setFilteredHistory(history.filter(chat => chat.chain_id === currentChain));
     } else {
-      setFilteredHistory(mockHistory);
+      setFilteredHistory(history);
     }
-  }, [currentChain]);
+  }, [currentChain, history]);
 
   useEffect(() => {
     if (defaultCollapsed !== isCollapsed) {
       setIsCollapsed(defaultCollapsed);
     }
   }, [defaultCollapsed]);
+  
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (isReady && web3 && address) {
+        try {
+          const txs = await fetchRecentTransactions(web3, address, currentChain);
+          setTransactions(txs);
+        } catch (error) {
+          console.error("Error fetching transactions:", error);
+          setTransactions([]);
+        }
+      }
+    };
+    
+    fetchTransactions();
+  }, [isReady, web3, address, currentChain]);
 
   const handleCollapseChange = (newCollapsedState: boolean) => {
     setIsCollapsed(newCollapsedState);
@@ -163,7 +190,15 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
           <div className="p-3 border-t">
             <div className="text-xs text-muted-foreground">
               <p>Pending Transactions</p>
-              <p className="mt-1">No pending transactions</p>
+              {transactions.length > 0 ? (
+                <div className="mt-2 space-y-2">
+                  {transactions.slice(0, 2).map((tx, index) => (
+                    <p key={index} className="text-xs truncate">{tx.hash}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1">No pending transactions</p>
+              )}
             </div>
           </div>
         </div>

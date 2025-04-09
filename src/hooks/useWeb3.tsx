@@ -1,10 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import Web3 from 'web3';
-import { useAccount } from 'wagmi';
+import { useAccount, useNetwork, useWalletClient } from 'wagmi';
 
 export const useWeb3 = () => {
   const { address, isConnected } = useAccount();
+  const { chain } = useNetwork();
+  const { data: walletClient } = useWalletClient();
   const [web3, setWeb3] = useState<Web3 | null>(null);
   const [isReady, setIsReady] = useState(false);
 
@@ -12,17 +14,39 @@ export const useWeb3 = () => {
     const initWeb3 = async () => {
       if (isConnected && window.ethereum) {
         try {
-          // Request access to the user's accounts
+          // Create new Web3 instance using window.ethereum
+          const web3Instance = new Web3(window.ethereum);
+          
+          // Request access to user accounts
           await window.ethereum.request({ method: 'eth_requestAccounts' });
           
-          // Create new Web3 instance
-          const web3Instance = new Web3(window.ethereum);
           setWeb3(web3Instance);
           setIsReady(true);
-          console.log("Web3 initialized successfully");
+          console.log("Web3 initialized successfully with provider window.ethereum");
         } catch (error) {
-          console.error("Error initializing Web3:", error);
-          setIsReady(false);
+          console.error("Error initializing Web3 with window.ethereum:", error);
+          
+          // Try to use walletClient as fallback
+          if (walletClient) {
+            try {
+              // Attempt to create provider from walletClient
+              // @ts-ignore - Assuming walletClient has a provider property
+              const provider = walletClient.provider;
+              if (provider) {
+                const web3Instance = new Web3(provider);
+                setWeb3(web3Instance);
+                setIsReady(true);
+                console.log("Web3 initialized successfully with walletClient provider");
+              } else {
+                setIsReady(false);
+              }
+            } catch (walletError) {
+              console.error("Error initializing Web3 with walletClient:", walletError);
+              setIsReady(false);
+            }
+          } else {
+            setIsReady(false);
+          }
         }
       } else {
         setWeb3(null);
@@ -57,9 +81,15 @@ export const useWeb3 = () => {
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       }
     };
-  }, [isConnected]);
+  }, [isConnected, walletClient]);
 
-  return { web3, isReady, address };
+  return { 
+    web3, 
+    isReady, 
+    address,
+    chainId: chain?.id,
+    isConnected
+  };
 };
 
 export default useWeb3;
