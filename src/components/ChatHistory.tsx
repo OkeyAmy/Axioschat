@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { MessageSquare, Trash, ChevronRight, Plus, ArrowLeftCircle } from "lucide-react";
+import { MessageSquare, ChevronRight, Plus, ArrowLeftCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Sample data for chat history
@@ -69,32 +69,34 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
 
   return (
     <div className={cn(
-      "bg-card/80 backdrop-blur-sm border rounded-lg h-full flex flex-col transition-all duration-300",
+      "bg-gradient-to-br from-sidebar-accent/30 to-sidebar-background border rounded-lg h-full flex flex-col transition-all duration-300 shadow-sm",
       isCollapsed ? "w-14" : "w-full"
     )}>
       <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
         <div className="flex items-center justify-between p-4">
           {!isCollapsed && <h3 className="text-sm font-medium">Chat History</h3>}
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="icon" className="ml-auto">
+            <Button variant="ghost" size="icon" className="ml-auto transition-transform duration-300">
               {isCollapsed ? <ChevronRight size={16} /> : <ArrowLeftCircle size={16} />}
             </Button>
           </CollapsibleTrigger>
         </div>
 
-        <Button 
-          variant="outline" 
-          className={cn(
-            "mx-4 mb-4 transition-all duration-300",
-            isCollapsed ? "w-auto p-2 justify-center" : "w-full justify-start"
-          )} 
-          onClick={onNewChat}
-        >
-          {isCollapsed ? <Plus size={16} /> : <>
-            <MessageSquare className="mr-2" size={16} />
-            New Chat
-          </>}
-        </Button>
+        <div className="px-4 mb-4">
+          <Button 
+            variant="outline" 
+            className={cn(
+              "w-full justify-start bg-secondary/30 hover:bg-secondary/50 border-secondary/20 transition-all duration-300 animate-in slide-in-from-left-4",
+              isCollapsed ? "w-auto p-2 justify-center" : ""
+            )} 
+            onClick={onNewChat}
+          >
+            {isCollapsed ? <Plus size={16} /> : <>
+              <MessageSquare className="mr-2" size={16} />
+              New Chat
+            </>}
+          </Button>
+        </div>
         
         <CollapsibleContent className="space-y-1">
           <ScrollArea className="flex-1 h-[calc(100vh-12rem)]">
@@ -103,7 +105,12 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                 <Button
                   key={chat.id}
                   variant={activeChat === chat.id ? "secondary" : "ghost"}
-                  className="w-full justify-start text-left hover-scale"
+                  className={cn(
+                    "w-full justify-start text-left transition-all duration-200",
+                    activeChat === chat.id ? "bg-secondary/50" : "hover:bg-secondary/30",
+                    "animate-in slide-in-from-left duration-300"
+                  )}
+                  style={{ animationDelay: `${chat.id * 50}ms` }}
                   onClick={() => onSelectChat(chat.id, chat.messages)}
                 >
                   <div className="flex items-center w-full">

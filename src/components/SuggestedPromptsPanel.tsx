@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Lightbulb, ArrowRightCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface SuggestedPromptsPanelProps {
   onSelectQuestion: (question: string) => void;
@@ -14,7 +15,7 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({ onSelectQ
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   
-  // Example categories and questions
+  // Example categories and prompts
   const promptCategories = [
     {
       name: "Smart Contracts",
@@ -63,13 +64,13 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({ onSelectQ
   return (
     <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
       <div className={cn(
-        "bg-card/80 backdrop-blur-sm border rounded-lg h-full transition-all duration-300",
+        "bg-gradient-to-br from-sidebar-accent/30 to-sidebar-background backdrop-blur-sm border rounded-lg h-full transition-all duration-300 shadow-sm",
         isCollapsed ? "w-14" : "w-full"
       )}>
         <div className="p-4 flex items-center justify-between">
           {!isCollapsed && <h3 className="text-sm font-medium">Suggested Prompts</h3>}
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="icon" className="ml-auto">
+            <Button variant="ghost" size="icon" className="ml-auto transition-transform duration-300">
               {isCollapsed ? <Lightbulb size={16} /> : <ArrowRightCircle size={16} />}
             </Button>
           </CollapsibleTrigger>
@@ -78,19 +79,24 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({ onSelectQ
         <CollapsibleContent>
           <ScrollArea className="h-[calc(100vh-12rem)]">
             <div className="p-4 space-y-6">
-              {promptCategories.map((category) => (
-                <div key={category.name} className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground">{category.name}</h4>
+              {promptCategories.map((category, categoryIndex) => (
+                <div key={category.name} className="space-y-3 animate-in fade-in-50" style={{ animationDelay: `${categoryIndex * 100}ms` }}>
+                  <h4 className="text-sm font-medium text-muted-foreground flex items-center">
+                    <Badge variant="outline" className="mr-2 bg-primary/10 text-primary border-primary/20">
+                      {category.name}
+                    </Badge>
+                  </h4>
                   <div className="grid gap-2">
-                    {category.prompts.map((prompt) => (
+                    {category.prompts.map((prompt, promptIndex) => (
                       <Button 
                         key={prompt} 
                         variant="outline" 
-                        className="justify-start text-sm h-auto py-3 px-4 font-normal bg-accent/20 border-accent/20 hover-scale"
+                        className="justify-start text-sm h-auto py-3 px-4 font-normal bg-secondary/40 border-secondary/30 hover:bg-secondary/60 transition-all duration-300 animate-in slide-in-from-right-4"
+                        style={{ animationDelay: `${(categoryIndex * 100) + (promptIndex * 50)}ms` }}
                         onClick={() => onSelectQuestion(prompt)}
                       >
                         <div className="flex items-start gap-2">
-                          <Lightbulb size={14} className="mt-0.5 text-primary/70" />
+                          <Lightbulb size={14} className="mt-0.5 text-primary" />
                           <span>{prompt}</span>
                         </div>
                       </Button>

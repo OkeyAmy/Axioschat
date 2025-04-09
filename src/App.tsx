@@ -19,7 +19,11 @@ const App = () => (
       <ThemeProvider>
         <RainbowKitProvider>
           <div className="min-h-screen flex flex-col relative overflow-hidden">
-            <div className="decorative-lines" />
+            <div className="decorative-background">
+              <div className="decorative-lines"></div>
+              <div className="decorative-gradient"></div>
+              <div className="decorative-grid"></div>
+            </div>
             <Toaster />
             <Sonner />
             <BrowserRouter>
