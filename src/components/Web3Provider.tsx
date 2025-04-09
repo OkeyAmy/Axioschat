@@ -14,8 +14,32 @@ interface Web3ProviderProps {
 
 const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-  // Simulate checking if MetaMask is installed
+  // Check for existing connection on mount
+  useEffect(() => {
+    const checkExistingConnection = async () => {
+      const windowWithEthereum = window as WindowWithEthereum;
+      
+      if (windowWithEthereum.ethereum) {
+        try {
+          const accounts = await windowWithEthereum.ethereum.request({ method: 'eth_accounts' });
+          if (accounts && accounts.length > 0) {
+            setWalletAddress(accounts[0]);
+            setIsConnected(true);
+            onConnect(accounts[0]);
+          }
+        } catch (error) {
+          console.error('Error checking existing connection', error);
+        }
+      }
+    };
+    
+    checkExistingConnection();
+  }, [onConnect]);
+
+  // Simulate checking if MetaMask or WalletConnect is installed/available
   const checkIfWalletIsInstalled = () => {
     // Use the typed window
     const windowWithEthereum = window as WindowWithEthereum;
@@ -24,6 +48,8 @@ const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
 
   // This function would be replaced with actual wallet connection logic
   const connectWallet = async () => {
+    if (isConnected) return; // Already connected
+    
     if (!checkIfWalletIsInstalled()) {
       toast({
         title: "Wallet not found",
@@ -45,6 +71,8 @@ const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
         
         if (accounts && accounts.length > 0) {
           const address = accounts[0];
+          setWalletAddress(address);
+          setIsConnected(true);
           onConnect(address);
           
           toast({
@@ -58,6 +86,8 @@ const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
       // Fallback to mock if real connection fails
       await new Promise(resolve => setTimeout(resolve, 500));
       const mockAddress = "0x" + Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+      setWalletAddress(mockAddress);
+      setIsConnected(true);
       onConnect(mockAddress);
       
     } catch (error) {
@@ -76,6 +106,8 @@ const Web3Provider: React.FC<Web3ProviderProps> = ({ children, onConnect }) => {
     connectWallet,
     isLoading,
     checkIfWalletIsInstalled,
+    walletAddress,
+    isConnected
   };
 
   // Add this to the window for child components to access

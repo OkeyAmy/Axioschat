@@ -1,15 +1,28 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Moon, Sun, Wallet } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 
 const Header = () => {
   // Get the web3 context from the window (in a real app, you would use React Context)
   const getWeb3Context = () => {
     // @ts-ignore
-    return window.web3Context || { connectWallet: () => {}, isLoading: false };
+    return window.web3Context || { 
+      connectWallet: () => {}, 
+      isLoading: false, 
+      walletAddress: null, 
+      isConnected: false 
+    };
   };
 
-  const { connectWallet, isLoading } = getWeb3Context();
+  const { connectWallet, isLoading, walletAddress, isConnected } = getWeb3Context();
+  const { theme, setTheme } = useTheme();
+  
+  const formattedAddress = walletAddress ? 
+    `${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}` : 
+    '';
 
   return (
     <header className="border-b bg-card sticky top-0 z-10">
@@ -19,15 +32,27 @@ const Header = () => {
             NovachatV2
           </h1>
         </div>
-        <Button 
-          onClick={connectWallet} 
-          disabled={isLoading}
-          variant="outline"
-          size="sm"
-          className="hover:bg-primary/10"
-        >
-          {isLoading ? "Connecting..." : "Connect Wallet"}
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+            <Switch
+              checked={theme === 'dark'}
+              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+            />
+          </div>
+          
+          <Button 
+            onClick={connectWallet} 
+            disabled={isLoading || isConnected}
+            variant="outline"
+            size="sm"
+            className="hover:bg-primary/10 flex items-center gap-2"
+          >
+            <Wallet size={16} />
+            {isLoading ? "Connecting..." : 
+             isConnected ? formattedAddress : "Connect Wallet"}
+          </Button>
+        </div>
       </div>
     </header>
   );

@@ -34,15 +34,23 @@ const WalletRequired = () => {
       </CardContent>
       <CardFooter className="flex justify-center">
         {walletInstalled ? (
-          <Button onClick={connectWallet} disabled={isLoading}>
+          <Button onClick={connectWallet} disabled={isLoading} className="gap-2">
             {isLoading ? "Connecting..." : "Connect Wallet"}
+            <Wallet size={16} />
           </Button>
         ) : (
-          <Button
-            onClick={() => window.open("https://metamask.io/download/", "_blank", "noopener noreferrer")}
-          >
-            Install MetaMask
-          </Button>
+          <div className="space-y-4 w-full">
+            <Button
+              onClick={() => window.open("https://metamask.io/download/", "_blank", "noopener noreferrer")}
+              className="w-full"
+            >
+              Install MetaMask
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              We support multiple wallet types including WalletConnect.
+              <br />Once installed, refresh the page to connect.
+            </p>
+          </div>
         )}
       </CardFooter>
     </Card>
