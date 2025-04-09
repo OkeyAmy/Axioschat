@@ -17,12 +17,12 @@ const WalletRequired = () => {
         </div>
         <CardTitle>Connect Your Wallet</CardTitle>
         <CardDescription>
-          Please connect your Web3 wallet to use the AI chat.
+          Please connect your Web3 wallet to interact with blockchain functions.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground text-center mb-4">
-          Click the button below to connect your wallet and get started.
+          Connect your wallet to send transactions, swap tokens, and interact with smart contracts.
         </p>
       </CardContent>
       <CardFooter className="flex justify-center">
