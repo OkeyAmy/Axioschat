@@ -39,10 +39,7 @@ const WalletRequired = () => {
           </Button>
         ) : (
           <Button
-            as="a" 
-            href="https://metamask.io/download/" 
-            target="_blank" 
-            rel="noopener noreferrer"
+            onClick={() => window.open("https://metamask.io/download/", "_blank", "noopener noreferrer")}
           >
             Install MetaMask
           </Button>

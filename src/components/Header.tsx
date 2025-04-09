@@ -12,16 +12,19 @@ const Header = () => {
   const { connectWallet, isLoading } = getWeb3Context();
 
   return (
-    <header className="border-b bg-card">
-      <div className="container max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+    <header className="border-b bg-card sticky top-0 z-10">
+      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <h1 className="font-bold text-lg">Web3 Chat Nexus</h1>
+          <h1 className="font-bold text-xl bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+            NovachatV2
+          </h1>
         </div>
         <Button 
           onClick={connectWallet} 
           disabled={isLoading}
-          variant="secondary"
+          variant="outline"
           size="sm"
+          className="hover:bg-primary/10"
         >
           {isLoading ? "Connecting..." : "Connect Wallet"}
         </Button>

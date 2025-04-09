@@ -9,6 +9,7 @@ import { toast } from "@/components/ui/use-toast";
 import Web3Provider from "@/components/Web3Provider";
 import Header from "@/components/Header";
 import WalletRequired from "@/components/WalletRequired";
+import LandingPage from "@/components/LandingPage";
 
 const Index = () => {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
@@ -16,6 +17,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
+  const [showChat, setShowChat] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,7 @@ const Index = () => {
           ...prev, 
           { 
             role: "assistant", 
-            content: `This is a simulated response to: "${userMessage}". In a complete implementation, this would come from a Hugging Face Web3 Agent Model.` 
+            content: `This is a simulated response to: "${userMessage}". In a complete implementation, this would come from the Flock Web3 Agent Model.` 
           }
         ]);
         setIsLoading(false);
@@ -73,13 +75,15 @@ const Index = () => {
     <Web3Provider onConnect={(address) => { setWalletConnected(true); setWalletAddress(address); }}>
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
-        <main className="flex-1 container max-w-4xl mx-auto px-4 py-8">
-          {!walletConnected ? (
+        <main className="flex-1 container mx-auto px-4 py-8">
+          {!showChat ? (
+            <LandingPage onGetStarted={() => setShowChat(true)} />
+          ) : !walletConnected ? (
             <WalletRequired />
           ) : (
-            <Card className="w-full mx-auto border shadow-md">
+            <Card className="w-full max-w-4xl mx-auto border shadow-md">
               <CardHeader>
-                <CardTitle>Web3 AI Chat</CardTitle>
+                <CardTitle>NovachatV2</CardTitle>
                 <CardDescription>
                   Connected wallet: {walletAddress.substring(0, 6)}...{walletAddress.substring(walletAddress.length - 4)}
                 </CardDescription>
