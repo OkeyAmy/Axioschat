@@ -4,13 +4,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, Sparkles } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Header from "@/components/Header";
 import WalletRequired from "@/components/WalletRequired";
 import LandingPage from "@/components/LandingPage";
 import ChatHistory from "@/components/ChatHistory";
-import SuggestedQuestions from "@/components/SuggestedQuestions";
+import SuggestedQuestionsCollapsible from "@/components/SuggestedQuestionsCollapsible";
 import { useAccount } from "wagmi";
 
 const Index = () => {
@@ -85,16 +85,19 @@ const Index = () => {
     setActiveChat(null);
   };
 
-  const handleSelectChat = (chatId: number) => {
+  const handleSelectChat = (chatId: number, chatMessages: Array<{ role: string; content: string }>) => {
     setActiveChat(chatId);
+    // Cast the roles to "user" | "assistant" to match our state type
+    const typedMessages = chatMessages.map(msg => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content
+    }));
+    setMessages(typedMessages);
+    
     toast({
-      title: "Chat Selected",
-      description: `Loading chat #${chatId}`,
+      title: "Chat Loaded",
+      description: `Loaded chat #${chatId}`,
     });
-    setMessages([
-      { role: "user", content: "Tell me about smart contracts" },
-      { role: "assistant", content: "Smart contracts are self-executing contracts with the terms directly written into code. They run on blockchain networks like Ethereum." }
-    ]);
   };
 
   const MessageItem = ({ message }: { message: { role: "user" | "assistant"; content: string } }) => (
@@ -102,7 +105,7 @@ const Index = () => {
       <div className="flex-shrink-0 pt-1">
         {message.role === "assistant" ? (
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot size={18} className="text-primary" />
+            <Sparkles size={18} className="text-primary" />
           </div>
         ) : (
           <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
@@ -139,8 +142,11 @@ const Index = () => {
             
             <div className="lg:col-span-6">
               <Card className="w-full h-full border shadow-md flex flex-col">
-                <CardHeader>
-                  <CardTitle>NovachatV2</CardTitle>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center">
+                    <Sparkles size={20} className="text-primary mr-2" />
+                    <CardTitle>NovachatV2 Web3 Assistant</CardTitle>
+                  </div>
                   {address && (
                     <CardDescription>
                       Connected wallet: {address.substring(0, 6)}...{address.substring(address.length - 4)}
@@ -165,7 +171,7 @@ const Index = () => {
                         {isLoading && (
                           <div className="flex gap-3 bg-muted/50 p-4 rounded-md">
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Bot size={18} className="text-primary" />
+                              <Sparkles size={18} className="text-primary" />
                             </div>
                             <div className="flex-1">
                               <p className="text-sm">Thinking...</p>
@@ -207,7 +213,7 @@ const Index = () => {
             </div>
             
             <div className="lg:col-span-3 hidden md:block">
-              <SuggestedQuestions onSelectQuestion={handleSelectQuestion} />
+              <SuggestedQuestionsCollapsible onSelectQuestion={handleSelectQuestion} />
             </div>
           </div>
         )}

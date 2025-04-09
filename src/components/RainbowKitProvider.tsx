@@ -42,7 +42,6 @@ const chains = [mainnet, polygon, optimism, arbitrum, base, zora] as const;
 const { connectors } = getDefaultWallets({
   appName: 'NovachatV2',
   projectId,
-  chains,
 });
 
 // Create wagmi config
