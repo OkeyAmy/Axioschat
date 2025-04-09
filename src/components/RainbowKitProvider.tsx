@@ -42,15 +42,16 @@ const projectId = 'f648e94e1f1c32327aaa0416d6409e2b';
 // Chain config - using an array instead of individual chains
 const chains = [mainnet, polygon, optimism, arbitrum, base, zora];
 
-// Wallets config
+// Wallets config - properly pass options object with projectId
 const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
     wallets: [
-      injectedWallet({ projectId }),
-      metaMaskWallet({ projectId }),
-      walletConnectWallet({ projectId }),
+      injectedWallet({ chains }),
+      metaMaskWallet({ chains, projectId }),
+      walletConnectWallet({ chains, projectId }),
       coinbaseWallet({ 
+        chains,
         appName: 'NovachatV2',
       }),
     ],
