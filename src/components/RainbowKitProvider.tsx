@@ -36,19 +36,20 @@ interface RainbowKitWrapperProps {
   children: React.ReactNode
 }
 
-// Chain config
+// WalletConnect Project ID
+const projectId = 'f648e94e1f1c32327aaa0416d6409e2b';
+
+// Chain config - using an array instead of individual chains
 const chains = [mainnet, polygon, optimism, arbitrum, base, zora];
 
 // Wallets config
-const projectId = 'YOUR_WALLETCONNECT_PROJECT_ID'; // You can replace with your WalletConnect Project ID
-
 const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
     wallets: [
-      injectedWallet,
-      metaMaskWallet,
-      walletConnectWallet,
+      injectedWallet({ projectId }),
+      metaMaskWallet({ projectId }),
+      walletConnectWallet({ projectId }),
       coinbaseWallet({ 
         appName: 'NovachatV2',
       }),
