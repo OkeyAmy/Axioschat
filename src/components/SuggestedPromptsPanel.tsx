@@ -11,18 +11,23 @@ interface SuggestedPromptsPanelProps {
   onSelectQuestion: (question: string) => void;
   onCollapseChange?: (collapsed: boolean) => void;
   defaultCollapsed?: boolean;
+  customPrompts?: Array<{
+    name: string;
+    prompts: string[];
+  }>;
 }
 
 const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({ 
   onSelectQuestion, 
   onCollapseChange,
-  defaultCollapsed = false 
+  defaultCollapsed = false,
+  customPrompts
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   
   // Example categories and prompts
-  const promptCategories = [
+  const defaultPromptCategories = [
     {
       name: "Smart Contracts",
       prompts: [
@@ -48,6 +53,9 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({
       ]
     }
   ];
+
+  // Use custom prompts if provided, otherwise use default
+  const promptCategories = customPrompts || defaultPromptCategories;
 
   useEffect(() => {
     const handleResize = () => {

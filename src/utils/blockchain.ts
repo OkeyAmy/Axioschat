@@ -76,7 +76,7 @@ export const getRecommendedGasPrice = async (web3: Web3, chainId: number): Promi
     // Try to get current gas price from the network
     let gasPrice;
     try {
-      gasPrice = Number(web3.eth.getGasPrice()) as unknown as number;
+      gasPrice = await web3.eth.getGasPrice();
     } catch (error) {
       console.error("Error getting gas price, using default:", error);
       return web3.utils.toWei(defaultGasPrices[chainId] || "20", 'gwei');

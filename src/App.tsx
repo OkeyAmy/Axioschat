@@ -10,6 +10,7 @@ import Landing from "./pages/Landing";
 import Chat from "./pages/Chat";
 import Functions from "./pages/Functions";
 import NotFound from "./pages/NotFound";
+import Web3Intro from "./pages/Web3Intro"; // Import the new page
 
 // This query client is for non-wagmi related queries
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
                 <Route path="/" element={<Landing />} />
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/functions" element={<Functions />} />
+                <Route path="/web3-intro" element={<Web3Intro />} /> {/* Add the new route */}
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

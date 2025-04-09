@@ -1,7 +1,7 @@
 
 "use client"
 import { Switch } from "@/components/ui/switch"
-import { Moon, Sun, LayoutDashboard, MessageCircle, Zap } from "lucide-react"
+import { Moon, Sun, LayoutDashboard, MessageCircle, Zap, Lightbulb } from "lucide-react"
 import { useTheme } from "@/components/ThemeProvider"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { useAccount } from "wagmi"
@@ -14,7 +14,7 @@ import { mainnet, polygon, optimism, arbitrum, base, zora, bsc } from "wagmi/cha
 
 // Custom EduChain definition for the header
 const educhain = {
-  id: 98432,
+  id: 11155111,
   name: 'EduChain',
   nativeCurrency: {
     decimals: 18,
@@ -83,6 +83,20 @@ const Header = () => {
                   >
                     <Zap className="w-4 h-4 mr-1" />
                     Functions
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link to="/web3-intro">
+                  <NavigationMenuLink 
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      location.pathname === "/web3-intro" && "bg-accent/50",
+                      "flex items-center gap-1"
+                    )}
+                  >
+                    <Lightbulb className="w-4 h-4 mr-1" />
+                    Web3 Intro
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
