@@ -1,59 +1,45 @@
 
-import React, { useState } from 'react';
-import { ScrollArea } from "@/components/ui/scroll-area";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ChevronRight, Plus, ArrowLeftCircle } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MessageSquarePlus, RotateCcw, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import TransactionQueue from './TransactionQueue';
-import { Separator } from "@/components/ui/separator";
-import { useAccount } from 'wagmi';
 
-// Sample data for chat history
-const sampleChatHistory = [
-  { 
-    id: 1, 
-    title: "Smart contract deployment", 
-    date: "Today",
+// Mock conversation history data
+const mockHistory = [
+  {
+    id: 1,
+    title: "Smart Contract Creation",
+    last_message: "How do I create an ERC-20 token?",
+    timestamp: "2023-12-01T10:00:00Z",
+    chain_id: 1,
     messages: [
-      { role: "user", content: "How do I deploy a smart contract on Ethereum?" },
-      { role: "assistant", content: "To deploy a smart contract on Ethereum, you'll need to use a development framework like Hardhat or Truffle. First, write your contract in Solidity, then compile it and deploy using the framework's deployment scripts. You'll need ETH in your wallet to pay for gas fees." },
-      { role: "user", content: "What about gas costs?" },
-      { role: "assistant", content: "Gas costs vary based on network congestion and contract complexity. For a simple contract, expect to pay around 0.01-0.05 ETH on mainnet. You can reduce costs by deploying to Layer 2 solutions like Optimism or Arbitrum, or testnets like Sepolia for testing purposes." }
+      { role: "user", content: "How do I create an ERC-20 token?" },
+      { role: "assistant", content: "To create an ERC-20 token, you need to implement the standard ERC-20 interface..." }
     ]
   },
-  { 
-    id: 2, 
-    title: "Gas optimization", 
-    date: "Yesterday",
+  {
+    id: 2,
+    title: "Gas Optimization",
+    last_message: "What are the best practices for optimizing gas usage in Solidity?",
+    timestamp: "2023-12-02T14:30:00Z",
+    chain_id: 1,
     messages: [
-      { role: "user", content: "How can I optimize gas usage in my smart contract?" },
-      { role: "assistant", content: "There are several ways to optimize gas in your smart contract: use mappings instead of arrays when possible, batch operations, minimize on-chain storage, use bytes32 instead of string, and remove unused variables." },
-      { role: "user", content: "Any specific examples for storage optimization?" },
-      { role: "assistant", content: "Yes! For storage optimization: 1) Pack multiple small variables into a single storage slot, 2) Use uint8/uint16 instead of uint256 when smaller values are sufficient, 3) Make frequently accessed variables 'memory' instead of 'storage', 4) Use events for historical data that doesn't need to be accessed on-chain." }
+      { role: "user", content: "What are the best practices for optimizing gas usage in Solidity?" },
+      { role: "assistant", content: "There are several approaches to optimize gas usage in Solidity contracts..." }
     ]
   },
-  { 
-    id: 3, 
-    title: "NFT minting strategies", 
-    date: "Apr 7",
+  {
+    id: 3,
+    title: "DeFi Integration",
+    last_message: "How can I integrate my dApp with Uniswap?",
+    timestamp: "2023-12-03T09:15:00Z",
+    chain_id: 1,
     messages: [
-      { role: "user", content: "What's the best approach for minting 10,000 NFTs?" },
-      { role: "assistant", content: "For large NFT collections, consider lazy minting where the actual minting happens at purchase time. Alternatively, use batch minting functions to mint multiple NFTs in a single transaction to save gas. ERC721A is a gas-optimized implementation worth considering." },
-      { role: "user", content: "Tell me more about ERC721A" },
-      { role: "assistant", content: "ERC721A is an improved implementation of the ERC721 standard created by Azuki. It significantly reduces gas costs for minting multiple NFTs in a single transaction by optimizing how token ownership data is stored. Instead of updating storage for each token individually, it uses a clever storage pattern that only updates once per batch mint operation." }
+      { role: "user", content: "How can I integrate my dApp with Uniswap?" },
+      { role: "assistant", content: "To integrate with Uniswap, you can use their SDK or interact directly with their contracts..." }
     ]
-  },
-  { 
-    id: 4, 
-    title: "Uniswap integration", 
-    date: "Apr 5",
-    messages: [
-      { role: "user", content: "How do I integrate with Uniswap from my dApp?" },
-      { role: "assistant", content: "To integrate with Uniswap, you can use their SDK or interact directly with their smart contracts. For the SDK approach, install @uniswap/sdk and @uniswap/sdk-core, then use them to fetch prices, calculate optimal paths, and execute swaps through your dApp." },
-      { role: "user", content: "Can you show me code for swapping tokens?" },
-      { role: "assistant", content: "Here's a simplified example of swapping tokens with Uniswap v3:\n\n```solidity\n// SPDX-License-Identifier: GPL-2.0-or-later\npragma solidity ^0.8.0;\n\nimport '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';\n\ncontract UniswapExample {\n    ISwapRouter public immutable swapRouter;\n    \n    constructor(ISwapRouter _swapRouter) {\n        swapRouter = _swapRouter;\n    }\n    \n    function swapExactInputSingle(address tokenIn, address tokenOut, uint256 amountIn) external returns (uint256 amountOut) {\n        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);\n        IERC20(tokenIn).approve(address(swapRouter), amountIn);\n        \n        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({\n            tokenIn: tokenIn,\n            tokenOut: tokenOut,\n            fee: 3000, // 0.3%\n            recipient: msg.sender,\n            deadline: block.timestamp + 15,\n            amountIn: amountIn,\n            amountOutMinimum: 0,\n            sqrtPriceLimitX96: 0\n        });\n        \n        amountOut = swapRouter.exactInputSingle(params);\n        return amountOut;\n    }\n}\n```" }
-    ]
-  },
+  }
 ];
 
 interface ChatHistoryProps {
@@ -61,91 +47,125 @@ interface ChatHistoryProps {
   onNewChat: () => void;
   activeChat: number | null;
   currentChain: number;
+  onCollapseChange?: (collapsed: boolean) => void;
+  defaultCollapsed?: boolean;
 }
 
 const ChatHistory: React.FC<ChatHistoryProps> = ({ 
   onSelectChat, 
-  onNewChat,
-  activeChat,
-  currentChain
+  onNewChat, 
+  activeChat, 
+  currentChain,
+  onCollapseChange,
+  defaultCollapsed = false
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const { isConnected } = useAccount();
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+  const [filteredHistory, setFilteredHistory] = useState(mockHistory);
+  
+  useEffect(() => {
+    if (currentChain) {
+      setFilteredHistory(mockHistory.filter(chat => chat.chain_id === currentChain));
+    } else {
+      setFilteredHistory(mockHistory);
+    }
+  }, [currentChain]);
+
+  useEffect(() => {
+    if (defaultCollapsed !== isCollapsed) {
+      setIsCollapsed(defaultCollapsed);
+    }
+  }, [defaultCollapsed]);
+
+  const handleCollapseChange = (newCollapsedState: boolean) => {
+    setIsCollapsed(newCollapsedState);
+    onCollapseChange?.(newCollapsedState);
+  };
 
   return (
-    <div className={cn(
-      "h-full transition-all duration-300",
-      isCollapsed ? "w-10" : "w-full"
-    )}>
+    <div className="h-full transition-all duration-300">
       {isCollapsed ? (
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => setIsCollapsed(false)}
+          onClick={() => handleCollapseChange(false)}
           className="h-full w-full rounded-lg border flex items-center justify-center"
         >
           <ChevronRight size={16} />
         </Button>
       ) : (
-        <div className="bg-gradient-to-br from-sidebar-accent/30 to-sidebar-background border rounded-lg h-full flex flex-col transition-all duration-300 shadow-sm">
-          <div className="flex items-center justify-between p-2">
-            <h3 className="text-sm font-medium truncate">Chat History</h3>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 ml-auto" 
-              onClick={() => setIsCollapsed(true)}
+        <div className="h-full flex flex-col border rounded-lg">
+          <div className="flex items-center justify-between p-3 border-b">
+            <h3 className="text-sm font-medium">Chat History</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleCollapseChange(true)}
+              className="h-7 w-7"
             >
-              <ArrowLeftCircle size={16} />
-            </Button>
-          </div>
-
-          <div className="px-2 mb-2">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start bg-secondary/30 hover:bg-secondary/50 border-secondary/20 transition-all duration-300"
-              onClick={onNewChat}
-            >
-              <MessageSquare className="mr-2" size={16} />
-              New Chat
+              <ChevronLeft className="h-4 w-4" />
             </Button>
           </div>
           
-          <ScrollArea className="h-[calc(100vh-16rem)] px-2 flex-1">
-            <div className="space-y-1 pr-2">
-              {sampleChatHistory.map((chat) => (
-                <Button
+          <div className="p-3 flex gap-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="w-full"
+              onClick={onNewChat}
+            >
+              <MessageSquarePlus className="mr-2 h-4 w-4" /> New Chat
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="shrink-0 h-9 w-9"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="px-3 py-2">
+            <p className="text-xs text-muted-foreground">Recent Conversations</p>
+          </div>
+          
+          <ScrollArea className="flex-1 overflow-y-auto">
+            <div className="p-3 space-y-2">
+              {filteredHistory.map((chat) => (
+                <div 
                   key={chat.id}
-                  variant={activeChat === chat.id ? "secondary" : "ghost"}
                   className={cn(
-                    "w-full justify-start text-left transition-all duration-200",
-                    activeChat === chat.id ? "bg-secondary/50" : "hover:bg-secondary/30"
+                    "p-3 rounded-md cursor-pointer hover:bg-muted/50 transition-colors",
+                    activeChat === chat.id && "bg-muted"
                   )}
                   onClick={() => onSelectChat(chat.id, chat.messages)}
                 >
-                  <div className="flex items-center w-full">
-                    <MessageSquare className="mr-2 flex-shrink-0" size={14} />
-                    <div className="truncate flex-1">
-                      <span className="block truncate">{chat.title}</span>
-                      <span className="text-xs text-muted-foreground truncate block">{chat.date}</span>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-sm truncate">{chat.title}</h4>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(chat.timestamp).toLocaleDateString()}
+                    </span>
                   </div>
-                </Button>
+                  <p className="text-xs text-muted-foreground mt-1 truncate">
+                    {chat.last_message}
+                  </p>
+                </div>
               ))}
+              
+              {filteredHistory.length === 0 && (
+                <div className="text-center p-4">
+                  <p className="text-sm text-muted-foreground">No conversations yet</p>
+                </div>
+              )}
             </div>
           </ScrollArea>
-
-          {isConnected && (
-            <>
-              <Separator className="my-2 mx-2" />
-              <div className="px-2 mb-2">
-                <h3 className="text-xs font-medium mb-2">Transaction Queue</h3>
-                <div className="h-[180px] overflow-hidden">
-                  <TransactionQueue chainId={currentChain} inPanel={true} />
-                </div>
-              </div>
-            </>
-          )}
+          
+          <div className="p-3 border-t">
+            <div className="text-xs text-muted-foreground">
+              <p>Pending Transactions</p>
+              <p className="mt-1">No pending transactions</p>
+            </div>
+          </div>
         </div>
       )}
     </div>

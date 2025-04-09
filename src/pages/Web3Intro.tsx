@@ -24,7 +24,7 @@ import SuggestedPromptsPanel from '@/components/SuggestedPromptsPanel';
 import TransactionQueue from '@/components/TransactionQueue';
 import { cn } from '@/lib/utils';
 import useApiKeys from '@/hooks/useApiKeys';
-import { callFlockWeb3, createDefaultWeb3Tools, FlockWeb3Request } from '@/services/replicateService';
+import { callFlockWeb3, createDefaultWeb3Tools, FlockWeb3Request } from '@/services/replicateProxyService';
 import { toast } from '@/components/ui/use-toast';
 import ModelSelector from '@/components/ModelSelector';
 
@@ -442,7 +442,7 @@ const Web3Intro: React.FC = () => {
               variant="ghost" 
               size="icon" 
               onClick={toggleHistoryPanel}
-              className="h-full rounded-none border-r"
+              className="h-full rounded-none border-r w-full"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -456,7 +456,7 @@ const Web3Intro: React.FC = () => {
                   onClick={toggleHistoryPanel}
                   className="h-8 w-8"
                 >
-                  <ArrowLeftCircle className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
               </div>
               <ScrollArea className="flex-1 h-[calc(100vh-16rem)]">
@@ -638,7 +638,7 @@ const Web3Intro: React.FC = () => {
               variant="ghost" 
               size="icon" 
               onClick={togglePromptsPanel}
-              className="h-full rounded-none border-l"
+              className="h-full w-full rounded-none border-l"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -647,6 +647,7 @@ const Web3Intro: React.FC = () => {
               <SuggestedPromptsPanel
                 onSelectQuestion={handleSelectQuestion}
                 onCollapseChange={setIsSuggestionsCollapsed}
+                defaultCollapsed={isSuggestionsCollapsed}
               />
             </div>
           )}

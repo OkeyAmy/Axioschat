@@ -15,8 +15,8 @@ import { ArrowRight, Bot, MessageSquare, RotateCcw } from "lucide-react";
 import { mainnet } from "wagmi/chains";
 import TransactionQueue from "@/components/TransactionQueue";
 import useApiKeys from "@/hooks/useApiKeys";
-import { callFlockWeb3, createDefaultWeb3Tools, FlockWeb3Request } from "@/services/replicateService";
 import ModelSelector from "@/components/ModelSelector";
+import { callFlockWeb3, createDefaultWeb3Tools, FlockWeb3Request } from "@/services/replicateProxyService";
 
 type Message = {
   role: "user" | "assistant";
@@ -93,7 +93,7 @@ const Chat = () => {
         });
         
         if (!response.ok) {
-          throw new Error(`Error from local API: ${response.statusText}`);
+          throw new Error(`Error from local API: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
@@ -195,11 +195,16 @@ const Chat = () => {
                 onNewChat={handleNewChat}
                 activeChat={activeChat}
                 currentChain={currentChain}
+                onCollapseChange={setIsHistoryPanelCollapsed}
+                defaultCollapsed={isHistoryPanelCollapsed}
               />
             </div>
             
             {/* Main Chat Area */}
-            <div className="flex flex-col rounded-lg border h-full max-h-full overflow-hidden">
+            <div className={cn(
+              "flex flex-col rounded-lg border h-full max-h-full overflow-hidden",
+              "transition-all duration-300"
+            )}>
               <div className="border-b px-4 py-2 flex justify-between items-center flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-primary" />
