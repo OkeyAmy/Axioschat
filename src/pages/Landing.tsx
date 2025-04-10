@@ -1,25 +1,27 @@
+"use client"
 
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowRight, Send } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
+import type React from "react"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { ArrowDown, ArrowRight, Send } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent } from "@/components/ui/card"
+import { useNavigate } from "react-router-dom"
+import Header from "@/components/Header"
 
 const Landing = () => {
-  const [question, setQuestion] = useState("");
-  const navigate = useNavigate();
+  const [question, setQuestion] = useState("")
+  const navigate = useNavigate()
 
   const handleSubmitQuestion = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = question.trim() ? `?question=${encodeURIComponent(question.trim())}` : '';
-    navigate(`/chat${params}`);
-  };
+    e.preventDefault()
+    const params = question.trim() ? `?question=${encodeURIComponent(question.trim())}` : ""
+    navigate(`/chat${params}`)
+  }
 
   const handleGetStarted = () => {
-    navigate('/chat');
-  };
+    navigate("/chat")
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -31,10 +33,10 @@ const Landing = () => {
             NovachatV2
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl">
-            The next generation of Web3 conversational AI, powered by the 
+            The next generation of Web3 conversational AI, powered by the
             <span className="font-semibold"> Flock Web3 Agent Model</span>
           </p>
-          
+
           {/* Immediate Question Input */}
           <Card className="w-full max-w-2xl mb-8 border shadow-md bg-card/80 backdrop-blur-sm animate-fade-in">
             <CardContent className="p-4">
@@ -46,10 +48,7 @@ const Landing = () => {
                     placeholder="Ask anything about Web3, blockchain, or smart contracts..."
                     className="resize-none min-h-[60px] flex-1"
                   />
-                  <Button 
-                    type="submit" 
-                    className="h-full min-w-[100px] flex items-center justify-center gap-2"
-                  >
+                  <Button type="submit" className="h-full min-w-[100px] flex items-center justify-center gap-2">
                     <Send size={16} />
                     Ask Now
                   </Button>
@@ -57,7 +56,7 @@ const Landing = () => {
               </form>
             </CardContent>
           </Card>
-          
+
           <div className="animate-bounce mt-8">
             <ArrowDown className="text-muted-foreground" />
           </div>
@@ -67,18 +66,18 @@ const Landing = () => {
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">Capabilities</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <FeatureCard 
-                title="Web3 Knowledge" 
+              <FeatureCard
+                title="Web3 Knowledge"
                 description="Access comprehensive knowledge about blockchain technologies, smart contracts, and decentralized applications."
               />
-              <FeatureCard 
-                title="Real-time Interactions" 
+              <FeatureCard
+                title="Real-time Interactions"
                 description="Connect your wallet and interact with blockchain data in real-time through natural conversation."
               />
-              <FeatureCard 
-                title="Developer Tools" 
+              <FeatureCard
+                title="Developer Tools"
                 description="Get help with smart contract development, code reviews, and blockchain integration."
               />
             </div>
@@ -100,14 +99,14 @@ const Landing = () => {
         </section>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const FeatureCard = ({ title, description }: { title: string; description: string }) => (
   <div className="bg-card/60 backdrop-blur-sm border rounded-lg p-6 transition-all duration-200 hover:shadow-md hover:bg-card/80 hover-scale">
     <h3 className="text-xl font-semibold mb-3">{title}</h3>
     <p className="text-muted-foreground">{description}</p>
   </div>
-);
+)
 
-export default Landing;
+export default Landing

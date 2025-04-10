@@ -1,98 +1,120 @@
+"use client"
 
-import React from 'react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Settings, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import ApiKeyInput from './ApiKeyInput';
+import type React from "react"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Settings, X } from "lucide-react"
+import { cn } from "@/lib/utils"
+import ApiKeyInput from "./ApiKeyInput"
 
 interface ModelSelectorProps {
-  useLocalAI: boolean;
-  onUseLocalAIChange: (value: boolean) => void;
-  showSettings: boolean;
-  onShowSettingsChange: (value: boolean) => void;
-  localEndpoint: string;
-  onLocalEndpointChange: (value: string) => void;
-  replicateApiKey: string;
-  onReplicateApiKeyChange: (value: string) => void;
-  className?: string;
+  useOpenAI: boolean
+  onUseOpenAIChange: (value: boolean) => void
+  showSettings: boolean
+  onShowSettingsChange: (value: boolean) => void
+  llamaEndpoint: string
+  onLlamaEndpointChange: (value: string) => void
+  openaiApiKey: string
+  onOpenAIApiKeyChange: (value: string) => void
+  replicateApiKey: string
+  onReplicateApiKeyChange: (value: string) => void
+  className?: string
+  debugMode?: boolean
+  onDebugModeChange?: (value: boolean) => void
 }
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({
-  useLocalAI,
-  onUseLocalAIChange,
+  useOpenAI,
+  onUseOpenAIChange,
   showSettings,
   onShowSettingsChange,
-  localEndpoint,
-  onLocalEndpointChange,
+  llamaEndpoint,
+  onLlamaEndpointChange,
+  openaiApiKey,
+  onOpenAIApiKeyChange,
   replicateApiKey,
   onReplicateApiKeyChange,
-  className
+  className,
+  debugMode = false,
+  onDebugModeChange,
 }) => {
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn("space-y-3", className)}>
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-2">
-          <Switch
-            id="model-toggle"
-            checked={useLocalAI}
-            onCheckedChange={onUseLocalAIChange}
-          />
+          <Switch id="model-toggle" checked={useOpenAI} onCheckedChange={onUseOpenAIChange} />
           <Label htmlFor="model-toggle" className="text-sm cursor-pointer select-none">
-            {useLocalAI ? "Llama 3.2 (Local)" : "Flock Web3 (Cloud)"}
+            {useOpenAI ? "OpenAI GPT-4o" : "Llama 3.2 (Local)"}
           </Label>
         </div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => onShowSettingsChange(!showSettings)}
-          className="h-8 w-8"
-        >
+        <Button variant="ghost" size="icon" onClick={() => onShowSettingsChange(!showSettings)} className="h-8 w-8">
           <Settings size={14} />
         </Button>
       </div>
-      
+
       {showSettings && (
         <div className="p-3 border rounded-md bg-muted/40 space-y-3 relative">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             className="h-6 w-6 absolute top-2 right-2"
             onClick={() => onShowSettingsChange(false)}
           >
             <X size={12} />
           </Button>
-          
-          {useLocalAI ? (
+
+          {useOpenAI ? (
             <div className="space-y-2">
-              <Label htmlFor="local-endpoint" className="text-xs">Local Endpoint</Label>
-              <input
-                id="local-endpoint"
-                placeholder="http://localhost:11434"
-                value={localEndpoint}
-                onChange={(e) => onLocalEndpointChange(e.target.value)}
-                className="w-full px-3 py-1 text-xs h-8 rounded-md border"
+              <ApiKeyInput
+                label="OpenAI API Key"
+                apiKey={openaiApiKey}
+                onChange={onOpenAIApiKeyChange}
+                placeholder="Enter your OpenAI API key"
               />
             </div>
           ) : (
             <div className="space-y-2">
-              <ApiKeyInput 
-                label="Replicate API Key"
-                apiKey={replicateApiKey}
-                onChange={onReplicateApiKeyChange}
-                placeholder="Enter your Replicate API key"
+              <Label htmlFor="llama-endpoint" className="text-xs">
+                Llama Endpoint
+              </Label>
+              <input
+                id="llama-endpoint"
+                placeholder="http://localhost:11434"
+                value={llamaEndpoint}
+                onChange={(e) => onLlamaEndpointChange(e.target.value)}
+                className="w-full px-3 py-1 text-xs h-8 rounded-md border"
               />
-              <div className="text-xs text-muted-foreground mt-2">
-                <p>Note: Due to CORS restrictions, API calls may not work directly from the browser. 
-                Consider using a backend service or Supabase Edge Function for production use.</p>
-              </div>
             </div>
           )}
+
+          <div className="space-y-2 pt-2 border-t">
+            <ApiKeyInput
+              label="Replicate API Key (for Web3 Functions)"
+              apiKey={replicateApiKey}
+              onChange={onReplicateApiKeyChange}
+              placeholder="Enter your Replicate API key"
+            />
+            <div className="text-xs text-muted-foreground mt-2">
+              <p>Note: The Replicate API key is required for Web3 function calling with the Flock Web3 model.</p>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex items-center space-x-2">
+              <Switch id="debug-mode" checked={debugMode} onCheckedChange={onDebugModeChange} />
+              <Label htmlFor="debug-mode" className="text-sm cursor-pointer select-none">
+                Troubleshooting Mode
+              </Label>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              <p>Shows all data including function call responses for debugging purposes.</p>
+            </div>
+          </div>
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default ModelSelector;
+export default ModelSelector

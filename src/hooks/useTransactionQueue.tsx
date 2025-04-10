@@ -44,6 +44,7 @@ export const TransactionQueueProvider = ({ children }: { children: ReactNode }) 
     setQueue([])
   }, [])
 
+  // Update the addTransaction function to better handle transactions
   const addTransaction = useCallback(
     (transaction: any) => {
       const id = uuidv4()
@@ -51,7 +52,8 @@ export const TransactionQueueProvider = ({ children }: { children: ReactNode }) 
         id,
         status: "success" as const,
         type: transaction.type || "transaction",
-        description: `Transaction ${transaction.hash?.slice(0, 6)}...${transaction.hash?.slice(-4)}`,
+        description:
+          transaction.description || `Transaction ${transaction.hash?.slice(0, 6)}...${transaction.hash?.slice(-4)}`,
         hash: transaction.hash,
         txHash: transaction.hash,
         from: transaction.from,
@@ -62,7 +64,14 @@ export const TransactionQueueProvider = ({ children }: { children: ReactNode }) 
         execute: async () => {}, // Empty function as this is for already executed transactions
       }
 
+      console.log("Adding transaction to queue:", queuedTx)
       setQueue((prev) => [...prev, queuedTx])
+
+      // Show toast notification
+      toast({
+        title: "Transaction Added",
+        description: queuedTx.description,
+      })
 
       // Auto-remove successful transactions after 30 seconds
       setTimeout(() => {
