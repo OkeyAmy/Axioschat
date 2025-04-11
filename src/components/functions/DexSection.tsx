@@ -1,511 +1,623 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRightLeft, DollarSign, RefreshCw, RotateCw } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
-import { getTokenBalance } from '@/utils/blockchain';
-import useWeb3 from '@/hooks/useWeb3';
-import { useTransactionQueue } from '@/hooks/useTransactionQueue';
+"use client"
 
-// Helper function to get token allowance
-const getTokenAllowance = async (web3: any, owner: string, tokenAddress: string, spender: string) => {
-  try {
-    // ERC20 allowance function ABI
-    const tokenAbi = [{"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}];
-    const tokenContract = new web3.eth.Contract(tokenAbi, tokenAddress);
-    
-    const allowance = await tokenContract.methods.allowance(owner, spender).call();
-    return allowance;
-  } catch (error) {
-    console.error('Error getting token allowance:', error);
-    throw error;
-  }
-};
-
-// Helper function to approve token spending
-const approveToken = async (web3: any, from: string, tokenAddress: string, spender: string, amount: string) => {
-  try {
-    // ERC20 approve function ABI
-    const tokenAbi = [{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"}];
-    const tokenContract = new web3.eth.Contract(tokenAbi, tokenAddress);
-    
-    const tx = await tokenContract.methods.approve(spender, amount).send({ from });
-    return tx;
-  } catch (error) {
-    console.error('Error approving token:', error);
-    throw error;
-  }
-};
-
-// Implementation of swap tokens
-const swapTokens = async (web3: any, from: string, tokenInAddress: string, tokenOutAddress: string, amountIn: string, slippageTolerance: string, deadlineMinutes: string) => {
-  try {
-    // This is a simplified implementation
-    // In a real application, you would interact with a DEX router contract
-    
-    // For demo purposes, we'll just log the swap details and return a mocked transaction receipt
-    console.log('Swapping tokens:', {
-      from,
-      tokenIn: tokenInAddress,
-      tokenOut: tokenOutAddress,
-      amountIn,
-      slippageTolerance,
-      deadline: `${deadlineMinutes} minutes`
-    });
-    
-    // Mock transaction hash for demo purposes
-    const txHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-    
-    // Return a mock transaction receipt
-    return {
-      transactionHash: txHash,
-      status: true,
-      to: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' // Uniswap V2 router
-    };
-  } catch (error) {
-    console.error('Error swapping tokens:', error);
-    throw error;
-  }
-};
-
-// Implementation of add liquidity
-const addLiquidity = async (web3: any, from: string, tokenAAddress: string, tokenBAddress: string, amountA: string, amountB: string, slippageTolerance: string, deadlineMinutes: string) => {
-  try {
-    // This is a simplified implementation
-    // In a real application, you would interact with a DEX router contract
-    
-    // For demo purposes, we'll just log the liquidity addition details and return a mocked transaction receipt
-    console.log('Adding liquidity:', {
-      from,
-      tokenA: tokenAAddress,
-      tokenB: tokenBAddress,
-      amountA,
-      amountB,
-      slippageTolerance,
-      deadline: `${deadlineMinutes} minutes`
-    });
-    
-    // Mock transaction hash for demo purposes
-    const txHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-    
-    // Return a mock transaction receipt
-    return {
-      transactionHash: txHash,
-      status: true,
-      to: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' // Uniswap V2 router
-    };
-  } catch (error) {
-    console.error('Error adding liquidity:', error);
-    throw error;
-  }
-};
+import type React from "react"
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ArrowRightLeft, DollarSign, RefreshCw, RotateCw, AlertTriangle } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
+import useWeb3 from "@/hooks/useWeb3"
+import { useTransactionQueue } from "@/hooks/useTransactionQueue"
+import {
+  swapTokensOnUniswap,
+  addLiquidity as addLiquidityToPool,
+  convertToTokenUnits,
+  COMMON_TOKENS,
+  UNISWAP_ROUTER_ADDRESSES,
+  FACTORY_ADDRESSES,
+} from "@/utils/blockchain"
 
 // Implementation of getting pair info
-const getPairInfo = async (web3: any, from: string, tokenAAddress: string, tokenBAddress: string, chainId: string) => {
+const getPairInfo = async (web3: any, from: string, tokenAAddress: string, tokenBAddress: string, chainId: number) => {
   try {
-    // In a real application, you would query the DEX factory contract
-    
-    // For demo purposes, return mock data
-    return {
-      pairAddress: '0x' + Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
-      reserveUSD: '100000',
-      reserve0: '1000',
-      reserve1: '1000'
-    };
-  } catch (error) {
-    console.error('Error getting pair info:', error);
-    throw error;
-  }
-};
+    // Get the factory address for the current chain
+    const factoryAddress = FACTORY_ADDRESSES[chainId] || FACTORY_ADDRESSES[1]
 
-// Common token addresses for various networks
-const commonTokens: Record<string, Record<string, { symbol: string, address: string }>> = {
-  "1": { // Ethereum Mainnet
-    "ETH": { symbol: "ETH", address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-    "WETH": { symbol: "WETH", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" },
-    "USDC": { symbol: "USDC", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" },
-    "USDT": { symbol: "USDT", address: "0xdAC17F958D2ee523a2206206994597C13D831ec7" },
-    "DAI": { symbol: "DAI", address: "0x6B175474E89094C44Da98b954EedeAC495271d0F" },
-  },
-  "11155111": { // Sepolia Testnet
-    "ETH": { symbol: "ETH", address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-    "WETH": { symbol: "WETH", address: "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9" },
-    "USDC": { symbol: "USDC", address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" },
-    "DAI": { symbol: "DAI", address: "0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6" },
-  },
-  "137": { // Polygon
-    "MATIC": { symbol: "MATIC", address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" },
-    "WMATIC": { symbol: "WMATIC", address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270" },
-    "USDC": { symbol: "USDC", address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174" },
-    "WETH": { symbol: "WETH", address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619" },
-  },
-};
+    // Factory ABI for getPair function
+    const factoryAbi = [
+      {
+        constant: true,
+        inputs: [
+          { internalType: "address", name: "tokenA", type: "address" },
+          { internalType: "address", name: "tokenB", type: "address" },
+        ],
+        name: "getPair",
+        outputs: [{ internalType: "address", name: "pair", type: "address" }],
+        payable: false,
+        stateMutability: "view",
+        type: "function",
+      },
+    ]
+
+    // Create factory contract instance
+    const factory = new web3.eth.Contract(factoryAbi, factoryAddress)
+
+    try {
+      // Try to get the pair address
+      const pairAddress = await factory.methods.getPair(tokenAAddress, tokenBAddress).call()
+
+      // If pair doesn't exist
+      if (pairAddress === "0x0000000000000000000000000000000000000000") {
+        return {
+          pairAddress: "0x0000000000000000000000000000000000000000",
+          reserveUSD: "0",
+          reserve0: "0",
+          reserve1: "0",
+          exists: false,
+        }
+      }
+
+      // For a real implementation, we would query the pair contract for reserves
+      // For demo purposes, return mock data
+      return {
+        pairAddress,
+        reserveUSD: "100000",
+        reserve0: "1000",
+        reserve1: "1000",
+        exists: true,
+      }
+    } catch (error) {
+      console.error("Error getting pair:", error)
+      // Return empty pair info if there's an error
+      return {
+        pairAddress: "0x0000000000000000000000000000000000000000",
+        reserveUSD: "0",
+        reserve0: "0",
+        reserve1: "0",
+        exists: false,
+      }
+    }
+  } catch (error) {
+    console.error("Error getting pair info:", error)
+    throw error
+  }
+}
 
 const DexSection: React.FC = () => {
-  const { web3, isReady, address, chainId } = useWeb3();
-  const { addTransaction } = useTransactionQueue();
-  
-  const [fromToken, setFromToken] = useState<string>(chainId === 137 ? "MATIC" : "ETH");
-  const [toToken, setToToken] = useState<string>("USDC");
-  const [fromAmount, setFromAmount] = useState<string>("");
-  const [toAmount, setToAmount] = useState<string>("");
-  const [slippage, setSlippage] = useState<string>("0.5");
-  const [deadline, setDeadline] = useState<string>("20"); // minutes
-  
-  const [tokenAAmount, setTokenAAmount] = useState<string>("");
-  const [tokenBAmount, setTokenBAmount] = useState<string>("");
-  const [tokenA, setTokenA] = useState<string>(chainId === 137 ? "WMATIC" : "WETH");
-  const [tokenB, setTokenB] = useState<string>("USDC");
-  
-  const [isSwapping, setIsSwapping] = useState<boolean>(false);
-  const [isAddingLiquidity, setIsAddingLiquidity] = useState<boolean>(false);
-  const [isLoadingPair, setIsLoadingPair] = useState<boolean>(false);
-  const [pairInfo, setPairInfo] = useState<any>(null);
-  
+  const { web3, isReady, address, chainId } = useWeb3()
+  const { addTransaction } = useTransactionQueue()
+
+  const [fromToken, setFromToken] = useState<string>(chainId === 137 ? "MATIC" : "ETH")
+  const [toToken, setToToken] = useState<string>("USDC")
+  const [fromAmount, setFromAmount] = useState<string>("")
+  const [toAmount, setToAmount] = useState<string>("")
+  const [slippage, setSlippage] = useState<string>("0.5")
+  const [deadline, setDeadline] = useState<string>("20") // minutes
+  const [estimatedGas, setEstimatedGas] = useState<string>("")
+  const [showWarning, setShowWarning] = useState<boolean>(false)
+
+  const [tokenAAmount, setTokenAAmount] = useState<string>("")
+  const [tokenBAmount, setTokenBAmount] = useState<string>("")
+  const [tokenA, setTokenA] = useState<string>(chainId === 137 ? "WMATIC" : "WETH")
+  const [tokenB, setTokenB] = useState<string>("USDC")
+
+  const [isSwapping, setIsSwapping] = useState<boolean>(false)
+  const [isAddingLiquidity, setIsAddingLiquidity] = useState<boolean>(false)
+  const [isLoadingPair, setIsLoadingPair] = useState<boolean>(false)
+  const [pairInfo, setPairInfo] = useState<any>(null)
+  const [isEstimating, setIsEstimating] = useState<boolean>(false)
+
   // Get available tokens based on current chain
-  const availableTokens = chainId && commonTokens[chainId.toString()]
-    ? Object.values(commonTokens[chainId.toString()])
-    : Object.values(commonTokens["1"]); // Default to Ethereum tokens
-  
+  const availableTokens =
+    chainId && COMMON_TOKENS[chainId]
+      ? Object.entries(COMMON_TOKENS[chainId]).map(([symbol, data]) => ({
+          symbol,
+          address: data.address,
+          decimals: data.decimals,
+        }))
+      : Object.entries(COMMON_TOKENS[1]).map(([symbol, data]) => ({
+          symbol,
+          address: data.address,
+          decimals: data.decimals,
+        }))
+
   // Reset selected tokens when chain changes
   useEffect(() => {
     if (chainId) {
       // Set default tokens based on chain
       if (chainId === 137) {
-        setFromToken("MATIC");
-        setTokenA("WMATIC");
+        setFromToken("MATIC")
+        setTokenA("WMATIC")
+      } else if (chainId === 56) {
+        setFromToken("BNB")
+        setTokenA("WBNB")
+      } else if (chainId === 43114) {
+        setFromToken("AVAX")
+        setTokenA("WAVAX")
       } else {
-        setFromToken("ETH");
-        setTokenA("WETH");
+        setFromToken("ETH")
+        setTokenA("WETH")
       }
-      setToToken("USDC");
-      setTokenB("USDC");
-      setPairInfo(null);
+      setToToken("USDC")
+      setTokenB("USDC")
+      setPairInfo(null)
+      setShowWarning(false)
+      setEstimatedGas("")
     }
-  }, [chainId]);
-  
+  }, [chainId])
+
+  // Effect to update estimated gas and output amount when fromAmount changes
+  useEffect(() => {
+    const estimateSwap = async () => {
+      if (!web3 || !isReady || !address || !chainId || !fromAmount || Number.parseFloat(fromAmount) <= 0) {
+        setEstimatedGas("")
+        setShowWarning(false)
+        setToAmount("")
+        return
+      }
+
+      setIsEstimating(true)
+
+      try {
+        // Get router address
+        const routerAddress = UNISWAP_ROUTER_ADDRESSES[chainId] || UNISWAP_ROUTER_ADDRESSES[1]
+
+        // Get token info
+        if (!COMMON_TOKENS[chainId]) {
+          setIsEstimating(false)
+          return
+        }
+
+        const fromTokenData = COMMON_TOKENS[chainId][fromToken]
+        const toTokenData = COMMON_TOKENS[chainId][toToken]
+
+        if (!fromTokenData || !toTokenData) {
+          setIsEstimating(false)
+          return
+        }
+
+        // Get basic gas estimation
+        const gasPrice = await web3.eth.getGasPrice()
+        const gasLimit =
+          fromTokenData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+            ? 250000 // Native token swap (higher for safety)
+            : 400000 // ERC20 swap (needs approval + swap)
+
+        const gasCost = web3.utils.fromWei((BigInt(gasPrice) * BigInt(gasLimit)).toString(), "ether")
+
+        setEstimatedGas(gasCost)
+
+        // Check if gas cost is more than 10% of swap amount (as a simple warning heuristic)
+        const gasWarningThreshold = 0.1 // 10%
+        const amountInEth =
+          fromTokenData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" ? Number.parseFloat(fromAmount) : 0 // We don't want to show warnings for token-to-token swaps based on this heuristic
+
+        if (amountInEth > 0 && Number.parseFloat(gasCost) > amountInEth * gasWarningThreshold) {
+          setShowWarning(true)
+        } else {
+          setShowWarning(false)
+        }
+
+        // Estimate output amount (simplified for demo)
+        // In a real app, you would call getAmountsOut on the router
+        const exchangeRate =
+          fromToken === "USDC" || fromToken === "USDT" || fromToken === "DAI"
+            ? 0.0005 // 1 USDC/USDT/DAI = 0.0005 ETH/MATIC/etc.
+            : 2000 // 1 ETH/MATIC/etc. = 2000 USDC/USDT/DAI
+
+        const estimatedOutput =
+          fromToken === "USDC" || fromToken === "USDT" || fromToken === "DAI"
+            ? Number.parseFloat(fromAmount) * exchangeRate
+            : toToken === "USDC" || toToken === "USDT" || toToken === "DAI"
+              ? Number.parseFloat(fromAmount) * exchangeRate
+              : Number.parseFloat(fromAmount) // 1:1 for other pairs
+
+        setToAmount(estimatedOutput.toFixed(6))
+      } catch (error) {
+        console.error("Error estimating swap:", error)
+        setEstimatedGas("")
+        setShowWarning(false)
+        setToAmount("")
+      } finally {
+        setIsEstimating(false)
+      }
+    }
+
+    estimateSwap()
+  }, [web3, isReady, address, chainId, fromToken, toToken, fromAmount])
+
   const fetchPairInfo = async () => {
-    if (!web3 || !isReady || !address) return;
-    
-    const chainKey = chainId?.toString() || "1";
-    if (!commonTokens[chainKey]) return;
-    
-    const tokenAAddress = commonTokens[chainKey][tokenA]?.address;
-    const tokenBAddress = commonTokens[chainKey][tokenB]?.address;
-    
-    if (!tokenAAddress || !tokenBAddress) return;
-    
-    setIsLoadingPair(true);
-    
+    if (!web3 || !isReady || !address || !chainId) return
+
+    if (!COMMON_TOKENS[chainId]) return
+
+    const tokenAData = COMMON_TOKENS[chainId][tokenA]
+    const tokenBData = COMMON_TOKENS[chainId][tokenB]
+
+    if (!tokenAData || !tokenBData) return
+
+    setIsLoadingPair(true)
+
     try {
-      const result = await getPairInfo(
-        web3,
-        address,
-        tokenAAddress,
-        tokenBAddress,
-        String(chainId)
-      );
-      
-      setPairInfo(result);
-      
-      toast({
-        title: "Pair Info Loaded",
-        description: `LP Token Address: ${result.pairAddress.slice(0, 6)}...${result.pairAddress.slice(-4)}`,
-      });
+      const result = await getPairInfo(web3, address, tokenAData.address, tokenBData.address, chainId)
+
+      // Ensure we have a valid result
+      const safeResult = result || {
+        exists: false,
+        pairAddress: "0x0000000000000000000000000000000000000000",
+        reserveUSD: "0",
+        reserve0: "0",
+        reserve1: "0",
+      }
+
+      setPairInfo(safeResult)
+
+      if (safeResult.exists) {
+        toast({
+          title: "Pair Info Loaded",
+          description: `LP Token Address: ${safeResult.pairAddress.slice(0, 6)}...${safeResult.pairAddress.slice(-4)}`,
+        })
+      } else {
+        toast({
+          title: "Pair Not Found",
+          description: "This pair doesn't exist yet. You can be the first to add liquidity!",
+          variant: "destructive",
+        })
+      }
     } catch (error) {
-      console.error("Error fetching pair info:", error);
-      
+      console.error("Error fetching pair info:", error)
+
       toast({
         title: "Failed to Load Pair",
         description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      });
-      
-      setPairInfo(null);
+      })
+
+      setPairInfo(null)
     } finally {
-      setIsLoadingPair(false);
+      setIsLoadingPair(false)
     }
-  };
-  
-  const checkAllowanceAndApprove = async (tokenSymbol: string, tokenAmount: string, spender: string): Promise<boolean> => {
-    if (!web3 || !isReady || !address || !chainId) return false;
-    
-    const chainKey = chainId.toString();
-    if (!commonTokens[chainKey]) return false;
-    
-    const tokenAddress = commonTokens[chainKey][tokenSymbol]?.address;
-    if (!tokenAddress || tokenAddress === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
+  }
+
+  const checkAllowanceAndApprove = async (
+    tokenSymbol: string,
+    tokenAmount: string,
+    spender: string,
+  ): Promise<boolean> => {
+    if (!web3 || !isReady || !address || !chainId) return false
+
+    if (!COMMON_TOKENS[chainId]) return false
+
+    const tokenData = COMMON_TOKENS[chainId][tokenSymbol]
+    if (!tokenData || tokenData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
       // Native token (ETH/MATIC) doesn't need approval
-      return true;
+      return true
     }
-    
+
     try {
-      const allowance = await getTokenAllowance(
-        web3,
-        address,
-        tokenAddress,
-        spender
-      );
-      
-      const requiredAmount = web3.utils.toWei(tokenAmount, 'ether');
-      
+      // Check current allowance
+      const tokenContract = new web3.eth.Contract(
+        [
+          {
+            constant: true,
+            inputs: [
+              { name: "owner", type: "address" },
+              { name: "spender", type: "address" },
+            ],
+            name: "allowance",
+            outputs: [{ name: "", type: "uint256" }],
+            payable: false,
+            stateMutability: "view",
+            type: "function",
+          },
+          {
+            constant: true,
+            inputs: [],
+            name: "decimals",
+            outputs: [{ name: "", type: "uint8" }],
+            payable: false,
+            stateMutability: "view",
+            type: "function",
+          },
+        ] as any,
+        tokenData.address,
+      )
+
+      // Get token decimals
+      const decimalsResult = await tokenContract.methods.decimals().call()
+      const decimals = decimalsResult ? Number(decimalsResult) : tokenData.decimals
+
+      const allowanceResult = await tokenContract.methods.allowance(address, spender).call()
+      const allowance = allowanceResult ? allowanceResult.toString() : "0"
+
+      // Convert amount to token units for comparison
+      const requiredAmount = convertToTokenUnits(tokenAmount, Number(decimals))
+
       if (BigInt(allowance) >= BigInt(requiredAmount)) {
-        return true;
+        console.log(`Token ${tokenSymbol} already approved for ${tokenAmount}`)
+        return true
       }
-      
+
       // Need to approve
-      const receipt = await approveToken(
-        web3,
-        address,
-        tokenAddress,
-        spender,
-        requiredAmount
-      );
-      
+      console.log(`Approving ${tokenSymbol} for ${tokenAmount}`)
+      const approveAbi = [
+        {
+          constant: false,
+          inputs: [
+            { name: "spender", type: "address" },
+            { name: "value", type: "uint256" },
+          ],
+          name: "approve",
+          outputs: [{ name: "", type: "bool" }],
+          payable: false,
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+      ]
+
+      const approveContract = new web3.eth.Contract(approveAbi as any, tokenData.address)
+      const receipt = await approveContract.methods.approve(spender, requiredAmount).send({
+        from: address,
+        gas: "100000", // Use string for gas to avoid type errors
+      })
+
       if (receipt && receipt.transactionHash) {
         addTransaction({
-          hash: receipt.transactionHash,
+          hash: receipt.transactionHash.toString(),
           from: address,
-          to: tokenAddress,
+          to: tokenData.address,
           value: "0",
           chainId: String(chainId),
           type: "approve",
           status: "confirmed",
           method: "approve",
-          timestamp: Date.now()
-        });
-        
+          timestamp: Date.now(),
+        })
+
         toast({
           title: "Token Approved",
           description: `Successfully approved ${tokenSymbol} for trading`,
-        });
-        
-        return true;
+        })
+
+        return true
       } else {
-        return false;
+        return false
       }
     } catch (error) {
-      console.error("Error approving token:", error);
-      
+      console.error("Error approving token:", error)
+
       toast({
         title: "Approval Failed",
         description: error instanceof Error ? error.message : "Failed to approve token for trading",
         variant: "destructive",
-      });
-      
-      return false;
+      })
+
+      return false
     }
-  };
-  
+  }
+
   const handleSwap = async () => {
     if (!web3 || !isReady || !address || !chainId) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to swap tokens.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
-    
-    if (!fromAmount || parseFloat(fromAmount) <= 0) {
+
+    if (!fromAmount || Number.parseFloat(fromAmount) <= 0) {
       toast({
         title: "Invalid amount",
         description: "Please enter a valid amount to swap.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
-    
-    setIsSwapping(true);
-    
+
+    setIsSwapping(true)
+
     try {
-      const chainKey = chainId.toString();
-      if (!commonTokens[chainKey]) {
-        throw new Error(`Unsupported chain: ${chainId}`);
+      if (!COMMON_TOKENS[chainId]) {
+        throw new Error(`Unsupported chain: ${chainId}`)
       }
-      
-      const fromTokenData = commonTokens[chainKey][fromToken];
-      const toTokenData = commonTokens[chainKey][toToken];
-      
+
+      const fromTokenData = COMMON_TOKENS[chainId][fromToken]
+      const toTokenData = COMMON_TOKENS[chainId][toToken]
+
       if (!fromTokenData || !toTokenData) {
-        throw new Error("Invalid token selection");
+        throw new Error("Invalid token selection")
       }
-      
+
+      // Get the router address for the current chain
+      const routerAddress = UNISWAP_ROUTER_ADDRESSES[chainId] || UNISWAP_ROUTER_ADDRESSES[1]
+
       // For DEX swaps, we need to approve router to spend tokens first (except native token)
       if (fromTokenData.address !== "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
-        // Assuming router address is consistent for each chain or we have a map somewhere
-        const routerAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"; // Uniswap V2 router for Ethereum
-        
-        const approved = await checkAllowanceAndApprove(fromToken, fromAmount, routerAddress);
+        const approved = await checkAllowanceAndApprove(fromToken, fromAmount, routerAddress)
         if (!approved) {
-          throw new Error("Failed to approve token for swapping");
+          throw new Error("Failed to approve token for swapping")
         }
       }
-      
-      const receipt = await swapTokens(
+
+      // Execute the swap
+      const receipt = await swapTokensOnUniswap(
         web3,
-        address,
         fromTokenData.address,
         toTokenData.address,
-        web3.utils.toWei(fromAmount, 'ether'),
-        slippage,
-        deadline
-      );
-      
+        fromAmount,
+        address,
+        chainId,
+        Number(slippage),
+      )
+
       if (receipt && receipt.transactionHash) {
         addTransaction({
-          hash: receipt.transactionHash,
+          hash: receipt.transactionHash.toString(),
           from: address,
-          to: receipt.to || "",
-          value: fromTokenData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" ? web3.utils.toWei(fromAmount, 'ether') : "0",
+          to: receipt.to || routerAddress,
+          value:
+            fromTokenData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+              ? convertToTokenUnits(fromAmount, 18) // Native tokens use 18 decimals
+              : "0",
           chainId: String(chainId),
           type: "swap",
           status: "confirmed",
           method: "swap",
-          timestamp: Date.now()
-        });
-        
+          timestamp: Date.now(),
+        })
+
         toast({
           title: "Swap Successful",
-          description: `Successfully swapped ${fromAmount} ${fromToken} to ${toToken}`,
-        });
-        
+          description: `Successfully swapped ${fromAmount} ${fromToken} to ${receipt.amountOut || "?"} ${toToken}`,
+        })
+
         // Reset form
-        setFromAmount("");
-        setToAmount("");
+        setFromAmount("")
+        setToAmount("")
       }
     } catch (error) {
-      console.error("Error swapping tokens:", error);
-      
+      console.error("Error swapping tokens:", error)
+
       toast({
         title: "Swap Failed",
         description: error instanceof Error ? error.message : "Failed to swap tokens",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsSwapping(false);
+      setIsSwapping(false)
     }
-  };
-  
+  }
+
   const handleAddLiquidity = async () => {
     if (!web3 || !isReady || !address || !chainId) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to add liquidity.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
-    
-    if (!tokenAAmount || !tokenBAmount || parseFloat(tokenAAmount) <= 0 || parseFloat(tokenBAmount) <= 0) {
+
+    if (
+      !tokenAAmount ||
+      !tokenBAmount ||
+      Number.parseFloat(tokenAAmount) <= 0 ||
+      Number.parseFloat(tokenBAmount) <= 0
+    ) {
       toast({
         title: "Invalid amounts",
         description: "Please enter valid amounts for both tokens.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
-    
-    setIsAddingLiquidity(true);
-    
+
+    setIsAddingLiquidity(true)
+
     try {
-      const chainKey = chainId.toString();
-      if (!commonTokens[chainKey]) {
-        throw new Error(`Unsupported chain: ${chainId}`);
+      if (!COMMON_TOKENS[chainId]) {
+        throw new Error(`Unsupported chain: ${chainId}`)
       }
-      
-      const tokenAData = commonTokens[chainKey][tokenA];
-      const tokenBData = commonTokens[chainKey][tokenB];
-      
+
+      const tokenAData = COMMON_TOKENS[chainId][tokenA]
+      const tokenBData = COMMON_TOKENS[chainId][tokenB]
+
       if (!tokenAData || !tokenBData) {
-        throw new Error("Invalid token selection");
+        throw new Error("Invalid token selection")
       }
-      
-      // For adding liquidity, we need to approve router to spend tokens
-      const routerAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"; // Uniswap V2 router for Ethereum
-      
+
+      // Get the router address for the current chain
+      const routerAddress = UNISWAP_ROUTER_ADDRESSES[chainId] || UNISWAP_ROUTER_ADDRESSES[1]
+
       // Approve token A if not native token
       if (tokenAData.address !== "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
-        const approvedA = await checkAllowanceAndApprove(tokenA, tokenAAmount, routerAddress);
+        const approvedA = await checkAllowanceAndApprove(tokenA, tokenAAmount, routerAddress)
         if (!approvedA) {
-          throw new Error(`Failed to approve ${tokenA} for adding liquidity`);
+          throw new Error(`Failed to approve ${tokenA} for adding liquidity`)
         }
       }
-      
+
       // Approve token B if not native token
       if (tokenBData.address !== "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
-        const approvedB = await checkAllowanceAndApprove(tokenB, tokenBAmount, routerAddress);
+        const approvedB = await checkAllowanceAndApprove(tokenB, tokenBAmount, routerAddress)
         if (!approvedB) {
-          throw new Error(`Failed to approve ${tokenB} for adding liquidity`);
+          throw new Error(`Failed to approve ${tokenB} for adding liquidity`)
         }
       }
-      
-      const receipt = await addLiquidity(
+
+      // Execute the liquidity addition
+      const receipt = await addLiquidityToPool(
         web3,
-        address,
         tokenAData.address,
         tokenBData.address,
-        web3.utils.toWei(tokenAAmount, 'ether'),
-        web3.utils.toWei(tokenBAmount, 'ether'),
-        slippage,
-        deadline
-      );
-      
+        tokenAAmount,
+        tokenBAmount,
+        address,
+        chainId,
+        Number(slippage),
+      )
+
       if (receipt && receipt.transactionHash) {
         addTransaction({
-          hash: receipt.transactionHash,
+          hash: receipt.transactionHash.toString(),
           from: address,
-          to: receipt.to || "",
-          value: (tokenAData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" || tokenBData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") 
-            ? (tokenAData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" ? web3.utils.toWei(tokenAAmount, 'ether') : web3.utils.toWei(tokenBAmount, 'ether'))
-            : "0",
+          to: receipt.to || routerAddress,
+          value:
+            tokenAData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" ||
+            tokenBData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+              ? tokenAData.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+                ? convertToTokenUnits(tokenAAmount, 18) // Native tokens use 18 decimals
+                : convertToTokenUnits(tokenBAmount, 18) // Native tokens use 18 decimals
+              : "0",
           chainId: String(chainId),
           type: "liquidity",
           status: "confirmed",
           method: "addLiquidity",
-          timestamp: Date.now()
-        });
-        
+          timestamp: Date.now(),
+        })
+
         toast({
           title: "Liquidity Added",
           description: `Successfully added ${tokenAAmount} ${tokenA} and ${tokenBAmount} ${tokenB} to the pool`,
-        });
-        
+        })
+
         // Refresh pair info
-        fetchPairInfo();
-        
+        fetchPairInfo()
+
         // Reset form
-        setTokenAAmount("");
-        setTokenBAmount("");
+        setTokenAAmount("")
+        setTokenBAmount("")
       }
     } catch (error) {
-      console.error("Error adding liquidity:", error);
-      
+      console.error("Error adding liquidity:", error)
+
       toast({
         title: "Failed to Add Liquidity",
         description: error instanceof Error ? error.message : "Failed to add liquidity to the pool",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsAddingLiquidity(false);
+      setIsAddingLiquidity(false)
     }
-  };
-  
+  }
+
   const switchTokens = () => {
-    const tempFromToken = fromToken;
-    const tempFromAmount = fromAmount;
-    
-    setFromToken(toToken);
-    setFromAmount(toAmount);
-    
-    setToToken(tempFromToken);
-    setToAmount(tempFromAmount);
-  };
-  
+    const tempFromToken = fromToken
+    const tempFromAmount = fromAmount
+
+    setFromToken(toToken)
+    setFromAmount(toAmount)
+
+    setToToken(tempFromToken)
+    setToAmount(tempFromAmount)
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -513,9 +625,7 @@ const DexSection: React.FC = () => {
           <ArrowRightLeft className="h-5 w-5 text-primary" />
           Decentralized Exchange
         </CardTitle>
-        <CardDescription>
-          Swap tokens and provide liquidity to pools
-        </CardDescription>
+        <CardDescription>Swap tokens and provide liquidity to pools</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="swap">
@@ -529,7 +639,7 @@ const DexSection: React.FC = () => {
               Liquidity
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="swap" className="space-y-4">
             <div className="space-y-4">
               <div className="space-y-2">
@@ -541,11 +651,7 @@ const DexSection: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {availableTokens.map((token) => (
-                        <SelectItem 
-                          key={token.symbol} 
-                          value={token.symbol}
-                          disabled={token.symbol === toToken}
-                        >
+                        <SelectItem key={token.symbol} value={token.symbol} disabled={token.symbol === toToken}>
                           {token.symbol}
                         </SelectItem>
                       ))}
@@ -561,20 +667,15 @@ const DexSection: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex justify-center">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={switchTokens}
-                  className="rounded-full h-8 w-8"
-                >
+                <Button variant="ghost" size="icon" onClick={switchTokens} className="rounded-full h-8 w-8">
                   <RotateCw className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               <div className="space-y-2">
-                <Label>To</Label>
+                <Label>To (Estimated)</Label>
                 <div className="flex gap-2">
                   <Select value={toToken} onValueChange={setToToken}>
                     <SelectTrigger className="w-[120px]">
@@ -582,11 +683,7 @@ const DexSection: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {availableTokens.map((token) => (
-                        <SelectItem 
-                          key={token.symbol} 
-                          value={token.symbol}
-                          disabled={token.symbol === fromToken}
-                        >
+                        <SelectItem key={token.symbol} value={token.symbol} disabled={token.symbol === fromToken}>
                           {token.symbol}
                         </SelectItem>
                       ))}
@@ -598,11 +695,25 @@ const DexSection: React.FC = () => {
                     step="0.000001"
                     placeholder="0.0"
                     value={toAmount}
-                    onChange={(e) => setToAmount(e.target.value)}
+                    readOnly
+                    className="bg-muted"
                   />
                 </div>
+                {isEstimating && (
+                  <p className="text-xs text-muted-foreground animate-pulse">Estimating output amount...</p>
+                )}
               </div>
-              
+
+              {showWarning && (
+                <Alert variant="default" className="bg-yellow-50 border-yellow-200">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-700">
+                    Gas cost is high relative to transaction amount. Consider increasing the amount or using a different
+                    token.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Slippage Tolerance (%)</Label>
@@ -625,11 +736,18 @@ const DexSection: React.FC = () => {
                   />
                 </div>
               </div>
-              
-              <Button 
+
+              {estimatedGas && (
+                <div className="text-sm text-muted-foreground">
+                  Estimated gas cost: {Number.parseFloat(estimatedGas).toFixed(6)}{" "}
+                  {chainId === 137 ? "MATIC" : chainId === 56 ? "BNB" : chainId === 43114 ? "AVAX" : "ETH"}
+                </div>
+              )}
+
+              <Button
                 className="w-full"
                 onClick={handleSwap}
-                disabled={!isReady || isSwapping || !fromAmount || parseFloat(fromAmount) <= 0}
+                disabled={!isReady || isSwapping || !fromAmount || Number.parseFloat(fromAmount) <= 0 || isEstimating}
               >
                 {isSwapping ? (
                   <>
@@ -645,7 +763,7 @@ const DexSection: React.FC = () => {
               </Button>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="liquidity" className="space-y-4">
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -657,11 +775,7 @@ const DexSection: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {availableTokens.map((token) => (
-                        <SelectItem 
-                          key={token.symbol} 
-                          value={token.symbol}
-                          disabled={token.symbol === tokenB}
-                        >
+                        <SelectItem key={token.symbol} value={token.symbol} disabled={token.symbol === tokenB}>
                           {token.symbol}
                         </SelectItem>
                       ))}
@@ -676,11 +790,7 @@ const DexSection: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {availableTokens.map((token) => (
-                        <SelectItem 
-                          key={token.symbol} 
-                          value={token.symbol}
-                          disabled={token.symbol === tokenA}
-                        >
+                        <SelectItem key={token.symbol} value={token.symbol} disabled={token.symbol === tokenA}>
                           {token.symbol}
                         </SelectItem>
                       ))}
@@ -688,9 +798,9 @@ const DexSection: React.FC = () => {
                   </Select>
                 </div>
               </div>
-              
-              <Button 
-                variant="outline" 
+
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={fetchPairInfo}
                 disabled={!isReady || isLoadingPair || tokenA === tokenB}
@@ -707,28 +817,38 @@ const DexSection: React.FC = () => {
                   </>
                 )}
               </Button>
-              
+
               {pairInfo && (
                 <div className="p-3 bg-muted rounded-md space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm">Pair Address:</span>
-                    <span className="text-sm font-medium">{pairInfo.pairAddress.slice(0, 6)}...{pairInfo.pairAddress.slice(-4)}</span>
+                    <span className="text-sm font-medium">
+                      {pairInfo.pairAddress === "0x0000000000000000000000000000000000000000"
+                        ? "Not created yet"
+                        : `${pairInfo.pairAddress.slice(0, 6)}...${pairInfo.pairAddress.slice(-4)}`}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Liquidity:</span>
-                    <span className="text-sm font-medium">${parseFloat(pairInfo.reserveUSD || "0").toFixed(2)}</span>
+                    <span className="text-sm font-medium">
+                      ${Number.parseFloat(pairInfo.reserveUSD || "0").toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">{tokenA} Balance:</span>
-                    <span className="text-sm font-medium">{parseFloat(pairInfo.reserve0 || "0").toFixed(6)}</span>
+                    <span className="text-sm font-medium">
+                      {Number.parseFloat(pairInfo.reserve0 || "0").toFixed(6)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">{tokenB} Balance:</span>
-                    <span className="text-sm font-medium">{parseFloat(pairInfo.reserve1 || "0").toFixed(6)}</span>
+                    <span className="text-sm font-medium">
+                      {Number.parseFloat(pairInfo.reserve1 || "0").toFixed(6)}
+                    </span>
                   </div>
                 </div>
               )}
-              
+
               <div className="space-y-2">
                 <Label>{tokenA} Amount</Label>
                 <Input
@@ -740,7 +860,7 @@ const DexSection: React.FC = () => {
                   onChange={(e) => setTokenAAmount(e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>{tokenB} Amount</Label>
                 <Input
@@ -752,7 +872,7 @@ const DexSection: React.FC = () => {
                   onChange={(e) => setTokenBAmount(e.target.value)}
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Slippage Tolerance (%)</Label>
@@ -775,11 +895,18 @@ const DexSection: React.FC = () => {
                   />
                 </div>
               </div>
-              
-              <Button 
+
+              <Button
                 className="w-full"
                 onClick={handleAddLiquidity}
-                disabled={!isReady || isAddingLiquidity || !tokenAAmount || !tokenBAmount || parseFloat(tokenAAmount) <= 0 || parseFloat(tokenBAmount) <= 0}
+                disabled={
+                  !isReady ||
+                  isAddingLiquidity ||
+                  !tokenAAmount ||
+                  !tokenBAmount ||
+                  Number.parseFloat(tokenAAmount) <= 0 ||
+                  Number.parseFloat(tokenBAmount) <= 0
+                }
               >
                 {isAddingLiquidity ? (
                   <>
@@ -801,7 +928,7 @@ const DexSection: React.FC = () => {
         <p>Note: DEX functionality requires sufficient balance and approval for token usage.</p>
       </CardFooter>
     </Card>
-  );
-};
+  )
+}
 
-export default DexSection;
+export default DexSection

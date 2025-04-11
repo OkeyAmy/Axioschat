@@ -1,30 +1,11 @@
-
 "use client"
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import {
-  RainbowKitProvider as RKProvider,
-  darkTheme,
-  lightTheme
-} from "@rainbow-me/rainbowkit"
-import { 
-  http, 
-  createConfig, 
-  WagmiProvider,
-} from "wagmi"
-import {
-  mainnet,
-  polygon,
-  optimism,
-  arbitrum,
-  base,
-  zora,
-  bsc
-} from "wagmi/chains"
-import { 
-  getDefaultWallets
-} from '@rainbow-me/rainbowkit';
+import { RainbowKitProvider as RKProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit"
+import { http, createConfig, WagmiProvider } from "wagmi"
+import { mainnet, polygon, optimism, arbitrum, base, zora, bsc, avalanche } from "wagmi/chains"
+import { getDefaultWallets } from "@rainbow-me/rainbowkit"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useTheme } from "@/components/ThemeProvider"
 import "@rainbow-me/rainbowkit/styles.css"
@@ -34,34 +15,34 @@ interface RainbowKitWrapperProps {
 }
 
 // WalletConnect Project ID
-const projectId = 'f648e94e1f1c32327aaa0416d6409e2b';
+const projectId = "f648e94e1f1c32327aaa0416d6409e2b"
 
 // Custom EduChain
 const educhain = {
   id: 11155111,
-  name: 'EduChain',
+  name: "EduChain",
   nativeCurrency: {
     decimals: 18,
-    name: 'EduChain',
-    symbol: 'EDU',
+    name: "EduChain",
+    symbol: "EDU",
   },
   rpcUrls: {
-    default: { http: ['https://rpc.edutestnet.io'] },
+    default: { http: ["https://rpc.edutestnet.io"] },
   },
   blockExplorers: {
-    default: { name: 'EduChainExplorer', url: 'https://sepolia-explorer.edu-chain.org' },
+    default: { name: "EduChainExplorer", url: "https://sepolia-explorer.edu-chain.org" },
   },
-  testnet: true
-};
+  testnet: true,
+}
 
-// Chain configuration with BSC and EduChain included
-const chains = [mainnet, polygon, optimism, arbitrum, base, zora, bsc, educhain] as const;
+// Chain configuration with Avalanche C-Chain included
+const chains = [mainnet, polygon, optimism, arbitrum, base, zora, bsc, avalanche, educhain] as const
 
 // Get wallets using the proper API for RainbowKit v2
 const { connectors } = getDefaultWallets({
-  appName: 'NovachatV2',
+  appName: "NovachatV2",
   projectId,
-});
+})
 
 // Create wagmi config
 const config = createConfig({
@@ -74,9 +55,10 @@ const config = createConfig({
     [base.id]: http(),
     [zora.id]: http(),
     [bsc.id]: http(),
+    [avalanche.id]: http(),
     [educhain.id]: http(),
   },
-  connectors
+  connectors,
 })
 
 // Create query client
@@ -96,9 +78,7 @@ export const RainbowKitProvider: React.FC<RainbowKitWrapperProps> = ({ children 
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RKProvider theme={theme === "dark" ? darkTheme() : lightTheme()}>
-          {children}
-        </RKProvider>
+        <RKProvider theme={theme === "dark" ? darkTheme() : lightTheme()}>{children}</RKProvider>
       </QueryClientProvider>
     </WagmiProvider>
   )
