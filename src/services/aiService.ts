@@ -72,35 +72,58 @@ const getApiTokens = (): { openai: string; replicate: string } => {
   return { openai: "", replicate: "" }
 }
 
-// Call Llama model
+// Call Llama model (now using OpenAI in production)
 export async function callLlama(options: LlamaOptions, endpoint: string): Promise<string> {
   try {
-    const response = await fetch(`${endpoint}/api/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama3.2:latest",
+    // Check if we're in production (Vercel) or development
+    const isProduction = !endpoint.includes("localhost") && !endpoint.includes("127.0.0.1")
+
+    if (isProduction) {
+      // In production, use OpenAI via our API route
+      const { openai: OPENAI_API_KEY } = getApiTokens()
+
+      if (!OPENAI_API_KEY) {
+        return "Please provide an OpenAI API key in the settings to use the chatbot."
+      }
+
+      // Call OpenAI directly
+      return await callOpenAI({
+        model: "gpt-4o-turbo",
         messages: options.messages,
-        temperature: options.temperature || 0.7,
-        top_p: options.top_p || 0.9,
-        max_tokens: options.max_tokens || 2000,
-        stop: options.stop || [],
-        stream: false,
-      }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Failed to call Llama model: ${errorText}`)
-    }
-
-    const data = await response.json()
-    if (data.message && data.message.content) {
-      return data.message.content
+        temperature: options.temperature,
+        top_p: options.top_p,
+        max_tokens: options.max_tokens,
+        stop: options.stop,
+      })
     } else {
-      return "No valid response from Llama model"
+      // In development, use the local Llama server
+      const response = await fetch(`${endpoint}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "llama3.2:latest",
+          messages: options.messages,
+          temperature: options.temperature || 0.7,
+          top_p: options.top_p || 0.9,
+          max_tokens: options.max_tokens || 2000,
+          stop: options.stop || [],
+          stream: false,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to call Llama model: ${errorText}`)
+      }
+
+      const data = await response.json()
+      if (data.message && data.message.content) {
+        return data.message.content
+      } else {
+        return "No valid response from Llama model"
+      }
     }
   } catch (error) {
     console.error("Error calling Llama:", error)
@@ -180,8 +203,19 @@ export const callFlockWeb3 = async (
 
     console.log("Request body:", JSON.stringify(requestBody, null, 2))
 
+    // Determine if we're in production or development
+    const isProduction =
+      typeof window !== "undefined" &&
+      !window.location.hostname.includes("localhost") &&
+      !window.location.hostname.includes("127.0.0.1")
+
+    // Use the appropriate API endpoint
+    const apiUrl = isProduction
+      ? "/api/replicate" // Production (Vercel)
+      : "http://localhost:3000/api/replicate" // Development (local)
+
     // Call the proxy server
-    const response = await fetch("http://localhost:3000/api/replicate", {
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
