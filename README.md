@@ -1,73 +1,89 @@
-# Welcome to your Lovable project
+# NovachatV2
 
-## Project info
+![NovachatV2 Title](https://sjc.microlink.io/1vRgADpCEWNh4TMR1VGylSUFVbYgtGFDhmbQIr9Hg56YlPwwXzGQO3dwwKmpCC5jVlo-NOd9CuQqr1PYOedWuQ.jpeg)
 
-**URL**: https://lovable.dev/projects/b2ef6bc3-13c3-4f71-8e48-4beecb46c6cd
+## Overview
 
-## How can I edit this code?
+NovachatV2 is an AI-powered chat interface that makes blockchain interactions accessible through natural language. By combining advanced language models with specialized Web3 knowledge, NovachatV2 allows users to perform blockchain operations, check balances, and learn about crypto concepts through simple conversation.
 
-There are several ways of editing your application.
+## Key Features
 
-**Use Lovable**
+![NovachatV2 Features](https://lh3.googleusercontent.com/d/17ghTS-zolKynlOFlkS3z5yDC5CtkoMBF)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b2ef6bc3-13c3-4f71-8e48-4beecb46c6cd) and start prompting.
+![Additional Features](https://lh3.googleusercontent.com/d/1kbE2-1lZsu3zG_dwKn7sh44_V_q1Ke-L)
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Natural Language Blockchain Interactions**: Execute blockchain operations using conversational language
+- **Educational Responses**: Learn about blockchain concepts while performing actions
+- **Multi-Chain Support**: Interact with multiple blockchain networks
+- **Secure Transaction Approval**: Two-step verification for all transactions that modify blockchain state
+- **Balance Checking**: Easily check wallet balances across chains
+- **Token Transfers**: Send tokens through simple conversation
+- **NFT Exploration**: View and learn about NFTs in your wallet
 
-**Use your preferred IDE**
+## Impact
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+![Project Impact](https://lh3.googleusercontent.com/d/1XzyyXk7Vgo2eiGJqS1CjemR4fqqzkeFB)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+NovachatV2 bridges the gap between complex blockchain technology and everyday users by:
 
-Follow these steps:
+- Removing technical barriers to blockchain interaction
+- Providing educational context with every operation
+- Making Web3 accessible to non-technical users
+- Streamlining common blockchain tasks through conversation
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Architecture
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+NovachatV2 uses a dual-model approach:
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. **Primary LLM (Llama 3.2)**: Handles general conversation and intent classification
+2. **Specialized Web3 Model (Flock)**: Processes blockchain-specific requests and extracts function parameters
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+The system distinguishes between read-only operations (automatically executed) and state-changing operations (requiring user approval).
 
-**Edit a file directly in GitHub**
+## Roadmap
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+![Project Roadmap](https://lh3.googleusercontent.com/d/1dXQKMOqwf8TpTnOQwsdb1AV56-e-S9Nj)
 
-**Use GitHub Codespaces**
+- **Phase 1**: Core functionality with Ethereum support
+- **Phase 2**: Multi-chain expansion (Solana, Polygon, etc.)
+- **Phase 3**: Advanced features (DEX interactions, yield farming)
+- **Phase 4**: Mobile app and browser extension
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Demo
 
-## What technologies are used for this project?
+[Watch the NovachatV2 Demo Video](https://youtu.be/your-demo-link)
 
-This project is built with:
+## Information Flow
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+\`\`\`mermaid
+graph TD;
+    User["User Input"] --> LLM["Llama 3.2 Model"];
+    LLM -- "Intent Classification" --> Decision{"Requires Web3\nFunction?"};
+    Decision -- "No" --> DirectResponse["Generate Direct Response"];
+    Decision -- "Yes" --> FlockModel["Flock Web3 Foundation Model"];
+    FlockModel -- "Function Extraction" --> FunctionCall["Extract Function + Parameters"];
+    FunctionCall --> FunctionType{"Function Type"};
+    FunctionType -- "Read-Only\n(e.g., balance check)" --> AutoExecute["Auto-Execute Function"];
+    FunctionType -- "Write\n(e.g., send tokens)" --> ApprovalQueue["User Approval Queue"];
+    ApprovalQueue -- "User Approves" --> Execute["Execute Blockchain Function"];
+    ApprovalQueue -- "User Rejects" --> Reject["Cancel Operation"];
+    AutoExecute --> Web3["Web3.js / Blockchain"];
+    Execute --> Web3;
+    Web3 -- "Result Data" --> ResultInterpreter["AI Result Interpreter"];
+    ResultInterpreter --> ContextEnrichment["Add Educational Context"];
+    DirectResponse --> UserResponse["Response to User"];
+    ContextEnrichment --> UserResponse;
+    Reject --> RejectionMessage["Inform User of Cancellation"];
+    RejectionMessage --> UserResponse;
+\`\`\`
 
-## How can I deploy this project?
+## Getting Started
 
-Simply open [Lovable](https://lovable.dev/projects/b2ef6bc3-13c3-4f71-8e48-4beecb46c6cd) and click on Share -> Publish.
+1. Clone this repository
+2. Install dependencies with `npm install`
+3. Configure your environment variables
+4. Run the development server with `npm run dev`
 
-## Can I connect a custom domain to my Lovable project?
+## License
 
-Yes it is!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+[MIT License](LICENSE)
