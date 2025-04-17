@@ -18,7 +18,7 @@ NovachatV2 is an AI-powered chat interface that makes blockchain interactions ac
 - **Secure Transaction Approval**: Two-step verification for all transactions that modify blockchain state
 - **Balance Checking**: Easily check wallet balances across chains
 - **Token Transfers**: Send tokens through simple conversation
-- **NFT Exploration**: View and learn about NFTs in your wallet
+- **DEX Exploration**: Interact with, trade and stake by talking to your wallet
 
 ## Impact
 
