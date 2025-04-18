@@ -9,7 +9,10 @@ NovachatV2 is an AI-powered chat interface that makes blockchain interactions ac
 ## Demo & Pitch Video
 
 [Watch the NovachatV2 Demo & Pitch Video](www.youtube.com/watch?v=ieW3SK8Y0UM)
+##
+
 [See platform live (without AI functionality due to API limitations](novachat-v2.vercel.app)
+##
 
 ## Key Features
 
