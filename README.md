@@ -6,6 +6,11 @@
 
 NovachatV2 is an AI-powered chat interface that makes blockchain interactions accessible through natural language. By combining advanced language models with specialized Web3 knowledge, NovachatV2 allows users to perform blockchain operations, check balances, and learn about crypto concepts through simple conversation.
 
+## Demo & Pitch Video
+
+[Watch the NovachatV2 Demo & Pitch Video](www.youtube.com/watch?v=ieW3SK8Y0UM)
+[See platform live (without AI functionality due to API limitations](novachat-v2.vercel.app)
+
 ## Key Features
 
 ![NovachatV2 Features](https://lh3.googleusercontent.com/d/17ghTS-zolKynlOFlkS3z5yDC5CtkoMBF)
@@ -49,9 +54,6 @@ The system distinguishes between read-only operations (automatically executed) a
 - **Phase 3**: Advanced features (DEX interactions, yield farming)
 - **Phase 4**: Mobile app and browser extension
 
-## Demo
-
-[Watch the NovachatV2 Demo Video](https://youtu.be/your-demo-link)
 
 ## Information Flow
 
