@@ -4,7 +4,6 @@ import OpenAI from 'openai';
 // This is a Vercel serverless function that mimics the behavior of your Flask proxy
 // but uses OpenAI's GPT-4o-turbo instead of Replicate
 export const config = {
-  runtime: 'nodejs',
   regions: ['iad1'], // Use your preferred region
 };
 
