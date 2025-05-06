@@ -29,9 +29,6 @@
   <a href="https://axioschat-r2jy.vercel.app/" target="_blank">
     <img src="https://img.shields.io/badge/Try_AxiosChat-Live_Demo-4E56A6?style=for-the-badge&logo=vercel" alt="Live Demo" />
   </a>
-  <a href="https://www.youtube.com/watch?v=ieW3SK8Y0UM" target="_blank">
-    <img src="https://img.shields.io/badge/Watch-Demo_Video-FF0000?style=for-the-badge&logo=youtube" alt="Demo Video" />
-  </a>
 </div>
 
 > **Note:** AI functionality may be limited on the live demo due to API key constraints.
