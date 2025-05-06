@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 // This is a Vercel serverless function that mimics the behavior of your Flask proxy
-// but uses OpenAI's GPT-4o-turbo instead of Replicate
+// but uses Google's Gemini API instead of Replicate
 export const config = {
   regions: ['iad1'], // Use your preferred region
 };
@@ -21,7 +21,7 @@ export default async function handler(req: NextRequest) {
     const apiToken = req.headers.get('X-Replicate-API-Token');
     if (!apiToken) {
       return NextResponse.json(
-        { error: 'OpenAI API token is required' },
+        { error: 'Gemini API token is required' },
         { status: 401 }
       );
     }
@@ -57,14 +57,16 @@ export default async function handler(req: NextRequest) {
       );
     }
 
-    // Initialize the OpenAI client
+    // Initialize the OpenAI client with Gemini configuration
     const openai = new OpenAI({
       apiKey: apiToken,
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+      dangerouslyAllowBrowser: true // Allow use in browser environment
     });
 
-    // Call OpenAI with the function calling capability
+    // Call Gemini API through OpenAI compatibility layer
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gemini-2.0-flash',
       messages: [
         {
           role: 'system',
@@ -75,11 +77,10 @@ export default async function handler(req: NextRequest) {
       tools: parsedTools,
       tool_choice: 'auto',
       temperature,
-      top_p,
       max_tokens,
     });
 
-    console.log('OpenAI response:', JSON.stringify(response).substring(0, 500) + '...');
+    console.log('Gemini response:', JSON.stringify(response).substring(0, 500) + '...');
 
     // Process the response to match the format expected by the client
     let output;
@@ -114,7 +115,7 @@ export default async function handler(req: NextRequest) {
     // Return the response in the format expected by the client
     // This mimics the Replicate API response format
     return NextResponse.json({
-      id: `openai-${Date.now()}`,
+      id: `gemini-${Date.now()}`,
       status: 'succeeded',
       output,
     });

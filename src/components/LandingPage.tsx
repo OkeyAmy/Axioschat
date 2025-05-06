@@ -28,7 +28,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onAskQuestion }
       {/* Hero Section */}
       <section className="flex flex-col items-center justify-center py-16 px-4 text-center animate-in fade-in-50 slide-in-from-bottom-10">
         <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-          NovachatV2
+          Axioschat
         </h1>
         <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl">
           The next generation of Web3 conversational AI, powered by the 

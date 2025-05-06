@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from "react"
+import ReactMarkdown from "react-markdown"
 import Header from "@/components/Header"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,6 +24,7 @@ import {
   Code,
   Brain,
   School,
+  MessageSquare,
 } from "lucide-react"
 import SuggestedPromptsPanel from "@/components/SuggestedPromptsPanel"
 import TransactionQueue from "@/components/TransactionQueue"
@@ -665,11 +667,11 @@ This information is relevant to ${sectionName} because it provides data that can
             aiResponse = `I couldn't connect to the local model. ${error instanceof Error ? error.message : "Unknown error"}`
           }
         } else {
-          // Similar changes for OpenAI...
+          // Similar changes for Gemini...
           if (!apiKeys.openai) {
-            aiResponse = "Please provide an OpenAI API key in the settings to use GPT-4o."
+            aiResponse = "Please provide a Gemini API key in the settings to use the chatbot."
           } else {
-            // Prepare messages for OpenAI
+            // Prepare messages for Gemini
             const conversationalMessages: ChatMessage[] = messages
               .filter((m) => m.role !== "function") // Filter out function messages for the initial query
               .map((m) => ({
@@ -692,9 +694,9 @@ This information is relevant to ${sectionName} because it provides data that can
                 `\n\nIf you need to call a Web3 function, include [FUNCTION_CALL:function_name] in your response. Available functions: get_token_balance, get_token_price, get_gas_price, send_token, swap_tokens, add_liquidity, explain_transaction, estimate_gas.`,
             })
 
-            // Call OpenAI
+            // Call Gemini
             aiResponse = await callOpenAI({
-              model: "gpt-4o",
+              model: "gemini-2.0-flash",
               messages: conversationalMessages,
               temperature: 0.7,
               top_p: 0.9,
@@ -1063,14 +1065,20 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex items-center border-b px-4 py-2">
+          <div className="flex items-center border-b px-4 py-3 bg-background/95">
             {isHistoryCollapsed && (
               <Button variant="ghost" size="icon" onClick={toggleHistoryPanel} className="md:hidden h-8 w-8 mr-2">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             )}
-            <h2 className="text-lg font-semibold">
-              {defiSections.find((s) => s.id === activeSection)?.name || "Web3 Introduction"}
+            <h2 className="text-lg font-semibold flex items-center">
+              {defiSections.find((s) => s.id === activeSection)?.icon &&
+                React.createElement(defiSections.find((s) => s.id === activeSection)?.icon || "div", {
+                  className: "mr-2 h-5 w-5 text-primary",
+                })}
+              <span className="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                {defiSections.find((s) => s.id === activeSection)?.name || "Web3 Introduction"}
+              </span>
             </h2>
             {isSuggestionsCollapsed && (
               <Button variant="ghost" size="icon" onClick={togglePromptsPanel} className="md:hidden h-8 w-8 ml-auto">
@@ -1079,111 +1087,183 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
             )}
           </div>
 
-          <ScrollArea className="flex-1 p-4 h-[calc(100vh-20rem)]">
-            <div className="space-y-4">
-              {messages
-                .filter((m) => m.role !== "function" || showFunctionMessages) // Show function messages if enabled
-                .map((message, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      "p-3 md:p-4 rounded-lg max-w-[85%] md:max-w-3xl",
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground ml-auto"
-                        : message.role === "function"
-                          ? "bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800"
-                          : "bg-muted",
-                    )}
-                  >
-                    {message.role === "function" && (
-                      <div className="flex items-center mr-2">
-                        <Code size={16} className="text-amber-600 dark:text-amber-400" />
-                      </div>
-                    )}
-                    <div className="whitespace-pre-wrap break-words text-sm md:text-base">
-                      {message.role === "function" ? (
-                        <div>
-                          <div className="font-mono text-xs text-amber-700 dark:text-amber-300 mb-1">
-                            Function Response:
-                          </div>
-                          <pre className="text-xs overflow-auto">{message.content}</pre>
+          <ScrollArea className="flex-1 p-4 bg-gradient-to-b from-background/80 to-background h-[calc(100vh-20rem)]">
+            <div className="space-y-4 max-w-3xl mx-auto">
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/20 animate-float">
+                    <School className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                    Web3 Learning Hub
+                  </h3>
+                  <p className="text-muted-foreground max-w-md">
+                    Ask questions and learn about {defiSections.find((s) => s.id === activeSection)?.name || "Web3 concepts"}
+                  </p>
+                </div>
+              ) : (
+                messages
+                  .filter((m) => m.role !== "function" || showFunctionMessages)
+                  .map((message, index) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        "flex items-start gap-3",
+                        message.role === "user" ? "justify-end" : "justify-start"
+                      )}
+                    >
+                      {message.role !== "user" && (
+                        <div
+                          className={cn(
+                            "w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center",
+                            message.role === "function"
+                              ? "bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800"
+                              : "bg-gradient-to-br from-indigo-500 to-purple-500 shadow-md"
+                          )}
+                        >
+                          {message.role === "function" ? (
+                            <Code size={16} className="text-amber-600 dark:text-amber-400" />
+                          ) : (
+                            <School size={16} className="text-white" />
+                          )}
                         </div>
-                      ) : (
-                        message.content
+                      )}
+                      
+                      <div
+                        className={cn(
+                          "p-3 md:p-4 rounded-xl max-w-[85%] shadow-sm",
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground ml-auto rounded-tr-sm"
+                            : message.role === "function"
+                              ? "bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-tl-sm"
+                              : "bg-card rounded-tl-sm"
+                        )}
+                      >
+                        {message.role === "function" ? (
+                          <div>
+                            <div className="font-mono text-xs text-amber-700 dark:text-amber-300 mb-1">
+                              Function Response:
+                            </div>
+                            <pre className="text-xs overflow-auto">{message.content}</pre>
+                          </div>
+                        ) : (
+                          <div className="whitespace-pre-wrap break-words text-sm md:text-base prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {message.role === "user" && (
+                        <div className="w-9 h-9 rounded-full bg-muted flex-shrink-0 flex items-center justify-center">
+                          <MessageSquare size={16} className="text-primary" />
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  ))
+              )}
+              
               {isProcessing && (
-                <div className="bg-muted p-4 rounded-lg max-w-3xl">
-                  <div className="flex space-x-2">
-                    <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce"></div>
-                    <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce delay-75"></div>
-                    <div className="h-2 w-2 bg-muted-foreground/50 rounded-full animate-bounce delay-150"></div>
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex-shrink-0 flex items-center justify-center shadow-md">
+                    <School size={16} className="text-white" />
+                  </div>
+                  <div className="p-4 rounded-xl bg-card rounded-tl-sm flex items-center max-w-[85%] shadow-sm">
+                    <div className="dot-typing"></div>
                   </div>
                 </div>
               )}
             </div>
           </ScrollArea>
 
-          {/* Function Queue */}
-          {functionCalls.length > 0 && (
-            <div className="border-t p-3">
-              <FunctionQueue functionCalls={functionCalls} onFunctionStatusChange={handleFunctionStatusChange} />
-            </div>
-          )}
-
           {activeSection && (
-            <div className="border-t p-4 bg-card/50">
-              <Tabs defaultValue="overview">
-                <TabsList className="mb-2">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="concepts">Key Concepts</TabsTrigger>
-                  <TabsTrigger value="resources">Resources</TabsTrigger>
-                </TabsList>
+            <div className="border-t p-4 bg-card/50 backdrop-blur-sm">
+              <Tabs defaultValue="overview" className="w-full">
+                <div className="flex justify-between items-center mb-3">
+                  <TabsList className="w-auto">
+                    <TabsTrigger value="overview" className="text-xs md:text-sm">Overview</TabsTrigger>
+                    <TabsTrigger value="concepts" className="text-xs md:text-sm">Key Concepts</TabsTrigger>
+                    <TabsTrigger value="resources" className="text-xs md:text-sm">Resources</TabsTrigger>
+                  </TabsList>
+                  
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-muted-foreground">Show function calls</div>
+                    <Checkbox
+                      checked={showFunctionMessages}
+                      onCheckedChange={(checked) => setShowFunctionMessages(!!checked)}
+                      className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                    />
+                  </div>
+                </div>
 
-                <TabsContent value="overview">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
+                <TabsContent value="overview" className="mt-0">
+                  <Card className="overflow-hidden border-indigo-500/20 shadow-md">
+                    <CardHeader className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 backdrop-blur-sm">
+                      <CardTitle className="flex items-center text-lg">
                         {defiSections.find((s) => s.id === activeSection)?.icon &&
                           React.createElement(defiSections.find((s) => s.id === activeSection)?.icon || "div", {
-                            className: "mr-2 h-4 w-4",
+                            className: "mr-2 h-5 w-5 text-indigo-500",
                           })}
                         {defiSections.find((s) => s.id === activeSection)?.name}
                       </CardTitle>
-                      <CardDescription>{defiSections.find((s) => s.id === activeSection)?.description}</CardDescription>
+                      <CardDescription className="text-sm leading-relaxed">
+                        {defiSections.find((s) => s.id === activeSection)?.description}
+                      </CardDescription>
                     </CardHeader>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="concepts">
-                  <Card>
-                    <CardContent className="pt-4">
-                      {defiSections
-                        .find((s) => s.id === activeSection)
-                        ?.concepts.map((concept, i) => (
-                          <div key={i} className="mb-4">
-                            <h3 className="font-medium">{concept.title}</h3>
-                            <p className="text-sm text-muted-foreground mt-1">{concept.description}</p>
-                          </div>
-                        ))}
+                    <CardContent className="p-0">
+                      <div className="px-4 py-3 bg-muted/30 border-t border-muted-foreground/10 text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Lightbulb className="h-3.5 w-3.5" />
+                        <span>Try asking questions about {defiSections.find((s) => s.id === activeSection)?.name}</span>
+                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="resources">
-                  <Card>
-                    <CardContent className="pt-4">
-                      {defiSections
-                        .find((s) => s.id === activeSection)
-                        ?.concepts.flatMap((concept) =>
-                          concept.resources.map((resource, i) => (
-                            <div key={i} className="mb-2">
-                              {renderResourceLink(resource)}
+                <TabsContent value="concepts" className="mt-0">
+                  <Card className="shadow-md border-indigo-500/20">
+                    <CardContent className="p-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+                        {defiSections
+                          .find((s) => s.id === activeSection)
+                          ?.concepts.map((concept, i) => (
+                            <div key={i} className="p-3 border rounded-lg bg-card/90 hover:bg-card/100 transition-colors hover:border-indigo-500/20">
+                              <h3 className="font-medium flex items-center text-sm">
+                                <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center mr-2 text-xs text-primary">
+                                  {i + 1}
+                                </div>
+                                {concept.title}
+                              </h3>
+                              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{concept.description}</p>
                             </div>
-                          )),
-                        )}
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="resources" className="mt-0">
+                  <Card className="shadow-md border-indigo-500/20">
+                    <CardContent className="p-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+                        {defiSections
+                          .find((s) => s.id === activeSection)
+                          ?.concepts.flatMap((concept) =>
+                            concept.resources.map((resource, i) => (
+                              <a
+                                key={i}
+                                href={resource.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-3 border rounded-lg hover:bg-card/90 transition-colors hover:border-indigo-500/30 flex items-start gap-2 group"
+                              >
+                                <ExternalLink size={16} className="text-primary mt-0.5 flex-shrink-0 transition-transform group-hover:translate-x-0.5" />
+                                <div>
+                                  <div className="font-medium text-sm group-hover:text-primary transition-colors">{resource.name}</div>
+                                  <div className="text-xs text-muted-foreground mt-0.5">{resource.description}</div>
+                                </div>
+                              </a>
+                            )),
+                          )}
+                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -1192,40 +1272,63 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
           )}
 
           <div className="border-t p-4 bg-background">
-            <ModelSelector
-              useOpenAI={!useLocalAI}
-              onUseOpenAIChange={(value) => setUseLocalAI(!value)}
-              showSettings={showEndpointSettings}
-              onShowSettingsChange={setShowEndpointSettings}
-              llamaEndpoint={localEndpoint}
-              onLlamaEndpointChange={setLocalEndpoint}
-              openaiApiKey={apiKeys.openai || ""}
-              onOpenAIApiKeyChange={(key) => updateApiKey("openai", key)}
-              replicateApiKey={apiKeys.replicate}
-              onReplicateApiKeyChange={(key) => updateApiKey("replicate", key)}
-              className="mb-3"
-            />
-
-
-            <div className="flex gap-2">
-              <Textarea
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask a question about Web3 or DeFi..."
-                className="min-h-[60px] flex-1"
+            <div className="max-w-3xl mx-auto">
+              <ModelSelector
+                useOpenAI={!useLocalAI}
+                onUseOpenAIChange={(value) => setUseLocalAI(!value)}
+                showSettings={showEndpointSettings}
+                onShowSettingsChange={setShowEndpointSettings}
+                llamaEndpoint={localEndpoint}
+                onLlamaEndpointChange={setLocalEndpoint}
+                openaiApiKey={apiKeys.openai || ""}
+                onOpenAIApiKeyChange={(key) => updateApiKey("openai", key)}
+                replicateApiKey={apiKeys.replicate}
+                onReplicateApiKeyChange={(key) => updateApiKey("replicate", key)}
+                className="mb-3"
               />
-              <Button onClick={handleSendMessage} className="self-end" disabled={isProcessing}>
-                <Send className="h-4 w-4" />
-              </Button>
+
+              <div className="flex gap-2">
+                <Textarea
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask a question about Web3 or DeFi..."
+                  className="min-h-[60px] flex-1 bg-card/70 border-indigo-500/20 focus-visible:ring-indigo-500/50 rounded-xl"
+                />
+                <Button 
+                  onClick={handleSendMessage} 
+                  className="self-end rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600" 
+                  disabled={isProcessing}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {activeSection && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {defiSections
+                    .find((s) => s.id === activeSection)
+                    ?.suggestedQuestions.slice(0, 3).map((question, i) => (
+                      <Button
+                        key={i}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs border-indigo-500/20 text-muted-foreground hover:bg-indigo-500/5 hover:text-foreground rounded-lg"
+                        onClick={() => handleSelectQuestion(question)}
+                      >
+                        {question}
+                      </Button>
+                    ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div
           className={cn(
-            "flex-shrink-0 transition-all duration-300 overflow-hidden",
-            isSuggestionsCollapsed ? "w-10" : "w-[260px] lg:w-[300px]",
+            "bg-card/50 flex-shrink-0 transition-all duration-300 overflow-hidden border-l",
+            isSuggestionsCollapsed ? "w-10" : "w-[280px] md:w-1/4 lg:w-1/5",
           )}
         >
           {isSuggestionsCollapsed ? (
@@ -1233,31 +1336,91 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
               variant="ghost"
               size="icon"
               onClick={togglePromptsPanel}
-              className="h-full w-full rounded-none border-l"
+              className="h-full rounded-none border-l w-full"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
           ) : (
-            <div className="p-4 h-full">
+            <div className="p-4 h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Suggestions</h2>
+                <Button variant="ghost" size="icon" onClick={togglePromptsPanel} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              
               <SuggestedPromptsPanel
-                onSelectQuestion={handleSelectQuestion}
-                onCollapseChange={setIsSuggestionsCollapsed}
-                defaultCollapsed={isSuggestionsCollapsed}
-                customPrompts={[
-                  {
-                    name: activeSection ? defiSections.find((s) => s.id === activeSection)?.name || "DeFi" : "DeFi",
-                    prompts: activeSection
-                      ? defiSections.find((s) => s.id === activeSection)?.suggestedQuestions || []
-                      : defiSections[0].suggestedQuestions,
-                  },
-                ]}
+                suggestions={defiSections.find((s) => s.id === activeSection)?.suggestedQuestions || []}
+                onSelectPrompt={handleSelectQuestion}
               />
+
+              <div className="mt-4 text-xs text-muted-foreground">
+                <h3 className="font-medium mb-1">Active Functions</h3>
+                <div className="space-y-2">
+                  {functionCalls.length === 0 ? (
+                    <div className="text-xs text-muted-foreground italic">No active functions</div>
+                  ) : (
+                    <FunctionQueue
+                      functions={functionCalls}
+                      onStatusChange={handleFunctionStatusChange}
+                      walletAddress={address}
+                      chain={currentChain}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
     </div>
   )
+}
+
+// Add typing dots animation
+const styles = `
+.dot-typing {
+  position: relative;
+  left: -9999px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary));
+  box-shadow: 9984px 0 0 0 hsl(var(--primary)), 9999px 0 0 0 hsl(var(--primary)), 10014px 0 0 0 hsl(var(--primary));
+  animation: dot-typing 1.5s infinite linear;
+}
+
+@keyframes dot-typing {
+  0% {
+    box-shadow: 9984px 0 0 0 hsl(var(--primary)), 9999px 0 0 0 hsl(var(--primary)), 10014px 0 0 0 hsl(var(--primary));
+  }
+  16.667% {
+    box-shadow: 9984px -10px 0 0 hsl(var(--primary)), 9999px 0 0 0 hsl(var(--primary)), 10014px 0 0 0 hsl(var(--primary));
+  }
+  33.333% {
+    box-shadow: 9984px 0 0 0 hsl(var(--primary)), 9999px 0 0 0 hsl(var(--primary)), 10014px 0 0 0 hsl(var(--primary));
+  }
+  50% {
+    box-shadow: 9984px 0 0 0 hsl(var(--primary)), 9999px -10px 0 0 hsl(var(--primary)), 10014px 0 0 0 hsl(var(--primary));
+  }
+  66.667% {
+    box-shadow: 9984px 0 0 0 hsl(var(--primary)), 9999px 0 0 0 hsl(var(--primary)), 10014px 0 0 0 hsl(var(--primary));
+  }
+  83.333% {
+    box-shadow: 9984px 0 0 0 hsl(var(--primary)), 9999px 0 0 0 hsl(var(--primary)), 10014px -10px 0 0 hsl(var(--primary));
+  }
+  100% {
+    box-shadow: 9984px 0 0 0 hsl(var(--primary)), 9999px 0 0 0 hsl(var(--primary)), 10014px 0 0 0 hsl(var(--primary));
+  }
+}
+`;
+
+// Add style tag for the animation
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = styles;
+  document.head.appendChild(styleSheet);
 }
 
 export default Web3Intro

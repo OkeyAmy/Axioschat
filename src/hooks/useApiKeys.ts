@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 
 export interface ApiKeys {
   replicate: string
-  openai: string
+  openai: string // Keeping the key name "openai" for backward compatibility, but we're using it for Gemini
 }
 
 const useApiKeys = () => {
@@ -19,7 +19,7 @@ const useApiKeys = () => {
         const parsedKeys = JSON.parse(savedKeys) as Partial<ApiKeys>
         setApiKeys({
           replicate: parsedKeys.replicate || "",
-          openai: parsedKeys.openai || "",
+          openai: parsedKeys.openai || "", // This will be the Gemini API key
         })
       } catch (error) {
         console.error("Failed to parse API keys from localStorage:", error)

@@ -40,7 +40,7 @@ const chains = [mainnet, polygon, optimism, arbitrum, base, zora, bsc, avalanche
 
 // Get wallets using the proper API for RainbowKit v2
 const { connectors } = getDefaultWallets({
-  appName: "NovachatV2",
+  appName: "Axioschat",
   projectId,
 })
 

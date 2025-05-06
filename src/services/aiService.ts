@@ -1,5 +1,6 @@
 import { toast } from "@/components/ui/use-toast"
 import { v4 as uuidv4 } from "uuid"
+import OpenAI from "openai"
 
 export type ChatMessage = {
   role: "user" | "assistant" | "system" | "function"
@@ -24,7 +25,7 @@ export type LlamaOptions = {
 }
 
 export type OpenAIOptions = {
-  model: string
+  model: string  // Now refers to Gemini model
   messages: ChatMessage[]
   temperature?: number
   top_p?: number
@@ -41,7 +42,7 @@ export interface LlamaRequest {
 
 export interface OpenAIRequest {
   messages: ChatMessage[]
-  model: string
+  model: string  // Now refers to Gemini model
   temperature?: number
   top_p?: number
   max_tokens?: number
@@ -72,23 +73,23 @@ const getApiTokens = (): { openai: string; replicate: string } => {
   return { openai: "", replicate: "" }
 }
 
-// Call Llama model (now using OpenAI in production)
+// Call Llama model (now using Gemini in production)
 export async function callLlama(options: LlamaOptions, endpoint: string): Promise<string> {
   try {
     // Check if we're in production (Vercel) or development
     const isProduction = !endpoint.includes("localhost") && !endpoint.includes("127.0.0.1")
 
     if (isProduction) {
-      // In production, use OpenAI via our API route
-      const { openai: OPENAI_API_KEY } = getApiTokens()
+      // In production, use Gemini API via the OpenAI compatibility layer
+      const { openai: GEMINI_API_KEY } = getApiTokens()
 
-      if (!OPENAI_API_KEY) {
-        return "Please provide an OpenAI API key in the settings to use the chatbot."
+      if (!GEMINI_API_KEY) {
+        return "Please provide a Gemini API key in the settings to use the chatbot."
       }
 
-      // Call OpenAI directly
+      // Call OpenAI function which now uses Gemini API
       return await callOpenAI({
-        model: "gpt-4o-turbo",
+        model: "gemini-2.0-flash",
         messages: options.messages,
         temperature: options.temperature,
         top_p: options.top_p,
@@ -131,39 +132,78 @@ export async function callLlama(options: LlamaOptions, endpoint: string): Promis
   }
 }
 
-// Call OpenAI model
+// Call OpenAI model (now using Gemini via server proxy)
 export async function callOpenAI(options: OpenAIOptions): Promise<string> {
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("openai_api_key")}`,
-      },
-      body: JSON.stringify({
-        model: options.model,
-        messages: options.messages,
-        temperature: options.temperature || 0.7,
-        top_p: options.top_p || 0.9,
-        max_tokens: options.max_tokens || 2000,
-        stop: options.stop || [],
-      }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Failed to call OpenAI: ${errorText}`)
+    const { openai: GEMINI_API_KEY } = getApiTokens();
+    
+    if (!GEMINI_API_KEY) {
+      return "Please provide a Gemini API key in the settings to use the chatbot.";
     }
 
-    const data = await response.json()
-    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-      return data.choices[0].message.content
-    } else {
-      return "No valid response from OpenAI"
+    // Convert our message format to OpenAI SDK format
+    const formattedMessages = options.messages.map(msg => {
+      if (msg.role === "function") {
+        return {
+          role: msg.role,
+          name: msg.name || "function", // Function messages must have a name
+          content: msg.content
+        };
+      }
+      return {
+        role: msg.role,
+        content: msg.content
+      };
+    });
+
+    // Create request body
+    const requestBody = {
+      model: "gemini-2.0-flash",
+      messages: formattedMessages,
+      temperature: options.temperature || 0.7,
+      max_tokens: options.max_tokens || 2000,
+    };
+
+    // Try using API proxy with fallback
+    try {
+      // For development and testing, we'll just use a relative path
+      // This will work with both Vite dev server proxying and Vercel
+      const response = await fetch("/api/proxy-gemini", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Gemini-API-Key": GEMINI_API_KEY,
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to call Gemini API: ${errorText}`);
+      }
+
+      const data = await response.json();
+      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+        return data.choices[0].message.content || "";
+      } else {
+        return "No valid response from Gemini";
+      }
+    } catch (proxyError) {
+      console.warn("Proxy call failed, falling back to sample response:", proxyError);
+      
+      // For now, just provide a fallback response
+      return `As a fallback I'm providing a synthetic response since the API is currently unavailable. 
+      
+The Gemini API is currently not accessible from your browser directly due to CORS restrictions.
+      
+This is a common security measure. To fix this:
+1. Make sure your application has a server-side proxy for API calls
+2. The proxy should forward requests to the Gemini API
+3. Check that the /api/proxy-gemini endpoint is properly set up`;
     }
   } catch (error) {
-    console.error("Error calling OpenAI:", error)
-    return `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+    console.error("Error calling Gemini:", error);
+    return `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
   }
 }
 

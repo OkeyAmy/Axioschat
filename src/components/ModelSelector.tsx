@@ -4,7 +4,7 @@ import type React from "react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Settings, X } from "lucide-react"
+import { Settings, X, Sparkles, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import ApiKeyInput from "./ApiKeyInput"
 
@@ -36,80 +36,112 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   replicateApiKey,
   onReplicateApiKeyChange,
   className,
-  debugMode = false,
+  debugMode,
   onDebugModeChange,
 }) => {
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          <Switch id="model-toggle" checked={useOpenAI} onCheckedChange={onUseOpenAIChange} />
-          <Label htmlFor="model-toggle" className="text-sm cursor-pointer select-none">
-            {useOpenAI ? "OpenAI GPT-4o" : "Llama 3.2 (Local)"}
-          </Label>
+    <div className={cn("space-y-2", className)}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onShowSettingsChange(!showSettings)}
+            className={cn(
+              "h-8 px-2 text-xs font-medium rounded-full transition-colors",
+              showSettings && "bg-muted text-foreground"
+            )}
+          >
+            {showSettings ? <X className="h-3.5 w-3.5 mr-1" /> : <Settings className="h-3.5 w-3.5 mr-1" />}
+            {showSettings ? "Close" : "Settings"}
+          </Button>
+          {debugMode !== undefined && onDebugModeChange && (
+            <div className="flex items-center gap-1.5 text-xs">
+              <div className="flex h-8 items-center space-x-1 rounded-full bg-muted px-3">
+                <Label htmlFor="debug-mode" className="text-muted-foreground font-medium">
+                  Debug
+                </Label>
+                <Switch
+                  id="debug-mode"
+                  checked={debugMode}
+                  onCheckedChange={onDebugModeChange}
+                  className="data-[state=checked]:bg-amber-500"
+              />
+              </div>
+            </div>
+          )}
         </div>
-        <Button variant="ghost" size="icon" onClick={() => onShowSettingsChange(!showSettings)} className="h-8 w-8">
-          <Settings size={14} />
-        </Button>
+        <div className="flex items-center gap-1.5 text-xs">
+          <Label htmlFor="model-toggle" className="font-medium">Model:</Label>
+          <div className="flex items-center p-1 rounded-full border border-muted-foreground/20 bg-background shadow-sm">
+            <Button
+              size="sm"
+              variant="ghost"
+              className={cn(
+                "h-6 px-3 rounded-full text-xs flex gap-1 items-center transition-all",
+                !useOpenAI && "bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium"
+              )}
+              onClick={() => onUseOpenAIChange(false)}
+            >
+              <Zap className={cn("h-3 w-3", !useOpenAI && "text-white")} />
+              Local
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={cn(
+                "h-6 px-3 rounded-full text-xs flex gap-1 items-center transition-all",
+                useOpenAI && "bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium"
+              )}
+              onClick={() => onUseOpenAIChange(true)}
+            >
+              <Sparkles className={cn("h-3 w-3", useOpenAI && "text-white")} />
+              Gemini
+            </Button>
+          </div>
+        </div>
       </div>
 
       {showSettings && (
-        <div className="p-3 border rounded-md bg-muted/40 space-y-3 relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 absolute top-2 right-2"
-            onClick={() => onShowSettingsChange(false)}
-          >
-            <X size={12} />
-          </Button>
-
-          {useOpenAI ? (
+        <div className="border rounded-xl p-3 space-y-3 bg-muted/30 backdrop-blur-sm">
             <div className="space-y-2">
-              <ApiKeyInput
-                label="OpenAI API Key"
-                apiKey={openaiApiKey}
-                onChange={onOpenAIApiKeyChange}
-                placeholder="Enter your OpenAI API key"
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="llama-endpoint" className="text-xs">
-                Llama Endpoint
+            <Label htmlFor="llama-endpoint" className="text-xs font-medium flex items-center">
+              <Zap className="h-3 w-3 mr-1 text-blue-500" />
+              Local Endpoint:
               </Label>
+            <div className="flex gap-2">
               <input
                 id="llama-endpoint"
-                placeholder="http://localhost:11434"
+                type="text"
                 value={llamaEndpoint}
                 onChange={(e) => onLlamaEndpointChange(e.target.value)}
-                className="w-full px-3 py-1 text-xs h-8 rounded-md border"
+                className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="http://localhost:11434"
               />
-            </div>
-          )}
-
-          <div className="space-y-2 pt-2 border-t">
-            <ApiKeyInput
-              label="Replicate API Key (for Web3 Functions)"
-              apiKey={replicateApiKey}
-              onChange={onReplicateApiKeyChange}
-              placeholder="Enter your Replicate API key"
-            />
-            <div className="text-xs text-muted-foreground mt-2">
-              <p>Note: The Replicate API key is required for Web3 function calling with the Flock Web3 model.</p>
             </div>
           </div>
 
-          <div className="space-y-2 pt-2 border-t">
-            <div className="flex items-center space-x-2">
-              <Switch id="debug-mode" checked={debugMode} onCheckedChange={onDebugModeChange} />
-              <Label htmlFor="debug-mode" className="text-sm cursor-pointer select-none">
-                Troubleshooting Mode
-              </Label>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              <p>Shows all data including function call responses for debugging purposes.</p>
-            </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium flex items-center">
+              <Sparkles className="h-3 w-3 mr-1 text-purple-500" />
+              Gemini API Key:
+            </Label>
+            <ApiKeyInput
+              value={openaiApiKey}
+              onChange={onOpenAIApiKeyChange}
+              placeholder="Enter Gemini API key"
+              className="text-xs h-8 bg-background ring-offset-background focus-visible:ring-indigo-500"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Replicate API Key:</Label>
+            <ApiKeyInput
+              value={replicateApiKey}
+              onChange={onReplicateApiKeyChange}
+              placeholder="Enter Replicate API key"
+              className="text-xs h-8 bg-background ring-offset-background focus-visible:ring-blue-500"
+            />
           </div>
         </div>
       )}
