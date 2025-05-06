@@ -1,7 +1,7 @@
 # AxiosChat: Your Intelligent Web3 Navigator
 
 <div align="center">
-  <img src="https://sjc.microlink.io/1vRgADpCEWNh4TMR1VGylSUFVbYgtGFDhmbQIr9Hg56YlPwwXzGQO3dwwKmpCC5jVlo-NOd9CuQqr1PYOedWuQ.jpeg" alt="AxiosChat Banner" width="100%">
+  <img src="public\Axios.png" alt="AxiosChat Banner" width="100%">
   
   ### *Bridging the gap between complex blockchain technology and everyday users*
 </div>
@@ -38,9 +38,6 @@
 
 ## ✨ Key Features & Recent Enhancements
 
-<div align="center">
-  <img src="https://i.imgur.com/LZFgD7t.png" alt="AxiosChat Interface" width="90%" />
-</div>
 
 ### 💬 Core Functionality
 
@@ -67,7 +64,7 @@
 * **Multi-Model Approach**: Leverages both general LLMs (like Llama or Gemini) for conversation and specialized Web3 models (like Flock) for precise function execution.
 * **Customizable API Endpoints**: Flexibility to configure and use your preferred AI model providers.
 
-## 🏆 Why AxiosChat Stands Out: The "Wow" Factor for Judges
+## 🏆 Why AxiosChat Stands Out
 
 AxiosChat isn't just another chatbot. It's a **thoughtfully engineered solution** addressing a critical pain point in the Web3 ecosystem: **accessibility**.
 
@@ -171,8 +168,8 @@ graph TD;
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/axios-chat.git # Replace with your actual repo URL
-   cd axios-chat
+   git clone https://github.com/OkeyAmy/Axioschat.git # Replace with your actual repo URL
+   cd Axioschat
    ```
 
 2. **Install Dependencies**:
@@ -197,9 +194,7 @@ graph TD;
 
 ## 🔮 Future Roadmap & Vision
 
-<div align="center">
-  <img src="https://i.imgur.com/RZDnceG.png" alt="AxiosChat Roadmap" width="90%" />
-</div>
+
 
 * **Phase 1 (Achieved & Enhanced)**: Core conversational AI, Web3 function calling, robust UI, secure transaction handling, support for Ethereum.
 * **Phase 2**: Expansion to additional EVM chains (e.g., Polygon, BNB Chain, Arbitrum) and popular L2s.
