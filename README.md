@@ -209,7 +209,7 @@ This project is licensed under the [MIT License](LICENSE).
     <i>Built with 💜 for the blockchain community</i>
   </p>
   <p>
-    <a href="https://github.com/your-username/axios-chat/issues">Report Bug</a> · 
-    <a href="https://github.com/your-username/axios-chat/issues">Request Feature</a>
+    <a href="https://github.com/OkeyAmy/AxiosChat/issues">Report Bug</a> · 
+    <a href="https://github.com/OkeyAmy/AxiosChat/issues">Request Feature</a>
   </p>
 </div>
