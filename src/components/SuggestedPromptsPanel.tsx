@@ -140,7 +140,7 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({
         </TabsList>
 
         <div className="px-3 py-2">
-          <Button 
+                      <Button 
             variant="outline"
             size="sm"
             onClick={() => handlePromptClick("How can you help me with Web3 development?")}
@@ -158,11 +158,11 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({
           >
             {PROMPT_CATEGORIES.blockchain.map((prompt) => (
               <div
-                key={prompt} 
+                        key={prompt} 
                 className="transition-colors duration-200"
               >
                 <Button 
-                  variant="outline" 
+                        variant="outline" 
                   size="sm"
                   className={cn(
                     "justify-start text-xs h-auto py-2.5 px-3 font-normal w-full",
@@ -175,8 +175,8 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({
                   onMouseEnter={() => setHoveredPrompt(prompt)}
                   onMouseLeave={() => setHoveredPrompt(null)}
                   onClick={() => handlePromptClick(prompt)}
-                >
-                  <div className="flex items-start gap-2 w-full">
+                      >
+                        <div className="flex items-start gap-2 w-full">
                     <Lightbulb 
                       size={14} 
                       className={cn(
@@ -185,8 +185,8 @@ const SuggestedPromptsPanel: React.FC<SuggestedPromptsPanelProps> = ({
                       )} 
                     />
                     <span className="break-words whitespace-normal text-muted-foreground group-hover:text-foreground transition-colors">{prompt}</span>
-                  </div>
-                </Button>
+                        </div>
+                      </Button>
               </div>
             ))}
           </TabsContent>

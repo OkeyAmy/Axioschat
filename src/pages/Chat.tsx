@@ -128,24 +128,24 @@ const Chat = () => {
       setLoading(true);
 
       // Execute the rest of the function in a try-catch block to prevent UI from disappearing
-      try {
-        // Prepare messages for the Llama model
-        const conversationalMessages: ChatMessage[] = messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-          functionCalls: m.functionCalls,
-          name: m.name,
+    try {
+      // Prepare messages for the Llama model
+      const conversationalMessages: ChatMessage[] = messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        functionCalls: m.functionCalls,
+        name: m.name,
         }));
 
-        // Add the new user message
-        conversationalMessages.push({
-          role: "user",
+      // Add the new user message
+      conversationalMessages.push({
+        role: "user",
           content: userInput,
         });
 
-        // Add system message to guide the Llama model to ONLY identify if a function call is needed
-        conversationalMessages.unshift({
-          role: "system",
+      // Add system message to guide the Llama model to ONLY identify if a function call is needed
+      conversationalMessages.unshift({
+        role: "system",
           content: `You are Axoischat, a specialized Web3 assistant with deep knowledge of blockchain, cryptocurrencies, DeFi, NFTs, and smart contracts.
 
 Your ONLY job is to determine if the user's request requires calling a blockchain function.
@@ -173,38 +173,38 @@ DO NOT try to execute functions yourself. DO NOT include any specific function n
 DO NOT make up any blockchain data. ONLY identify if a function call is needed.`,
         });
 
-        // Call the Llama model to determine if a function call is needed
+      // Call the Llama model to determine if a function call is needed
         let llamaResponse: string;
 
-        if (useOpenAI) {
+      if (useOpenAI) {
           // Use Gemini
-          if (!apiKeys.openai) {
+        if (!apiKeys.openai) {
             llamaResponse = "Please provide a Gemini API key in the settings to use the chatbot.";
-          } else {
+        } else {
             try {
-              llamaResponse = await callOpenAI({
+          llamaResponse = await callOpenAI({
                 model: "gemini-2.0-flash",
-                messages: conversationalMessages,
-                temperature: 0.7,
-                top_p: 0.9,
-                max_tokens: 2000,
+            messages: conversationalMessages,
+            temperature: 0.7,
+            top_p: 0.9,
+            max_tokens: 2000,
               });
             } catch (error) {
               console.error("Error calling OpenAI:", error);
               llamaResponse = "Sorry, I'm having trouble connecting to the AI service. Please try again in a moment.";
             }
-          }
-        } else {
-          // Use Llama
+        }
+      } else {
+        // Use Llama
           try {
-            llamaResponse = await callLlama(
-              {
-                messages: conversationalMessages,
-                temperature: 0.7,
-                top_p: 0.9,
-                max_tokens: 2000,
-              },
-              llamaEndpoint,
+        llamaResponse = await callLlama(
+          {
+            messages: conversationalMessages,
+            temperature: 0.7,
+            top_p: 0.9,
+            max_tokens: 2000,
+          },
+          llamaEndpoint,
             );
           } catch (error) {
             console.error("Error calling Llama:", error);
@@ -214,119 +214,119 @@ DO NOT make up any blockchain data. ONLY identify if a function call is needed.`
 
         console.log("Llama response:", llamaResponse);
 
-        // Check if Llama identified a function call is needed
+      // Check if Llama identified a function call is needed
         const functionNeeded = llamaResponse.includes("[FUNCTION_NEEDED]");
 
-        // Clean up the response by removing the tag
+      // Clean up the response by removing the tag
         const cleanResponse = llamaResponse.replace("[FUNCTION_NEEDED]", "").trim();
 
-        // Add the assistant's message
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: cleanResponse,
-          id: uuidv4(),
+      // Add the assistant's message
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: cleanResponse,
+        id: uuidv4(),
         };
         setMessages((prevMessages) => [...prevMessages, assistantMessage]);
 
-        // If a function call is needed
-        if (functionNeeded) {
+      // If a function call is needed
+      if (functionNeeded) {
           console.log("Function call needed according to Llama");
 
-          // Set a processing message ID to track this operation
+        // Set a processing message ID to track this operation
           const processingId = uuidv4();
           setProcessingMessageId(processingId);
 
-          // Add a processing message
-          const processingMessage: Message = {
-            role: "assistant",
-            content: "I'm checking that information for you...",
-            id: processingId,
+        // Add a processing message
+        const processingMessage: Message = {
+          role: "assistant",
+          content: "I'm checking that information for you...",
+          id: processingId,
           };
           setMessages((prevMessages) => [...prevMessages, processingMessage]);
 
-          // Now forward the request to the Flock Web3 model
-          try {
+        // Now forward the request to the Flock Web3 model
+        try {
             setExecutingFunction(true);
 
-            // Check if Replicate API key is available
-            if (!apiKeys.replicate) {
+          // Check if Replicate API key is available
+          if (!apiKeys.replicate) {
               throw new Error("Replicate API key is required to use the Flock Web3 model");
-            }
+          }
 
-            // Get the tools JSON
+          // Get the tools JSON
             const tools = createDefaultWeb3Tools();
 
             console.log("Calling Flock Web3 model with query:", userInput);
 
-            // Call the Flock Web3 model to determine the specific function and parameters
+          // Call the Flock Web3 model to determine the specific function and parameters
             try {
-              const flockResponse = await callFlockWeb3({
+          const flockResponse = await callFlockWeb3({
                 query: userInput,
-                tools: tools,
-                temperature: 0.7,
-                top_p: 0.9,
-                max_new_tokens: 2000,
+            tools: tools,
+            temperature: 0.7,
+            top_p: 0.9,
+            max_new_tokens: 2000,
               });
 
               console.log("Flock Web3 response:", flockResponse);
 
-              if (typeof flockResponse === "string") {
+          if (typeof flockResponse === "string") {
                 throw new Error("Unexpected string response from Flock Web3");
-              }
+          }
 
-              if (flockResponse.error) {
+          if (flockResponse.error) {
                 throw new Error(flockResponse.error);
-              }
+          }
 
-              if (flockResponse.functionCalls && flockResponse.functionCalls.length > 0) {
-                // We got function calls from Flock Web3
+          if (flockResponse.functionCalls && flockResponse.functionCalls.length > 0) {
+            // We got function calls from Flock Web3
                 const functionCall = flockResponse.functionCalls[0];
                 console.log("Function call from Flock Web3:", functionCall);
 
-                // Add to function calls state
+            // Add to function calls state
                 setFunctionCalls((prev) => [...prev, functionCall]);
 
-                // If it's a read-only function, execute it directly
-                if (isReadOnlyFunction(functionCall.name)) {
+            // If it's a read-only function, execute it directly
+            if (isReadOnlyFunction(functionCall.name)) {
                   console.log("Auto-executing read-only function");
 
-                  try {
+              try {
                     const result = await executeFunctionCall(functionCall);
                     console.log("Function execution result:", result);
 
-                    // Add the function result as a function message
-                    const functionMessage: Message = {
-                      role: "function",
-                      name: functionCall.name,
-                      content: JSON.stringify(
-                        {
-                          function_name: functionCall.name,
-                          arguments: functionCall.arguments,
-                          result: result,
-                          timestamp: new Date().toISOString(),
-                        },
-                        null,
-                        2,
-                      ),
-                      id: uuidv4(),
+                // Add the function result as a function message
+                const functionMessage: Message = {
+                  role: "function",
+                  name: functionCall.name,
+                  content: JSON.stringify(
+                    {
+                      function_name: functionCall.name,
+                      arguments: functionCall.arguments,
+                      result: result,
+                      timestamp: new Date().toISOString(),
+                    },
+                    null,
+                    2,
+                  ),
+                  id: uuidv4(),
                     };
                     setMessages((prev) => [...prev, functionMessage]);
 
-                    // Update the function call status
-                    setFunctionCalls((prev) =>
-                      prev.map((f) => (f.id === functionCall.id ? { ...f, status: "executed", result } : f)),
+                // Update the function call status
+                setFunctionCalls((prev) =>
+                  prev.map((f) => (f.id === functionCall.id ? { ...f, status: "executed", result } : f)),
                     );
 
-                    // Format the result for the Llama model
+                // Format the result for the Llama model
                     const formattedResult = JSON.stringify(result);
 
-                    // Send the result back to the Llama model for interpretation
-                    // No need to look up the function, we already have it
-                    const interpretationMessages: ChatMessage[] = [
-                      {
-                        role: "system",
+                // Send the result back to the Llama model for interpretation
+                // No need to look up the function, we already have it
+                const interpretationMessages: ChatMessage[] = [
+                  {
+                    role: "system",
                         content: `You are Axioschat, a specialized Web3 assistant. You've just received the result of a function call.
-                        
+                    
 Interpret the function result and respond in a natural, conversational way. Focus on explaining what the data means for the user in plain language.
 
 Be concise and direct. Don't just repeat the raw data - explain its significance in a helpful way.
@@ -334,128 +334,128 @@ Be concise and direct. Don't just repeat the raw data - explain its significance
 Function: ${functionCall.name}
 Arguments: ${JSON.stringify(functionCall.arguments)}
 Result: ${formattedResult}`,
-                      },
-                      {
-                        role: "user",
+                  },
+                  {
+                    role: "user",
                         content: `The user asked: "${userInput}". Please interpret the function result in a helpful way.`,
-                      },
+                  },
                     ];
 
                     console.log("Sending function result to Llama for interpretation");
 
-                    // Call the Llama model again to interpret the result
+                // Call the Llama model again to interpret the result
                     let interpretationResponse: string;
 
-                    if (useOpenAI) {
-                      if (!apiKeys.openai) {
-                        // Generate a fallback response if no API key
+                if (useOpenAI) {
+                  if (!apiKeys.openai) {
+                    // Generate a fallback response if no API key
                         interpretationResponse = generateFallbackResponse(functionCall, result);
-                      } else {
-                        interpretationResponse = await callOpenAI({
+                  } else {
+                    interpretationResponse = await callOpenAI({
                           model: "gemini-2.0-flash",
-                          messages: interpretationMessages,
-                          temperature: 0.7,
-                          top_p: 0.9,
-                          max_tokens: 2000,
+                      messages: interpretationMessages,
+                      temperature: 0.7,
+                      top_p: 0.9,
+                      max_tokens: 2000,
                         });
-                      }
-                    } else {
-                      interpretationResponse = await callLlama(
-                        {
-                          messages: interpretationMessages,
-                          temperature: 0.7,
-                          top_p: 0.9,
-                          max_tokens: 2000,
-                        },
-                        llamaEndpoint,
+                  }
+                } else {
+                  interpretationResponse = await callLlama(
+                    {
+                      messages: interpretationMessages,
+                      temperature: 0.7,
+                      top_p: 0.9,
+                      max_tokens: 2000,
+                    },
+                    llamaEndpoint,
                       );
-                    }
+                }
 
                     console.log("Interpretation response:", interpretationResponse);
 
-                    // Replace the processing message with the interpretation
-                    if (interpretationResponse && !interpretationResponse.includes("No valid response from")) {
-                      setMessages((prevMessages) =>
-                        prevMessages.map((msg) =>
-                          msg.id === processingId
-                            ? {
-                                ...msg,
-                                content: interpretationResponse,
-                              }
-                            : msg,
-                        ),
-                      );
-                    } else {
-                      // Use fallback response if interpretation fails
-                      const fallbackResponse = generateFallbackResponse(functionCall, result);
-                      setMessages((prevMessages) =>
-                        prevMessages.map((msg) =>
-                          msg.id === processingId
-                            ? {
-                                ...msg,
-                                content: fallbackResponse,
-                              }
-                            : msg,
-                        ),
-                      );
-                    }
-                  } catch (error) {
-                    console.error("Error executing function:", error);
-
-                    // Update the processing message with the error
-                    setMessages((prevMessages) =>
-                      prevMessages.map((msg) =>
-                        msg.id === processingId
-                          ? {
-                              ...msg,
-                              content: `I encountered an error while checking that information: ${
-                                error instanceof Error ? error.message : "Unknown error"
-                              }`,
-                            }
-                          : msg,
-                      ),
-                    );
-
-                    // Update the function call status
-                    setFunctionCalls((prev) =>
-                      prev.map((f) =>
-                        f.id === functionCall.id
-                          ? {
-                              ...f,
-                              status: "rejected",
-                              result: { error: error instanceof Error ? error.message : "Unknown error" },
-                            }
-                          : f,
-                      ),
-                    );
-                  }
-                } else {
-                  // For non-read-only functions, add to queue for approval
-                  console.log("Adding function to queue for approval");
-
-                  // Update the processing message
+                // Replace the processing message with the interpretation
+                if (interpretationResponse && !interpretationResponse.includes("No valid response from")) {
                   setMessages((prevMessages) =>
                     prevMessages.map((msg) =>
                       msg.id === processingId
                         ? {
                             ...msg,
-                            content: `I need your approval to execute the ${functionCall.name} function. Please check the transaction queue.`,
+                            content: interpretationResponse,
                           }
                         : msg,
                     ),
-                  );
+                      );
+                } else {
+                  // Use fallback response if interpretation fails
+                      const fallbackResponse = generateFallbackResponse(functionCall, result);
+                  setMessages((prevMessages) =>
+                    prevMessages.map((msg) =>
+                      msg.id === processingId
+                        ? {
+                            ...msg,
+                            content: fallbackResponse,
+                          }
+                        : msg,
+                    ),
+                      );
                 }
-              } else {
-                // No function calls returned
+              } catch (error) {
+                    console.error("Error executing function:", error);
+
+                // Update the processing message with the error
                 setMessages((prevMessages) =>
                   prevMessages.map((msg) =>
                     msg.id === processingId
                       ? {
                           ...msg,
-                          content: "I couldn't determine the specific function needed. Could you please provide more details?",
+                          content: `I encountered an error while checking that information: ${
+                            error instanceof Error ? error.message : "Unknown error"
+                          }`,
                         }
                       : msg,
                   ),
+                    );
+
+                // Update the function call status
+                setFunctionCalls((prev) =>
+                  prev.map((f) =>
+                    f.id === functionCall.id
+                      ? {
+                          ...f,
+                          status: "rejected",
+                          result: { error: error instanceof Error ? error.message : "Unknown error" },
+                        }
+                      : f,
+                  ),
+                    );
+              }
+            } else {
+              // For non-read-only functions, add to queue for approval
+                  console.log("Adding function to queue for approval");
+
+              // Update the processing message
+              setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                  msg.id === processingId
+                    ? {
+                        ...msg,
+                        content: `I need your approval to execute the ${functionCall.name} function. Please check the transaction queue.`,
+                      }
+                    : msg,
+                ),
+                  );
+            }
+              } else {
+                // No function calls returned
+            setMessages((prevMessages) =>
+              prevMessages.map((msg) =>
+                msg.id === processingId
+                  ? {
+                      ...msg,
+                          content: "I couldn't determine the specific function needed. Could you please provide more details?",
+                    }
+                  : msg,
+              ),
                 );
               }
             } catch (flockError) {
@@ -472,22 +472,22 @@ Result: ${formattedResult}`,
                     : msg,
                 ),
               );
-            }
-          } catch (error) {
+          }
+        } catch (error) {
             console.error("Error in function execution flow:", error);
-            setMessages((prevMessages) =>
-              prevMessages.map((msg) =>
-                msg.id === processingId
-                  ? {
-                      ...msg,
-                      content: `I encountered an error while processing your request: ${
-                        error instanceof Error ? error.message : "Unknown error"
-                      }`,
-                    }
-                  : msg,
-              ),
+          setMessages((prevMessages) =>
+            prevMessages.map((msg) =>
+              msg.id === processingId
+                ? {
+                    ...msg,
+                    content: `I encountered an error while processing your request: ${
+                      error instanceof Error ? error.message : "Unknown error"
+                    }`,
+                  }
+                : msg,
+            ),
             );
-          } finally {
+        } finally {
             setExecutingFunction(false);
             setProcessingMessageId(null);
           }
@@ -498,9 +498,9 @@ Result: ${formattedResult}`,
         setMessages((prevMessages) => [
           ...prevMessages,
           {
-            role: "assistant",
+        role: "assistant",
             content: "I'm sorry, I encountered an unexpected error. Please try again.",
-            id: uuidv4(),
+        id: uuidv4(),
           },
         ]);
       }
@@ -796,56 +796,56 @@ Result: ${formattedResult}`,
         ) : (
           <ErrorBoundary>
             <div className="grid grid-cols-[auto_1fr_auto] gap-0 md:gap-3 lg:gap-4 h-full max-h-full">
-              {/* History Panel */}
-              <div
-                className={cn(
-                  "transition-all duration-300 h-full max-h-full overflow-hidden flex flex-col",
-                  isHistoryPanelCollapsed ? "w-10" : "w-[280px] md:w-[320px]",
-                )}
-              >
-                <div className="flex-1 overflow-hidden">
-                  <ChatHistory
-                    onSelectChat={handleSelectChat}
-                    onNewChat={handleNewChat}
-                    activeChat={activeChat}
-                    currentChain={currentChain}
-                    onCollapseChange={setIsHistoryPanelCollapsed}
-                    defaultCollapsed={isHistoryPanelCollapsed}
-                  />
-                </div>
-
-                {!isHistoryPanelCollapsed && (
-                  <div className="border-t mt-auto p-2 bg-background/50 backdrop-blur-sm rounded-b-xl">
-                    <TransactionQueue
-                      chainId={currentChain}
-                      inPanel={true}
-                      functionCalls={functionCalls}
-                      onFunctionStatusChange={handleFunctionStatusChange}
-                    />
-                  </div>
-                )}
+            {/* History Panel */}
+            <div
+              className={cn(
+                "transition-all duration-300 h-full max-h-full overflow-hidden flex flex-col",
+                isHistoryPanelCollapsed ? "w-10" : "w-[280px] md:w-[320px]",
+              )}
+            >
+              <div className="flex-1 overflow-hidden">
+                <ChatHistory
+                  onSelectChat={handleSelectChat}
+                  onNewChat={handleNewChat}
+                  activeChat={activeChat}
+                  currentChain={currentChain}
+                  onCollapseChange={setIsHistoryPanelCollapsed}
+                  defaultCollapsed={isHistoryPanelCollapsed}
+                />
               </div>
 
-              {/* Main Chat Area */}
-              <div className={getContentWidth()}>
+              {!isHistoryPanelCollapsed && (
+                  <div className="border-t mt-auto p-2 bg-background/50 backdrop-blur-sm rounded-b-xl">
+                  <TransactionQueue
+                    chainId={currentChain}
+                    inPanel={true}
+                    functionCalls={functionCalls}
+                    onFunctionStatusChange={handleFunctionStatusChange}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Main Chat Area */}
+            <div className={getContentWidth()}>
                 <div className="border-b px-5 py-3 flex justify-between items-center flex-shrink-0 bg-muted/30">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-md">
                       <MessageSquare className="h-4 w-4 text-white" />
                     </div>
-                    <h2 className="text-sm font-medium">{activeChat ? "Conversation" : "New Chat"}</h2>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearChat}
-                    className="text-xs h-8 hover:bg-background/80 hover:text-foreground"
-                    disabled={messages.length === 0}
-                  >
-                    <RotateCcw size={14} className="mr-1" />
-                    Clear
-                  </Button>
+                  <h2 className="text-sm font-medium">{activeChat ? "Conversation" : "New Chat"}</h2>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearChat}
+                    className="text-xs h-8 hover:bg-background/80 hover:text-foreground"
+                  disabled={messages.length === 0}
+                >
+                  <RotateCcw size={14} className="mr-1" />
+                  Clear
+                </Button>
+              </div>
 
                 <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 bg-gradient-to-b from-background via-background/95 to-background/90 relative">
                   {/* Background particle effect */}
@@ -854,16 +854,16 @@ Result: ${formattedResult}`,
                     <div className="absolute bottom-0 right-[10%] w-72 h-72 bg-purple-500/10 rounded-full blur-3xl transform translate-y-1/3"></div>
                   </div>
 
-                  {messages.length === 0 ? (
+                {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-4 md:p-8 relative z-10">
                       <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-xl shadow-purple-500/20 relative overflow-hidden">
                         <div className="absolute inset-0 bg-white opacity-20 animate-pulse"></div>
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2),transparent_75%)] animate-[ping_4s_ease-in-out_infinite]"></div>
                         <Sparkles className="h-12 w-12 text-white relative z-10" />
-                      </div>
+                    </div>
                       <h3 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">AxiosChat</h3>
                       <h4 className="text-xl font-semibold mt-2">Your Web3 AI Assistant</h4>
-                      <p className="text-muted-foreground text-sm mt-2 max-w-md">
+                    <p className="text-muted-foreground text-sm mt-2 max-w-md">
                         Ask me anything about blockchain, crypto, or web3 development. I'm here to assist!
                       </p>
                       
@@ -899,37 +899,37 @@ Result: ${formattedResult}`,
                           <span className="font-medium">Explain DeFi in simple terms</span>
                         </Button>
                       </div>
-                    </div>
-                  ) : (
-                    <ChatMessages
-                      messages={messages
-                        .filter((m) => m.role !== "function" || debugMode) // Show function messages only in debug mode
-                        .map((m) => ({ role: m.role, content: m.content }))}
-                    />
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
+                  </div>
+                ) : (
+                  <ChatMessages
+                    messages={messages
+                      .filter((m) => m.role !== "function" || debugMode) // Show function messages only in debug mode
+                      .map((m) => ({ role: m.role, content: m.content }))}
+                  />
+                )}
+                <div ref={messagesEndRef} />
+              </div>
 
                 <div className="border-t p-4 md:p-5 flex-shrink-0 bg-gradient-to-b from-muted/5 via-muted/10 to-muted/20 backdrop-blur-sm relative">
                   <div className="absolute inset-0 overflow-hidden pointer-events-none">
                     <div className="absolute bottom-0 left-1/4 w-1/2 h-1/2 bg-indigo-500/5 rounded-full blur-3xl"></div>
                   </div>
                   
-                  <ModelSelector
-                    useOpenAI={useOpenAI}
-                    onUseOpenAIChange={setUseOpenAI}
-                    showSettings={showEndpointSettings}
-                    onShowSettingsChange={setShowEndpointSettings}
-                    llamaEndpoint={llamaEndpoint}
-                    onLlamaEndpointChange={setLlamaEndpoint}
-                    openaiApiKey={apiKeys.openai || ""}
-                    onOpenAIApiKeyChange={(key) => updateApiKey("openai", key)}
-                    replicateApiKey={apiKeys.replicate || ""}
-                    onReplicateApiKeyChange={(key) => updateApiKey("replicate", key)}
+                <ModelSelector
+                  useOpenAI={useOpenAI}
+                  onUseOpenAIChange={setUseOpenAI}
+                  showSettings={showEndpointSettings}
+                  onShowSettingsChange={setShowEndpointSettings}
+                  llamaEndpoint={llamaEndpoint}
+                  onLlamaEndpointChange={setLlamaEndpoint}
+                  openaiApiKey={apiKeys.openai || ""}
+                  onOpenAIApiKeyChange={(key) => updateApiKey("openai", key)}
+                  replicateApiKey={apiKeys.replicate || ""}
+                  onReplicateApiKeyChange={(key) => updateApiKey("replicate", key)}
                     className="mb-4 relative z-10"
-                    debugMode={debugMode}
-                    onDebugModeChange={setDebugMode}
-                  />
+                  debugMode={debugMode}
+                  onDebugModeChange={setDebugMode}
+                />
 
                   <ErrorBoundary>
                     <form 
@@ -943,10 +943,10 @@ Result: ${formattedResult}`,
                     >
                       <div className="flex-1 flex border-2 rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/50 focus-within:border-indigo-500 bg-background/80 backdrop-blur-sm shadow-lg transition-all duration-200 relative group">
                         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300 rounded-full"></div>
-                        <Input
+                    <Input
                           placeholder="Ask anything about Web3, blockchain, or crypto..."
-                          value={input}
-                          onChange={(e) => setInput(e.target.value)}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
@@ -975,8 +975,8 @@ Result: ${formattedResult}`,
                             <span>Enter</span>
                           </div>
                         </div>
-                      </div>
-                      <Button
+                  </div>
+                  <Button
                         type="button"
                         onClick={(e) => {
                           try {
@@ -993,40 +993,40 @@ Result: ${formattedResult}`,
                             });
                           }
                         }}
-                        disabled={loading || !input.trim() || executingFunction}
+                    disabled={loading || !input.trim() || executingFunction}
                         className={cn(
                           "h-14 px-5 whitespace-nowrap rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40",
                           loading || executingFunction || !input.trim() ? "opacity-70" : "opacity-100"
                         )}
-                      >
-                        {loading || executingFunction ? (
+                  >
+                    {loading || executingFunction ? (
                           <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
-                        ) : (
-                          <>
+                    ) : (
+                      <>
                             <span className="hidden sm:inline-block mr-2">Send</span>
                             <Send className="h-5 w-5" />
-                          </>
-                        )}
-                      </Button>
-                    </form>
+                      </>
+                    )}
+                  </Button>
+                </form>
                   </ErrorBoundary>
-                </div>
-              </div>
-
-              {/* Suggested Prompts Panel */}
-              <div
-                className={cn(
-                  "transition-all duration-300 h-full max-h-full overflow-hidden",
-                  isPromptsPanelCollapsed ? "w-10" : "w-[260px] lg:w-[300px]",
-                )}
-              >
-                <SuggestedPromptsPanel
-                  onSelectQuestion={handleSuggestedQuestion}
-                  onCollapseChange={setIsPromptsPanelCollapsed}
-                  defaultCollapsed={isPromptsPanelCollapsed}
-                />
               </div>
             </div>
+
+            {/* Suggested Prompts Panel */}
+            <div
+              className={cn(
+                "transition-all duration-300 h-full max-h-full overflow-hidden",
+                isPromptsPanelCollapsed ? "w-10" : "w-[260px] lg:w-[300px]",
+              )}
+            >
+              <SuggestedPromptsPanel
+                onSelectQuestion={handleSuggestedQuestion}
+                onCollapseChange={setIsPromptsPanelCollapsed}
+                defaultCollapsed={isPromptsPanelCollapsed}
+              />
+            </div>
+          </div>
           </ErrorBoundary>
         )}
       </main>

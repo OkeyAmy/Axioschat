@@ -169,23 +169,23 @@ export async function callOpenAI(options: OpenAIOptions): Promise<string> {
       // For development and testing, we'll just use a relative path
       // This will work with both Vite dev server proxying and Vercel
       const response = await fetch("/api/proxy-gemini", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
           "X-Gemini-API-Key": GEMINI_API_KEY,
-        },
+      },
         body: JSON.stringify(requestBody)
       });
 
-      if (!response.ok) {
+    if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to call Gemini API: ${errorText}`);
-      }
+    }
 
       const data = await response.json();
-      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
         return data.choices[0].message.content || "";
-      } else {
+    } else {
         return "No valid response from Gemini";
       }
     } catch (proxyError) {

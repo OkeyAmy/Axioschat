@@ -1077,7 +1077,7 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                   className: "mr-2 h-5 w-5 text-primary",
                 })}
               <span className="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-                {defiSections.find((s) => s.id === activeSection)?.name || "Web3 Introduction"}
+              {defiSections.find((s) => s.id === activeSection)?.name || "Web3 Introduction"}
               </span>
             </h2>
             {isSuggestionsCollapsed && (
@@ -1104,10 +1104,10 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
               ) : (
                 messages
                   .filter((m) => m.role !== "function" || showFunctionMessages)
-                  .map((message, index) => (
-                    <div
-                      key={index}
-                      className={cn(
+                .map((message, index) => (
+                  <div
+                    key={index}
+                    className={cn(
                         "flex items-start gap-3",
                         message.role === "user" ? "justify-end" : "justify-start"
                       )}
@@ -1117,17 +1117,17 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                           className={cn(
                             "w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center",
                             message.role === "function"
-                              ? "bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800"
+                          ? "bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800"
                               : "bg-gradient-to-br from-indigo-500 to-purple-500 shadow-md"
-                          )}
-                        >
+                    )}
+                  >
                           {message.role === "function" ? (
-                            <Code size={16} className="text-amber-600 dark:text-amber-400" />
+                        <Code size={16} className="text-amber-600 dark:text-amber-400" />
                           ) : (
                             <School size={16} className="text-white" />
                           )}
-                        </div>
-                      )}
+                      </div>
+                    )}
                       
                       <div
                         className={cn(
@@ -1139,24 +1139,24 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                               : "bg-card rounded-tl-sm"
                         )}
                       >
-                        {message.role === "function" ? (
-                          <div>
-                            <div className="font-mono text-xs text-amber-700 dark:text-amber-300 mb-1">
-                              Function Response:
-                            </div>
-                            <pre className="text-xs overflow-auto">{message.content}</pre>
+                      {message.role === "function" ? (
+                        <div>
+                          <div className="font-mono text-xs text-amber-700 dark:text-amber-300 mb-1">
+                            Function Response:
                           </div>
-                        ) : (
+                          <pre className="text-xs overflow-auto">{message.content}</pre>
+                        </div>
+                      ) : (
                           <div className="whitespace-pre-wrap break-words text-sm md:text-base prose prose-sm dark:prose-invert max-w-none">
                             <ReactMarkdown>{message.content}</ReactMarkdown>
                           </div>
-                        )}
-                      </div>
+                      )}
+                    </div>
                       
                       {message.role === "user" && (
                         <div className="w-9 h-9 rounded-full bg-muted flex-shrink-0 flex items-center justify-center">
                           <MessageSquare size={16} className="text-primary" />
-                        </div>
+                  </div>
                       )}
                     </div>
                   ))
@@ -1183,8 +1183,8 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                     <TabsTrigger value="overview" className="text-xs md:text-sm">Overview</TabsTrigger>
                     <TabsTrigger value="concepts" className="text-xs md:text-sm">Key Concepts</TabsTrigger>
                     <TabsTrigger value="resources" className="text-xs md:text-sm">Resources</TabsTrigger>
-                  </TabsList>
-                  
+                </TabsList>
+
                   <div className="flex items-center gap-2">
                     <div className="text-xs text-muted-foreground">Show function calls</div>
                     <Checkbox
@@ -1222,9 +1222,9 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                   <Card className="shadow-md border-indigo-500/20">
                     <CardContent className="p-0">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
-                        {defiSections
-                          .find((s) => s.id === activeSection)
-                          ?.concepts.map((concept, i) => (
+                      {defiSections
+                        .find((s) => s.id === activeSection)
+                        ?.concepts.map((concept, i) => (
                             <div key={i} className="p-3 border rounded-lg bg-card/90 hover:bg-card/100 transition-colors hover:border-indigo-500/20">
                               <h3 className="font-medium flex items-center text-sm">
                                 <div className="w-5 h-5 rounded-full bg-indigo-500/10 flex items-center justify-center mr-2 text-xs text-primary">
@@ -1233,8 +1233,8 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                                 {concept.title}
                               </h3>
                               <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{concept.description}</p>
-                            </div>
-                          ))}
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
@@ -1244,10 +1244,10 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                   <Card className="shadow-md border-indigo-500/20">
                     <CardContent className="p-0">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
-                        {defiSections
-                          .find((s) => s.id === activeSection)
-                          ?.concepts.flatMap((concept) =>
-                            concept.resources.map((resource, i) => (
+                      {defiSections
+                        .find((s) => s.id === activeSection)
+                        ?.concepts.flatMap((concept) =>
+                          concept.resources.map((resource, i) => (
                               <a
                                 key={i}
                                 href={resource.url}
@@ -1259,10 +1259,10 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                                 <div>
                                   <div className="font-medium text-sm group-hover:text-primary transition-colors">{resource.name}</div>
                                   <div className="text-xs text-muted-foreground mt-0.5">{resource.description}</div>
-                                </div>
+                            </div>
                               </a>
-                            )),
-                          )}
+                          )),
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -1273,36 +1273,36 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
 
           <div className="border-t p-4 bg-background">
             <div className="max-w-3xl mx-auto">
-              <ModelSelector
-                useOpenAI={!useLocalAI}
-                onUseOpenAIChange={(value) => setUseLocalAI(!value)}
-                showSettings={showEndpointSettings}
-                onShowSettingsChange={setShowEndpointSettings}
-                llamaEndpoint={localEndpoint}
-                onLlamaEndpointChange={setLocalEndpoint}
-                openaiApiKey={apiKeys.openai || ""}
-                onOpenAIApiKeyChange={(key) => updateApiKey("openai", key)}
-                replicateApiKey={apiKeys.replicate}
-                onReplicateApiKeyChange={(key) => updateApiKey("replicate", key)}
-                className="mb-3"
-              />
+            <ModelSelector
+              useOpenAI={!useLocalAI}
+              onUseOpenAIChange={(value) => setUseLocalAI(!value)}
+              showSettings={showEndpointSettings}
+              onShowSettingsChange={setShowEndpointSettings}
+              llamaEndpoint={localEndpoint}
+              onLlamaEndpointChange={setLocalEndpoint}
+              openaiApiKey={apiKeys.openai || ""}
+              onOpenAIApiKeyChange={(key) => updateApiKey("openai", key)}
+              replicateApiKey={apiKeys.replicate}
+              onReplicateApiKeyChange={(key) => updateApiKey("replicate", key)}
+              className="mb-3"
+            />
 
-              <div className="flex gap-2">
-                <Textarea
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask a question about Web3 or DeFi..."
+            <div className="flex gap-2">
+              <Textarea
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask a question about Web3 or DeFi..."
                   className="min-h-[60px] flex-1 bg-card/70 border-indigo-500/20 focus-visible:ring-indigo-500/50 rounded-xl"
-                />
+              />
                 <Button 
                   onClick={handleSendMessage} 
                   className="self-end rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600" 
                   disabled={isProcessing}
                 >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
               
               {activeSection && (
                 <div className="mt-3 flex flex-wrap gap-2">

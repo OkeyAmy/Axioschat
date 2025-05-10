@@ -69,10 +69,10 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages }) => {
   const renderSimpleMessages = () => {
     return (
       <div className="flex flex-col space-y-6 p-4 w-full">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={cn(
+      {messages.map((message, index) => (
+        <div
+          key={index}
+          className={cn(
               "group flex items-start gap-3 max-w-[94%] md:max-w-[80%]",
               message.role === "user" ? "ml-auto" : "",
             )}
@@ -80,8 +80,8 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages }) => {
             {message.role !== "user" && (
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
                 <Bot size={16} className="text-white" />
-              </div>
-            )}
+            </div>
+          )}
             
             <div className={cn(
               "rounded-2xl px-5 py-3 shadow-md",
@@ -89,7 +89,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages }) => {
                 ? "bg-indigo-500 text-white font-medium rounded-tr-sm"
                 : "bg-gray-100 dark:bg-gray-800 rounded-tl-sm",
             )}>
-              <div className="whitespace-pre-wrap break-words">
+          <div className="whitespace-pre-wrap break-words">
                 {message.content}
               </div>
             </div>
@@ -131,8 +131,8 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages }) => {
         >
           Ask me anything about blockchain, crypto, web3, or NFTs. I'm here to help you explore the decentralized world.
         </p>
-      </div>
-    )
+    </div>
+  )
   }
 
   const copyToClipboard = (text: string, index: number) => {
