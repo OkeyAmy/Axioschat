@@ -87,10 +87,10 @@ export default async function handler(req: NextRequest) {
 
     // Extract parameters from the request
     const {
-      model = 'gemini-1.5-flash-latest',
+      model = 'gemini-2.0-flash',
       messages,
       temperature = 0.7,
-      max_tokens = 2000
+      // max_tokens = 2000
     } = requestData;
 
     // Convert OpenAI format messages to Gemini format
