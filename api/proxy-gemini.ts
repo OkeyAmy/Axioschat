@@ -4,12 +4,24 @@ import { NextRequest, NextResponse } from 'next/server';
 // to avoid CORS issues with browser-based requests
 export const config = {
   runtime: 'edge',
-  regions: ['iad1'], // Use your preferred region
 };
 
 export default async function handler(req: NextRequest) {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Gemini-API-Key',
+        'Access-Control-Max-Age': '86400',
+      },
+    });
+  }
+
   try {
-    // Only allow POST requests
+    // Only allow POST requests for actual API calls
     if (req.method !== 'POST') {
       return NextResponse.json(
         { error: 'Method not allowed' },

@@ -4,12 +4,25 @@ import OpenAI from 'openai';
 // This is a Vercel serverless function that acts as a proxy for Gemini API
 // to avoid CORS issues with browser-based requests
 export const config = {
-  regions: ['iad1'], // Use your preferred region
+  runtime: 'edge',
 };
 
 export default async function handler(req: NextRequest) {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Gemini-API-Key',
+        'Access-Control-Max-Age': '86400',
+      },
+    });
+  }
+
   try {
-    // Only allow POST requests
+    // Only allow POST requests for actual API calls
     if (req.method !== 'POST') {
       return NextResponse.json(
         { error: 'Method not allowed' },
@@ -63,16 +76,27 @@ export default async function handler(req: NextRequest) {
 
     console.log('Received response from Gemini API');
 
-    // Return the response directly to the client
-    return NextResponse.json(response);
+    // Return the response with proper CORS headers
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*', 
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Gemini-API-Key'
+      }
+    });
   } catch (error) {
     console.error('Error in Gemini proxy:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-        detail: error instanceof Error ? error.stack : undefined
-      },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      detail: error instanceof Error ? error.stack : undefined
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
   }
 } 

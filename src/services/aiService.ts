@@ -164,42 +164,67 @@ export async function callOpenAI(options: OpenAIOptions): Promise<string> {
       max_tokens: options.max_tokens || 2000,
     };
 
-    // Try using API proxy with fallback
+    console.log("Calling Gemini API via proxy");
+
+    // Use both proxy endpoints with fallback
     try {
-      // For development and testing, we'll just use a relative path
-      // This will work with both Vite dev server proxying and Vercel
+      // First try with proxy-gemini endpoint
       const response = await fetch("/api/proxy-gemini", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
           "X-Gemini-API-Key": GEMINI_API_KEY,
-      },
+        },
         body: JSON.stringify(requestBody)
       });
 
-    if (!response.ok) {
+      if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to call Gemini API: ${errorText}`);
-    }
+        throw new Error(`Failed to call proxy-gemini: ${errorText}`);
+      }
 
       const data = await response.json();
-    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
         return data.choices[0].message.content || "";
-    } else {
-        return "No valid response from Gemini";
+      } else {
+        throw new Error("Invalid response format from proxy-gemini");
       }
     } catch (proxyError) {
-      console.warn("Proxy call failed, falling back to sample response:", proxyError);
+      console.warn("proxy-gemini failed, trying gemini-proxy:", proxyError);
       
-      // For now, just provide a fallback response
-      return `As a fallback I'm providing a synthetic response since the API is currently unavailable. 
-      
-The Gemini API is currently not accessible from your browser directly due to CORS restrictions.
-      
-This is a common security measure. To fix this:
-1. Make sure your application has a server-side proxy for API calls
-2. The proxy should forward requests to the Gemini API
-3. Check that the /api/proxy-gemini endpoint is properly set up`;
+      // Try with alternative gemini-proxy endpoint
+      try {
+        const altResponse = await fetch("/api/gemini-proxy", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Gemini-API-Key": GEMINI_API_KEY,
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!altResponse.ok) {
+          const errorText = await altResponse.text();
+          throw new Error(`Failed to call gemini-proxy: ${errorText}`);
+        }
+
+        const data = await altResponse.json();
+        if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+          return data.choices[0].message.content || "";
+        } else {
+          throw new Error("Invalid response format from gemini-proxy");
+        }
+      } catch (altProxyError) {
+        console.error("Both proxy endpoints failed:", altProxyError);
+        return `As a fallback I'm providing a synthetic response since the API is currently unavailable.
+          
+The application is having trouble connecting to the Gemini API. This could be due to:
+1. CORS restrictions
+2. API proxy configuration issues 
+3. Temporary API service disruption
+
+Please check your API key and try again later. If the issue persists, contact support.`;
+      }
     }
   } catch (error) {
     console.error("Error calling Gemini:", error);
