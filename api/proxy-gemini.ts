@@ -32,22 +32,38 @@ export default async function handler(req: NextRequest) {
     // Get the API token from the headers
     const apiToken = req.headers.get('X-Gemini-API-Key');
     if (!apiToken) {
-      return NextResponse.json(
-        { error: 'Gemini API token is required' },
-        { status: 401 }
-      );
+      console.error('Missing Gemini API key in headers');
+      return new Response(JSON.stringify({
+        error: 'Gemini API token is required',
+        details: 'The X-Gemini-API-Key header is missing or empty'
+      }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
+
+    // Log that we received a key (mask most of it for security)
+    const maskedKey = apiToken.substring(0, 8) + '...' + apiToken.substring(apiToken.length - 4);
+    console.log(`Received API key: ${maskedKey}`);
 
     // Parse the request body
     const requestData = await req.json();
     if (!requestData) {
-      return NextResponse.json(
-        { error: 'Request body is required' },
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({
+        error: 'Request body is required'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
 
-    console.log('Proxying request to Gemini API');
+    console.log('Proxying request to Gemini API with model:', requestData.model);
 
     // Forward the request to the Gemini API
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
@@ -59,13 +75,30 @@ export default async function handler(req: NextRequest) {
       body: JSON.stringify(requestData)
     });
 
+    // Check if the response is OK
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Gemini API error (${response.status}):`, errorText);
+      
+      return new Response(JSON.stringify({
+        error: `Gemini API returned ${response.status}`,
+        details: errorText
+      }), {
+        status: response.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
     // Get the response data
     const responseData = await response.json();
-    console.log('Received response from Gemini API');
+    console.log('Received successful response from Gemini API');
 
     // Return the response
     return new Response(JSON.stringify(responseData), {
-      status: response.status,
+      status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*', 
@@ -75,12 +108,17 @@ export default async function handler(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error in proxy-gemini:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-        detail: error instanceof Error ? error.stack : undefined
-      },
-      { status: 500 }
-    );
+    
+    return new Response(JSON.stringify({
+      error: 'Proxy server error',
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      stack: error instanceof Error ? error.stack : undefined
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
   }
 } 

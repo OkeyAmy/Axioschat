@@ -57,12 +57,13 @@ export interface FlockWeb3Request {
 }
 
 // Get API tokens from localStorage
-const getApiTokens = (): { openai: string; replicate: string } => {
+const getApiTokens = (): { gemini: string; openai: string; replicate: string } => {
   try {
     const apiKeys = localStorage.getItem("apiKeys")
     if (apiKeys) {
       const parsed = JSON.parse(apiKeys)
       return {
+        gemini: parsed.gemini || parsed.openai || "", // Check for both gemini and openai keys
         openai: parsed.openai || "",
         replicate: parsed.replicate || "",
       }
@@ -70,7 +71,7 @@ const getApiTokens = (): { openai: string; replicate: string } => {
   } catch (error) {
     console.error("Error retrieving API tokens:", error)
   }
-  return { openai: "", replicate: "" }
+  return { gemini: "", openai: "", replicate: "" }
 }
 
 // Call Llama model (now using Gemini in production)
@@ -81,7 +82,7 @@ export async function callLlama(options: LlamaOptions, endpoint: string): Promis
 
     if (isProduction) {
       // In production, use Gemini API via the OpenAI compatibility layer
-      const { openai: GEMINI_API_KEY } = getApiTokens()
+      const { gemini: GEMINI_API_KEY } = getApiTokens()
 
       if (!GEMINI_API_KEY) {
         return "Please provide a Gemini API key in the settings to use the chatbot."
@@ -135,7 +136,7 @@ export async function callLlama(options: LlamaOptions, endpoint: string): Promis
 // Call OpenAI model (now using Gemini via server proxy)
 export async function callOpenAI(options: OpenAIOptions): Promise<string> {
   try {
-    const { openai: GEMINI_API_KEY } = getApiTokens();
+    const { gemini: GEMINI_API_KEY } = getApiTokens();
     
     if (!GEMINI_API_KEY) {
       return "Please provide a Gemini API key in the settings to use the chatbot.";
@@ -164,7 +165,7 @@ export async function callOpenAI(options: OpenAIOptions): Promise<string> {
       max_tokens: options.max_tokens || 2000,
     };
 
-    console.log("Calling Gemini API via proxy");
+    console.log("Calling Gemini API via proxy with key:", GEMINI_API_KEY ? "API key exists" : "No API key");
 
     // Use both proxy endpoints with fallback
     try {
