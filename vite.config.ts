@@ -3,6 +3,11 @@ import react from "@vitejs/plugin-react-swc"
 import path from "path"
 import { componentTagger } from "lovable-tagger"
 import { nodePolyfills } from "vite-plugin-node-polyfills"
+import { fileURLToPath } from 'url'
+
+// ESM compatible __dirname alternative
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({

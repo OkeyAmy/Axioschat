@@ -55,7 +55,22 @@ export default async function handler(req: NextRequest) {
     console.log(`Received API key in gemini-proxy: ${maskedKey}`);
 
     // Parse the request body
-    const requestData = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Failed to parse request body',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
     if (!requestData) {
       return new Response(JSON.stringify({
         error: 'Request body is required'
@@ -72,26 +87,32 @@ export default async function handler(req: NextRequest) {
 
     // Extract parameters from the request
     const {
-      model = 'gemini-2.0-flash',
+      model = 'gemini-1.5-flash-latest',
       messages,
       temperature = 0.7,
       max_tokens = 2000
     } = requestData;
 
+    // Convert OpenAI format messages to Gemini format
+    const contents = messages.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : msg.role,
+      parts: [{ text: msg.content }]
+    }));
+
     // Using direct fetch instead of OpenAI SDK for Edge compatibility
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    console.log(`Making request to Gemini endpoint: ${geminiEndpoint}`);
+
+    const response = await fetch(geminiEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiToken}`
       },
       body: JSON.stringify({
-        contents: messages.map(msg => ({
-          role: msg.role,
-          parts: [{ text: msg.content }]
-        })),
+        contents,
         generationConfig: {
-          temperature: temperature,
+          temperature,
           maxOutputTokens: max_tokens,
         }
       })
@@ -99,8 +120,13 @@ export default async function handler(req: NextRequest) {
 
     // Check if the response is OK
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Gemini API error (${response.status}):`, errorText);
+      let errorText;
+      try {
+        errorText = await response.text();
+        console.error(`Gemini API error (${response.status}):`, errorText);
+      } catch (error) {
+        errorText = 'Could not read error response';
+      }
       
       return new Response(JSON.stringify({
         error: `Gemini API returned ${response.status}`,
@@ -115,10 +141,32 @@ export default async function handler(req: NextRequest) {
     }
 
     // Get the response data
-    const rawResponse = await response.json();
-    console.log('Received response from Gemini API (direct fetch)');
+    let rawResponse;
+    try {
+      rawResponse = await response.json();
+      console.log('Received response from Gemini API (direct fetch)');
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Failed to parse Gemini API response',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
 
     // Transform Gemini response to OpenAI format
+    let content = '';
+    try {
+      content = rawResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'No response text';
+    } catch (error) {
+      console.error('Failed to extract content from response:', error);
+      content = 'Error extracting content from response';
+    }
+
     const formattedResponse = {
       id: 'gemini-' + Date.now(),
       object: 'chat.completion',
@@ -128,7 +176,7 @@ export default async function handler(req: NextRequest) {
         index: 0,
         message: {
           role: 'assistant',
-          content: rawResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'No response text'
+          content: content
         },
         finish_reason: 'stop'
       }],

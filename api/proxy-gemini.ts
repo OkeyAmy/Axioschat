@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 // This is a Vercel serverless function that acts as a proxy for Gemini API
 // to avoid CORS issues with browser-based requests
@@ -23,10 +23,15 @@ export default async function handler(req: NextRequest) {
   try {
     // Only allow POST requests for actual API calls
     if (req.method !== 'POST') {
-      return NextResponse.json(
-        { error: 'Method not allowed' },
-        { status: 405 }
-      );
+      return new Response(JSON.stringify({
+        error: 'Method not allowed'
+      }), {
+        status: 405,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
 
     // Get the API token from the headers
@@ -50,7 +55,22 @@ export default async function handler(req: NextRequest) {
     console.log(`Received API key: ${maskedKey}`);
 
     // Parse the request body
-    const requestData = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Failed to parse request body',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
     if (!requestData) {
       return new Response(JSON.stringify({
         error: 'Request body is required'
@@ -77,8 +97,13 @@ export default async function handler(req: NextRequest) {
 
     // Check if the response is OK
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Gemini API error (${response.status}):`, errorText);
+      let errorText;
+      try {
+        errorText = await response.text();
+        console.error(`Gemini API error (${response.status}):`, errorText);
+      } catch (error) {
+        errorText = 'Could not read error response';
+      }
       
       return new Response(JSON.stringify({
         error: `Gemini API returned ${response.status}`,
@@ -93,7 +118,22 @@ export default async function handler(req: NextRequest) {
     }
 
     // Get the response data
-    const responseData = await response.json();
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Failed to parse Gemini API response',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
     console.log('Received successful response from Gemini API');
 
     // Return the response
