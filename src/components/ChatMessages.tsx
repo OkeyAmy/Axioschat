@@ -65,6 +65,69 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages }) => {
     };
   }, []);
 
+  // Custom components for markdown rendering
+  const markdownComponents = {
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <SyntaxHighlighter
+          language={match[1]}
+          style={vscDarkPlus}
+          PreTag="div"
+          className="rounded-md border my-4 bg-gray-950 dark:bg-gray-950"
+          showLineNumbers={true}
+          {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      ) : (
+        <code className="bg-muted px-1 py-0.5 rounded-sm font-mono text-sm" {...props}>
+          {children}
+        </code>
+      );
+    },
+    p({ children }: any) {
+      return <p className="mb-4 last:mb-0">{children}</p>;
+    },
+    ul({ children }: any) {
+      return <ul className="list-disc pl-6 mb-4">{children}</ul>;
+    },
+    ol({ children }: any) {
+      return <ol className="list-decimal pl-6 mb-4">{children}</ol>;
+    },
+    li({ children }: any) {
+      return <li className="mb-1">{children}</li>;
+    },
+    h1({ children }: any) {
+      return <h1 className="text-2xl font-bold mb-4">{children}</h1>;
+    },
+    h2({ children }: any) {
+      return <h2 className="text-xl font-bold mb-3">{children}</h2>;
+    },
+    h3({ children }: any) {
+      return <h3 className="text-lg font-bold mb-2">{children}</h3>;
+    },
+    blockquote({ children }: any) {
+      return (
+        <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic mb-4">
+          {children}
+        </blockquote>
+      );
+    },
+    a({ children, href }: any) {
+      return (
+        <a 
+          href={href} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 underline"
+        >
+          {children}
+        </a>
+      );
+    },
+  };
+
   // Simple message rendering without animations
   const renderSimpleMessages = () => {
     return (
@@ -89,8 +152,14 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages }) => {
                 ? "bg-indigo-500 text-white font-medium rounded-tr-sm"
                 : "bg-gray-100 dark:bg-gray-800 rounded-tl-sm",
             )}>
-          <div className="whitespace-pre-wrap break-words">
-                {message.content}
+              <div className={cn("break-words", message.role === "user" ? "whitespace-pre-wrap" : "markdown-content")}>
+                {message.role === "user" ? (
+                  message.content
+                ) : (
+                  <ReactMarkdown components={markdownComponents}>
+                    {message.content}
+                  </ReactMarkdown>
+                )}
               </div>
             </div>
             
