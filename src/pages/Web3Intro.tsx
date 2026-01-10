@@ -1157,7 +1157,7 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                             </div>
                           ) : (
                             <div className="whitespace-pre-wrap break-words text-sm md:text-base prose prose-sm dark:prose-invert max-w-none">
-                              <ReactMarkdown>{message.content}</ReactMarkdown>
+                              <ReactMarkdown>{typeof message.content === 'string' ? message.content : String(message.content || '')}</ReactMarkdown>
                             </div>
                           )}
                         </div>

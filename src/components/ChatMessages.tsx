@@ -85,8 +85,9 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
 
   // Custom components for markdown rendering
   const markdownComponents = {
-    code({ node, inline, className, children, ...props }: any) {
+    code({ node, inline, className, children, ...props }: any = {}) {
       const match = /language-(\w+)/.exec(className || '');
+      const childrenContent = children || '';
       return !inline && match ? (
         <SyntaxHighlighterComp
           language={match[1]}
@@ -96,51 +97,51 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
           showLineNumbers={true}
           {...props}
         >
-          {String(children).replace(/\n$/, '')}
+          {String(childrenContent).replace(/\n$/, '')}
         </SyntaxHighlighterComp>
       ) : (
         <code className="bg-muted px-1 py-0.5 rounded-sm font-mono text-sm" {...props}>
-          {children}
+          {childrenContent}
         </code>
       );
     },
-    p({ children }: any) {
-      return <p className="mb-4 last:mb-0">{children}</p>;
+    p({ children }: any = {}) {
+      return <p className="mb-4 last:mb-0">{children || null}</p>;
     },
-    ul({ children }: any) {
-      return <ul className="list-disc pl-6 mb-4">{children}</ul>;
+    ul({ children }: any = {}) {
+      return <ul className="list-disc pl-6 mb-4">{children || null}</ul>;
     },
-    ol({ children }: any) {
-      return <ol className="list-decimal pl-6 mb-4">{children}</ol>;
+    ol({ children }: any = {}) {
+      return <ol className="list-decimal pl-6 mb-4">{children || null}</ol>;
     },
-    li({ children }: any) {
-      return <li className="mb-1">{children}</li>;
+    li({ children }: any = {}) {
+      return <li className="mb-1">{children || null}</li>;
     },
-    h1({ children }: any) {
-      return <h1 className="text-2xl font-bold mb-4">{children}</h1>;
+    h1({ children }: any = {}) {
+      return <h1 className="text-2xl font-bold mb-4">{children || null}</h1>;
     },
-    h2({ children }: any) {
-      return <h2 className="text-xl font-bold mb-3">{children}</h2>;
+    h2({ children }: any = {}) {
+      return <h2 className="text-xl font-bold mb-3">{children || null}</h2>;
     },
-    h3({ children }: any) {
-      return <h3 className="text-lg font-bold mb-2">{children}</h3>;
+    h3({ children }: any = {}) {
+      return <h3 className="text-lg font-bold mb-2">{children || null}</h3>;
     },
-    blockquote({ children }: any) {
+    blockquote({ children }: any = {}) {
       return (
         <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic mb-4">
-          {children}
+          {children || null}
         </blockquote>
       );
     },
-    a({ children, href }: any) {
+    a({ children, href }: any = {}) {
       return (
         <a 
-          href={href} 
+          href={href || '#'} 
           target="_blank" 
           rel="noopener noreferrer" 
           className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 underline"
         >
-          {children}
+          {children || null}
         </a>
       );
     },
@@ -172,10 +173,10 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
             )}>
               <div className={cn("break-words", message.role === "user" ? "whitespace-pre-wrap" : "markdown-content")}>
                 {message.role === "user" ? (
-                  message.content
+                  message.content || ''
                 ) : (
                   <ReactMarkdown components={markdownComponents}>
-                    {message.content}
+                    {typeof message.content === 'string' ? message.content : String(message.content || '')}
                   </ReactMarkdown>
                 )}
               </div>
