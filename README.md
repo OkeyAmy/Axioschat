@@ -37,7 +37,7 @@ AxiosChat is built for speed and security, leveraging the full power of the **MN
 
 ```mermaid
 graph TD
-    User[User] -->|Chat: "Send 5 MNEE..."| UI[AxiosChat UI]
+    User[User] -->|Chat: Send 5 MNEE...| UI[Axios Chat UI]
     UI -->|Prompt| AI[Gemini AI]
     AI -->|Function Call: prepare_transfer| Service[MNEE Service]
     Service -->|1. Check Balance| Chain[MNEE Blockchain]
