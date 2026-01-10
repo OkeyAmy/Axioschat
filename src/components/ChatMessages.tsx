@@ -23,6 +23,40 @@ interface ChatMessagesProps {
   isTyping?: boolean
 }
 
+// Safe wrapper for ReactMarkdown to prevent crashes
+const SafeReactMarkdown: React.FC<{ content: string; components: any }> = ({ content, components }) => {
+  try {
+    if (!content) {
+      console.warn('SafeReactMarkdown: Empty content provided');
+      return null;
+    }
+    
+    // Validate components object
+    if (!components || typeof components !== 'object') {
+      console.warn('SafeReactMarkdown: Invalid components prop, using default');
+      return (
+        <ReactMarkdown skipHtml={true}>
+          {content}
+        </ReactMarkdown>
+      );
+    }
+    
+    return (
+      <ReactMarkdown 
+        components={components}
+        skipHtml={true}
+      >
+        {content}
+      </ReactMarkdown>
+    );
+  } catch (error) {
+    console.error('Error rendering markdown:', error);
+    console.log('Content that failed to render:', content?.substring(0, 100));
+    // Fallback to plain text if markdown fails
+    return <div className="whitespace-pre-wrap break-words">{content || ''}</div>;
+  }
+};
+
 const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false }) => {
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
@@ -85,9 +119,9 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
 
   // Custom components for markdown rendering
   const markdownComponents = {
-    code({ node, inline, className, children, ...props }: any = {}) {
+    code(props: any = {}) {
+      const { node, inline, className = '', children = null, ...restProps } = props || {};
       const match = /language-(\w+)/.exec(className || '');
-      const childrenContent = children || '';
       return !inline && match ? (
         <SyntaxHighlighterComp
           language={match[1]}
@@ -95,53 +129,62 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
           PreTag="div"
           className="rounded-md border my-4 bg-gray-950 dark:bg-gray-950"
           showLineNumbers={true}
-          {...props}
+          {...restProps}
         >
-          {String(childrenContent).replace(/\n$/, '')}
+          {String(children || '').replace(/\n$/, '')}
         </SyntaxHighlighterComp>
       ) : (
-        <code className="bg-muted px-1 py-0.5 rounded-sm font-mono text-sm" {...props}>
-          {childrenContent}
+        <code className="bg-muted px-1 py-0.5 rounded-sm font-mono text-sm" {...restProps}>
+          {children}
         </code>
       );
     },
-    p({ children }: any = {}) {
-      return <p className="mb-4 last:mb-0">{children || null}</p>;
+    p(props: any = {}) {
+      const { children = null } = props || {};
+      return <p className="mb-4 last:mb-0">{children}</p>;
     },
-    ul({ children }: any = {}) {
-      return <ul className="list-disc pl-6 mb-4">{children || null}</ul>;
+    ul(props: any = {}) {
+      const { children = null } = props || {};
+      return <ul className="list-disc pl-6 mb-4">{children}</ul>;
     },
-    ol({ children }: any = {}) {
-      return <ol className="list-decimal pl-6 mb-4">{children || null}</ol>;
+    ol(props: any = {}) {
+      const { children = null } = props || {};
+      return <ol className="list-decimal pl-6 mb-4">{children}</ol>;
     },
-    li({ children }: any = {}) {
-      return <li className="mb-1">{children || null}</li>;
+    li(props: any = {}) {
+      const { children = null } = props || {};
+      return <li className="mb-1">{children}</li>;
     },
-    h1({ children }: any = {}) {
-      return <h1 className="text-2xl font-bold mb-4">{children || null}</h1>;
+    h1(props: any = {}) {
+      const { children = null } = props || {};
+      return <h1 className="text-2xl font-bold mb-4">{children}</h1>;
     },
-    h2({ children }: any = {}) {
-      return <h2 className="text-xl font-bold mb-3">{children || null}</h2>;
+    h2(props: any = {}) {
+      const { children = null } = props || {};
+      return <h2 className="text-xl font-bold mb-3">{children}</h2>;
     },
-    h3({ children }: any = {}) {
-      return <h3 className="text-lg font-bold mb-2">{children || null}</h3>;
+    h3(props: any = {}) {
+      const { children = null } = props || {};
+      return <h3 className="text-lg font-bold mb-2">{children}</h3>;
     },
-    blockquote({ children }: any = {}) {
+    blockquote(props: any = {}) {
+      const { children = null } = props || {};
       return (
         <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic mb-4">
-          {children || null}
+          {children}
         </blockquote>
       );
     },
-    a({ children, href }: any = {}) {
+    a(props: any = {}) {
+      const { children = null, href = '#' } = props || {};
       return (
         <a 
-          href={href || '#'} 
+          href={href} 
           target="_blank" 
           rel="noopener noreferrer" 
           className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 underline"
         >
-          {children || null}
+          {children}
         </a>
       );
     },
@@ -149,17 +192,37 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
 
   // Simple message rendering without animations
   const renderSimpleMessages = () => {
+    if (!messages || !Array.isArray(messages)) {
+      console.warn('ChatMessages: messages prop is not a valid array', messages);
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+          <p className="text-muted-foreground">No messages to display</p>
+        </div>
+      );
+    }
+    
     return (
       <div className="flex flex-col space-y-6 p-4 w-full">
-      {messages.map((message, index) => (
+      {messages.map((message, index) => {
+        // Validate message structure
+        if (!message || typeof message !== 'object') {
+          console.warn(`ChatMessages: Invalid message at index ${index}`, message);
+          return null;
+        }
+        
+        const messageContent = message.content || '';
+        const messageRole = message.role || 'assistant';
+        const isUser = messageRole === "user";
+        
+        return (
         <div
           key={index}
           className={cn(
               "group flex items-start gap-3 max-w-[94%] md:max-w-[80%]",
-              message.role === "user" ? "ml-auto" : "",
+              isUser ? "ml-auto" : "",
             )}
           >
-            {message.role !== "user" && (
+            {!isUser && (
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
                 <Bot size={16} className="text-white" />
             </div>
@@ -167,28 +230,30 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
             
             <div className={cn(
               "rounded-2xl px-5 py-3 shadow-md",
-              message.role === "user"
+              isUser
                 ? "bg-indigo-500 text-white font-medium rounded-tr-sm"
                 : "bg-gray-100 dark:bg-gray-800 rounded-tl-sm",
             )}>
-              <div className={cn("break-words", message.role === "user" ? "whitespace-pre-wrap" : "markdown-content")}>
-                {message.role === "user" ? (
-                  message.content || ''
+              <div className={cn("break-words", isUser ? "whitespace-pre-wrap" : "markdown-content")}>
+                {isUser ? (
+                  messageContent
                 ) : (
-                  <ReactMarkdown components={markdownComponents}>
-                    {typeof message.content === 'string' ? message.content : String(message.content || '')}
-                  </ReactMarkdown>
+                  <SafeReactMarkdown 
+                    content={messageContent}
+                    components={markdownComponents}
+                  />
                 )}
               </div>
             </div>
             
-            {message.role === "user" && (
+            {isUser && (
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
                 <User size={16} className="text-white" />
               </div>
             )}
           </div>
-        ))}
+        );
+      })}
         {isTyping && (
           <div className={cn("group flex items-start gap-3 max-w-[94%] md:max-w-[80%]")}> 
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">

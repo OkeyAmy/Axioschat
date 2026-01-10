@@ -91,6 +91,175 @@ const Web3Intro: React.FC = () => {
 
   const defiSections: DeFiSection[] = [
     {
+      id: "mnee",
+      name: "MNEE Stablecoin",
+      icon: Coins,
+      description: "MNEE is a USD-backed stablecoin built on the 1Sat Ordinals protocol, offering fast transactions, low fees, and instant finality for Web3 applications.",
+      concepts: [
+        {
+          title: "What is MNEE?",
+          description: "MNEE is a USD-backed stablecoin that provides a stable value for transactions on the blockchain. It's built on the 1Sat Ordinals protocol, enabling fast and efficient transfers with minimal fees.",
+          resources: [
+            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Complete developer documentation and API reference." },
+            { name: "MNEE Developer Portal", url: "https://developer.mnee.net", description: "Get API keys and access developer tools." },
+            { name: "MNEE GitHub", url: "https://github.com/mnee-io", description: "SDK source code and examples." }
+          ]
+        },
+        {
+          title: "Key Features",
+          description: "MNEE offers instant finality, low transaction fees, and seamless integration with Web3 applications. It's designed for in-app payments, microtransactions, P2P transfers, gaming, remittances, and A2A payments.",
+          resources: [
+            { name: "MNEE SDK", url: "https://www.npmjs.com/package/@mnee/ts-sdk", description: "TypeScript SDK for integrating MNEE into your applications." },
+            { name: "MNEE CLI", url: "https://docs.mnee.io/cli", description: "Command-line interface for managing MNEE wallets and transactions." }
+          ]
+        },
+        {
+          title: "Use Cases",
+          description: "MNEE is ideal for various applications including in-app payments, microtransactions, peer-to-peer transfers, gaming economies, remittances, and account-to-account payments. Its stable value makes it perfect for financial applications.",
+          resources: []
+        },
+        {
+          title: "Getting Started",
+          description: "To start using MNEE, you'll need to get an API key from the developer portal, install the SDK, and set up your wallet. The SDK provides methods for transfers, balance checks, transaction history, and UTXO management.",
+          resources: [
+            { name: "Quick Start Guide", url: "https://docs.mnee.io/quickstart", description: "Step-by-step guide to integrating MNEE." },
+            { name: "API Reference", url: "https://docs.mnee.io/api", description: "Complete API endpoint documentation." }
+          ]
+        }
+      ],
+      suggestedQuestions: [
+        "What is MNEE and how does it work?",
+        "How do I integrate MNEE into my application?",
+        "What are the benefits of using MNEE over other stablecoins?",
+        "How do I get started with the MNEE SDK?",
+        "What are the transaction fees for MNEE?",
+        "How do I check my MNEE balance?",
+        "Can I use MNEE for microtransactions?",
+        "What is the difference between MNEE and other stablecoins?"
+      ],
+      systemPrompt: `You are a helpful Web3 educator specializing in MNEE (a USD-backed stablecoin built on the 1Sat Ordinals protocol).
+
+MNEE Key Information:
+- USD-backed stablecoin for stable value transactions
+- Built on 1Sat Ordinals protocol
+- Fast transactions with instant finality
+- Low transaction fees
+- Ideal for in-app payments, microtransactions, P2P transfers, gaming, remittances, and A2A payments
+- SDK available: @mnee/ts-sdk (npm package)
+- Documentation: https://docs.mnee.io
+- Developer Portal: https://developer.mnee.net (for API keys)
+- CLI tool available for wallet management
+
+When explaining MNEE:
+- Emphasize its stability as a USD-backed token
+- Highlight the speed and low fees compared to other networks
+- Explain practical use cases and integration methods
+- Provide guidance on getting started with the SDK
+- Discuss the benefits for developers and end users
+- Explain how it works on the 1Sat Ordinals protocol
+
+If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`
+    },
+    {
+      id: "payments",
+      name: "Payments & Microtransactions",
+      icon: Send,
+      description: "Blockchain payments enable fast, low-cost transfers without intermediaries. Microtransactions open new possibilities for content monetization, gaming, and digital services.",
+      concepts: [
+        {
+          title: "Stablecoin Payments",
+          description: "Stablecoins like MNEE provide stable value for payments, making them ideal for everyday transactions, remittances, and cross-border payments without volatility concerns.",
+          resources: [
+            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Learn about MNEE stablecoin payments." },
+            { name: "MNEE SDK", url: "https://www.npmjs.com/package/@mnee/ts-sdk", description: "Integrate payments into your app." }
+          ]
+        },
+        {
+          title: "Microtransactions",
+          description: "Microtransactions enable small-value payments that were previously uneconomical. They're perfect for content creators, gaming economies, pay-per-use services, and tipping.",
+          resources: []
+        },
+        {
+          title: "Payment Integration",
+          description: "Integrating blockchain payments into applications requires understanding wallets, transaction fees, confirmation times, and user experience considerations.",
+          resources: [
+            { name: "MNEE Quick Start", url: "https://docs.mnee.io/quickstart", description: "Get started with MNEE payments." },
+            { name: "MNEE API Reference", url: "https://docs.mnee.io/api", description: "Complete payment API documentation." }
+          ]
+        }
+      ],
+      suggestedQuestions: [
+        "How do stablecoin payments work?",
+        "What are the benefits of using blockchain for payments?",
+        "How can I integrate payments into my application?",
+        "What are microtransactions and why are they important?",
+        "How do I handle payment fees in my app?",
+        "What's the difference between on-chain and off-chain payments?"
+      ],
+      systemPrompt: `You are a helpful Web3 educator teaching about blockchain payments and microtransactions.
+      
+      Focus on explaining how blockchain enables fast, low-cost payments, the role of stablecoins like MNEE, and how to integrate payment functionality into applications.
+      
+      When explaining:
+      - Emphasize the benefits of blockchain payments (speed, low fees, no intermediaries)
+      - Explain how stablecoins solve volatility issues for payments
+      - Discuss use cases like remittances, gaming, content monetization, and microtransactions
+      - Provide guidance on integrating payment systems
+      - Explain transaction fees and confirmation times
+      - Discuss best practices for payment UX
+      
+      If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`
+    },
+    {
+      id: "ordinals",
+      name: "Ordinals & BSV21 Tokens",
+      icon: Code,
+      description: "Ordinals enable data inscription on Bitcoin SV, while BSV21 is a token standard for creating fungible tokens like MNEE on the 1Sat Ordinals protocol.",
+      concepts: [
+        {
+          title: "What are Ordinals?",
+          description: "Ordinals allow data to be inscribed directly onto satoshis (the smallest unit of Bitcoin), creating unique digital artifacts and enabling token standards like BSV21.",
+          resources: [
+            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Learn about MNEE on 1Sat Ordinals." },
+            { name: "BSV21 Standard", url: "https://docs.mnee.io/bsv21", description: "Understanding the BSV21 token standard." }
+          ]
+        },
+        {
+          title: "BSV21 Token Standard",
+          description: "BSV21 is a token standard built on 1Sat Ordinals that enables the creation of fungible tokens like stablecoins. MNEE uses this standard for its USD-backed stablecoin.",
+          resources: []
+        },
+        {
+          title: "UTXOs and Token Management",
+          description: "Understanding Unspent Transaction Outputs (UTXOs) is crucial for managing tokens on Ordinals-based systems. Each UTXO can contain token data and must be properly managed for transfers.",
+          resources: [
+            { name: "MNEE UTXO Guide", url: "https://docs.mnee.io/utxos", description: "Learn about UTXO management with MNEE." }
+          ]
+        }
+      ],
+      suggestedQuestions: [
+        "What are Ordinals and how do they work?",
+        "What is the BSV21 token standard?",
+        "How does MNEE use Ordinals?",
+        "What are UTXOs and why are they important?",
+        "How do token transfers work on Ordinals?",
+        "What's the difference between Ordinals and other token standards?"
+      ],
+      systemPrompt: `You are a helpful Web3 educator teaching about Ordinals and the BSV21 token standard.
+      
+      Focus on explaining how Ordinals enable data inscription on Bitcoin SV, the BSV21 token standard for fungible tokens, and how systems like MNEE leverage this technology.
+      
+      When explaining:
+      - Explain Ordinals in simple terms (data inscribed on satoshis)
+      - Describe the BSV21 standard and its benefits
+      - Explain how MNEE uses 1Sat Ordinals protocol
+      - Discuss UTXO management and why it matters
+      - Compare Ordinals-based tokens to other token standards
+      - Explain transaction mechanics on Ordinals-based systems
+      
+      If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`
+    },
+    {
       id: "intro",
       name: "Introduction to DeFi",
       icon: Lightbulb,
@@ -454,6 +623,175 @@ const Web3Intro: React.FC = () => {
       - Highlight emerging trends and potential future developments
       
       If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`,
+    },
+    {
+      id: "mnee",
+      name: "MNEE Stablecoin",
+      icon: Coins,
+      description: "MNEE is a USD-backed stablecoin built on the 1Sat Ordinals protocol, offering fast transactions, low fees, and instant finality for Web3 applications.",
+      concepts: [
+        {
+          title: "What is MNEE?",
+          description: "MNEE is a USD-backed stablecoin that provides a stable value for transactions on the blockchain. It's built on the 1Sat Ordinals protocol, enabling fast and efficient transfers with minimal fees.",
+          resources: [
+            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Complete developer documentation and API reference." },
+            { name: "MNEE Developer Portal", url: "https://developer.mnee.net", description: "Get API keys and access developer tools." },
+            { name: "MNEE GitHub", url: "https://github.com/mnee-io", description: "SDK source code and examples." }
+          ]
+        },
+        {
+          title: "Key Features",
+          description: "MNEE offers instant finality, low transaction fees, and seamless integration with Web3 applications. It's designed for in-app payments, microtransactions, P2P transfers, gaming, remittances, and A2A payments.",
+          resources: [
+            { name: "MNEE SDK", url: "https://www.npmjs.com/package/@mnee/ts-sdk", description: "TypeScript SDK for integrating MNEE into your applications." },
+            { name: "MNEE CLI", url: "https://docs.mnee.io/cli", description: "Command-line interface for managing MNEE wallets and transactions." }
+          ]
+        },
+        {
+          title: "Use Cases",
+          description: "MNEE is ideal for various applications including in-app payments, microtransactions, peer-to-peer transfers, gaming economies, remittances, and account-to-account payments. Its stable value makes it perfect for financial applications.",
+          resources: []
+        },
+        {
+          title: "Getting Started",
+          description: "To start using MNEE, you'll need to get an API key from the developer portal, install the SDK, and set up your wallet. The SDK provides methods for transfers, balance checks, transaction history, and UTXO management.",
+          resources: [
+            { name: "Quick Start Guide", url: "https://docs.mnee.io/quickstart", description: "Step-by-step guide to integrating MNEE." },
+            { name: "API Reference", url: "https://docs.mnee.io/api", description: "Complete API endpoint documentation." }
+          ]
+        }
+      ],
+      suggestedQuestions: [
+        "What is MNEE and how does it work?",
+        "How do I integrate MNEE into my application?",
+        "What are the benefits of using MNEE over other stablecoins?",
+        "How do I get started with the MNEE SDK?",
+        "What are the transaction fees for MNEE?",
+        "How do I check my MNEE balance?",
+        "Can I use MNEE for microtransactions?",
+        "What is the difference between MNEE and other stablecoins?"
+      ],
+      systemPrompt: `You are a helpful Web3 educator specializing in MNEE (a USD-backed stablecoin built on the 1Sat Ordinals protocol).
+
+MNEE Key Information:
+- USD-backed stablecoin for stable value transactions
+- Built on 1Sat Ordinals protocol
+- Fast transactions with instant finality
+- Low transaction fees
+- Ideal for in-app payments, microtransactions, P2P transfers, gaming, remittances, and A2A payments
+- SDK available: @mnee/ts-sdk (npm package)
+- Documentation: https://docs.mnee.io
+- Developer Portal: https://developer.mnee.net (for API keys)
+- CLI tool available for wallet management
+
+When explaining MNEE:
+- Emphasize its stability as a USD-backed token
+- Highlight the speed and low fees compared to other networks
+- Explain practical use cases and integration methods
+- Provide guidance on getting started with the SDK
+- Discuss the benefits for developers and end users
+- Explain how it works on the 1Sat Ordinals protocol
+
+If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`
+    },
+    {
+      id: "payments",
+      name: "Payments & Microtransactions",
+      icon: Send,
+      description: "Blockchain payments enable fast, low-cost transfers without intermediaries. Microtransactions open new possibilities for content monetization, gaming, and digital services.",
+      concepts: [
+        {
+          title: "Stablecoin Payments",
+          description: "Stablecoins like MNEE provide stable value for payments, making them ideal for everyday transactions, remittances, and cross-border payments without volatility concerns.",
+          resources: [
+            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Learn about MNEE stablecoin payments." },
+            { name: "MNEE SDK", url: "https://www.npmjs.com/package/@mnee/ts-sdk", description: "Integrate payments into your app." }
+          ]
+        },
+        {
+          title: "Microtransactions",
+          description: "Microtransactions enable small-value payments that were previously uneconomical. They're perfect for content creators, gaming economies, pay-per-use services, and tipping.",
+          resources: []
+        },
+        {
+          title: "Payment Integration",
+          description: "Integrating blockchain payments into applications requires understanding wallets, transaction fees, confirmation times, and user experience considerations.",
+          resources: [
+            { name: "MNEE Quick Start", url: "https://docs.mnee.io/quickstart", description: "Get started with MNEE payments." },
+            { name: "MNEE API Reference", url: "https://docs.mnee.io/api", description: "Complete payment API documentation." }
+          ]
+        }
+      ],
+      suggestedQuestions: [
+        "How do stablecoin payments work?",
+        "What are the benefits of using blockchain for payments?",
+        "How can I integrate payments into my application?",
+        "What are microtransactions and why are they important?",
+        "How do I handle payment fees in my app?",
+        "What's the difference between on-chain and off-chain payments?"
+      ],
+      systemPrompt: `You are a helpful Web3 educator teaching about blockchain payments and microtransactions.
+      
+      Focus on explaining how blockchain enables fast, low-cost payments, the role of stablecoins like MNEE, and how to integrate payment functionality into applications.
+      
+      When explaining:
+      - Emphasize the benefits of blockchain payments (speed, low fees, no intermediaries)
+      - Explain how stablecoins solve volatility issues for payments
+      - Discuss use cases like remittances, gaming, content monetization, and microtransactions
+      - Provide guidance on integrating payment systems
+      - Explain transaction fees and confirmation times
+      - Discuss best practices for payment UX
+      
+      If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`
+    },
+    {
+      id: "ordinals",
+      name: "Ordinals & BSV21 Tokens",
+      icon: Code,
+      description: "Ordinals enable data inscription on Bitcoin SV, while BSV21 is a token standard for creating fungible tokens like MNEE on the 1Sat Ordinals protocol.",
+      concepts: [
+        {
+          title: "What are Ordinals?",
+          description: "Ordinals allow data to be inscribed directly onto satoshis (the smallest unit of Bitcoin), creating unique digital artifacts and enabling token standards like BSV21.",
+          resources: [
+            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Learn about MNEE on 1Sat Ordinals." },
+            { name: "BSV21 Standard", url: "https://docs.mnee.io/bsv21", description: "Understanding the BSV21 token standard." }
+          ]
+        },
+        {
+          title: "BSV21 Token Standard",
+          description: "BSV21 is a token standard built on 1Sat Ordinals that enables the creation of fungible tokens like stablecoins. MNEE uses this standard for its USD-backed stablecoin.",
+          resources: []
+        },
+        {
+          title: "UTXOs and Token Management",
+          description: "Understanding Unspent Transaction Outputs (UTXOs) is crucial for managing tokens on Ordinals-based systems. Each UTXO can contain token data and must be properly managed for transfers.",
+          resources: [
+            { name: "MNEE UTXO Guide", url: "https://docs.mnee.io/utxos", description: "Learn about UTXO management with MNEE." }
+          ]
+        }
+      ],
+      suggestedQuestions: [
+        "What are Ordinals and how do they work?",
+        "What is the BSV21 token standard?",
+        "How does MNEE use Ordinals?",
+        "What are UTXOs and why are they important?",
+        "How do token transfers work on Ordinals?",
+        "What's the difference between Ordinals and other token standards?"
+      ],
+      systemPrompt: `You are a helpful Web3 educator teaching about Ordinals and the BSV21 token standard.
+      
+      Focus on explaining how Ordinals enable data inscription on Bitcoin SV, the BSV21 token standard for fungible tokens, and how systems like MNEE leverage this technology.
+      
+      When explaining:
+      - Explain Ordinals in simple terms (data inscribed on satoshis)
+      - Describe the BSV21 standard and its benefits
+      - Explain how MNEE uses 1Sat Ordinals protocol
+      - Discuss UTXO management and why it matters
+      - Compare Ordinals-based tokens to other token standards
+      - Explain transaction mechanics on Ordinals-based systems
+      
+      If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`
     }
   ]
 
@@ -668,7 +1006,7 @@ Use this context to answer any user questions about Sensay or Cyberscope compreh
 
             // Call Gemini
             aiResponse = await callOpenAI({
-              model: "gemini-2.5-flash-lite",
+              model: "gemini-2.0-flash-lite",
               messages: conversationalMessages,
               temperature: 0.7,
               top_p: 0.9,
@@ -1157,7 +1495,7 @@ Be concise but informative. Don't just repeat the raw data - explain its signifi
                             </div>
                           ) : (
                             <div className="whitespace-pre-wrap break-words text-sm md:text-base prose prose-sm dark:prose-invert max-w-none">
-                              <ReactMarkdown>{typeof message.content === 'string' ? message.content : String(message.content || '')}</ReactMarkdown>
+                              <ReactMarkdown>{message.content}</ReactMarkdown>
                             </div>
                           )}
                         </div>
