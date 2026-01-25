@@ -1,4 +1,4 @@
-# Python virtual environment
+# Python virtual environment (not needed for Vercel)
 venv/
 .venv/
 __pycache__/
@@ -7,11 +7,11 @@ __pycache__/
 *.pyd
 .Python
 
-# Python files (not needed for Vercel serverless functions)
-*.py
+# Python files in api directory (not serverless functions)
+api/*.py
 requirements.txt
 
-# Build outputs
+# Pre-built outputs (Vercel will build fresh)
 dist/
 dist-ssr/
 .next/
@@ -21,12 +21,12 @@ build/
 # Dependencies (will be installed by Vercel)
 node_modules/
 
-# Documentation
+# Documentation (keep README)
 docs/
 *.md
 !README.md
 
-# Scripts
+# Development scripts (not needed for deployment)
 scripts/
 *.ps1
 *.sh
@@ -44,12 +44,4 @@ scripts/
 # Cache directories
 .cache/
 *.cache/
-
-# Source files (not needed for serverless functions)
-src/sensay-sdk/
-
-# Lock files (Vercel will use the appropriate one)
-pnpm-lock.yaml
-package-lock.json
-bun.lockb
 

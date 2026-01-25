@@ -4,13 +4,14 @@
     "framework": null,
     "functions": {
       "api/**": {
-        "excludeFiles": "{venv,*.cache,node_modules,dist,docs,scripts,public,src,.next,*.py,*.pyc,__pycache__}/**"
+        "excludeFiles": "{venv,*.cache,node_modules,dist,docs,scripts,.next,*.py,*.pyc,__pycache__}/**"
       }
     },
     "rewrites": [
       { "source": "/api/gemini_functions", "destination": "https://axioschat-sensay.onrender.com/api/gemini_functions" },
       { "source": "/api/proxy-gemini", "destination": "/api/proxy-gemini" },
       { "source": "/api/gemini-proxy", "destination": "/api/gemini-proxy" },
+      { "source": "/api/replicate", "destination": "/api/replicate" },
       { "source": "/api/(.*)", "destination": "/api/$1" },
       { "source": "/(.*)", "destination": "/index.html" }
     ],
