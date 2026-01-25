@@ -57,6 +57,7 @@ export interface FlockWeb3Request {
   temperature?: number
   max_new_tokens?: number
   messages?: ChatMessage[]
+  chainId?: number // Current chain ID for network-aware function calls
 }
 
 // Get API tokens from localStorage
@@ -73,7 +74,7 @@ const getApiTokens = (): { gemini: string; openai: string; replicate: string; se
       }
     }
   } catch (error) {
-    // Silently handle token retrieval errors - not critical for functionality
+    console.error("Error retrieving API tokens:", error)
   }
   return { gemini: "", openai: "", replicate: "", sensay: "" }
 }
@@ -142,9 +143,7 @@ export async function callLlama(options: LlamaOptions, endpoint: string, useSens
       }
     }
   } catch (error) {
-    if (error instanceof Error && !error.message.includes("AbortError")) {
-      console.error("[AiService] Llama API error:", error.message)
-    }
+    console.error("Error calling Llama:", error)
     return `Error: ${error instanceof Error ? error.message : "Unknown error"}`
   }
 }
@@ -165,6 +164,12 @@ export async function callOpenAI(options: OpenAIOptions, useSensay: boolean = fa
   try {
     const { gemini: GEMINI_API_KEY } = getApiTokens();
     // If no key in localStorage, allow proxies to supply from server env
+    if (!GEMINI_API_KEY) {
+      console.warn("[AiService] No Gemini API key found in localStorage. Relying on server-side environment variables.");
+    }
+    if (!GEMINI_API_KEY) {
+      console.warn("[AiService] No Gemini API key found in localStorage. Relying on server-side environment variables.");
+    }
 
     // Convert our message format to OpenAI SDK format
     const formattedMessages = options.messages.map(msg => {
@@ -189,9 +194,12 @@ export async function callOpenAI(options: OpenAIOptions, useSensay: boolean = fa
       max_tokens: options.max_tokens || 2000,
     };
 
+    console.log("Calling Gemini API via proxy with key:", GEMINI_API_KEY ? "API key exists" : "No API key");
+
     // Use both proxy endpoints with fallback
     try {
       // First try with proxy-gemini endpoint
+      console.log("[AiService] Attempting proxy-gemini endpoint...");
       const response = await fetch("/api/proxy-gemini", {
         method: "POST",
         headers: {
@@ -213,6 +221,9 @@ export async function callOpenAI(options: OpenAIOptions, useSensay: boolean = fa
         throw new Error("Invalid response format from proxy-gemini");
       }
     } catch (proxyError) {
+      console.warn("[AiService] proxy-gemini failed, trying gemini-proxy:", proxyError);
+      console.log("[AiService] Attempting gemini-proxy endpoint...");
+
       // Try with alternative gemini-proxy endpoint
       const altResponse = await fetch("/api/gemini-proxy", {
         method: "POST",
@@ -236,10 +247,7 @@ export async function callOpenAI(options: OpenAIOptions, useSensay: boolean = fa
       }
     }
   } catch (error) {
-    // Only log errors, not successful API calls
-    if (error instanceof Error && !error.message.includes("AbortError")) {
-      console.error("[AiService] OpenAI/Gemini API error:", error.message);
-    }
+    console.error("Error calling OpenAI:", error);
     return `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
   }
 }
@@ -251,16 +259,46 @@ export const callFlockWeb3 = async (
   try {
     // API key check is removed here; backend (Render) is responsible for using its env var.
 
+    console.log("Calling Gemini Functions API with input:", {
+      query: input.query.substring(0, 50) + "...",
+      temperature: input.temperature,
+      top_p: input.top_p,
+    })
+
     // Call the Gemini function calling service with the same input structure
     // Note: Using Gemini 2.0 Flash model as specified by the user
 
+    // Get chain name from chain ID for context
+    const getChainNameFromId = (id: number): string => {
+      const chainNames: Record<number, string> = {
+        1: "Ethereum Mainnet",
+        137: "Polygon",
+        56: "BNB Smart Chain (BSC)",
+        42161: "Arbitrum One",
+        10: "Optimism",
+        8453: "Base",
+        43114: "Avalanche",
+        11155111: "Sepolia Testnet",
+      }
+      return chainNames[id] || `Chain ID ${id}`
+    }
+
+    const currentChainId = input.chainId || 1
+    const currentChainName = getChainNameFromId(currentChainId)
+
     // Append system instruction to the query to prevent hallucination of wallet addresses
     const systemInstruction = `
-IMPORTANT INSTRUCTION: When calling functions like get_token_balance, send_token, or estimate_gas:
+IMPORTANT INSTRUCTION: When calling functions like get_token_balance, get_transaction_history, send_token, or estimate_gas:
 1. DO NOT invent, guess, or hallucinate wallet addresses (like 0x1234... or 0xYourWallet...).
-2. If the user refers to "my address", "my wallet", "me", or implies their own account, LEAVE the 'wallet_address' or 'from_address' field EMPTY/UNDEFINED.
+2. If the user refers to "my address", "my wallet", "me", "my transactions", "my history", or implies their own account, LEAVE the 'wallet_address' or 'from_address' field EMPTY/UNDEFINED.
 3. The system will automatically fill in the connected user's wallet address.
 4. ONLY provide a wallet_address if the user EXPLICITLY provides a specific 0x address in their request.
+5. When the user asks about "transaction history", "transactions", "my transactions", or wants to "explain transactions", you MUST call get_transaction_history function.
+
+CURRENT NETWORK CONTEXT:
+- The user is currently connected to: ${currentChainName} (Chain ID: ${currentChainId})
+- For ALL function calls that accept a chain_id parameter, use chain_id: ${currentChainId} unless the user explicitly asks about a different network.
+- Native token on this network: ${currentChainId === 56 ? 'BNB' : currentChainId === 137 ? 'MATIC' : currentChainId === 43114 ? 'AVAX' : 'ETH'}
 `;
 
     const geminiResponse = await callGeminiForFunctions({
@@ -278,7 +316,7 @@ IMPORTANT INSTRUCTION: When calling functions like get_token_balance, send_token
 
     // If there's an error, return it with proper formatting
     if (geminiResponse.error) {
-      console.error("[AiService] Gemini function calling error:", geminiResponse.error.substring(0, 100))
+      console.error("Error from Gemini function calling:", geminiResponse.error)
       // Return a user-friendly error message but don't break the conversation
       return {
         text: `I encountered an issue processing your request: ${geminiResponse.error.substring(0, 100)}... Let me try a different approach.`,
@@ -288,6 +326,8 @@ IMPORTANT INSTRUCTION: When calling functions like get_token_balance, send_token
 
     // If there are function calls, process them
     if (geminiResponse.functionCalls && Array.isArray(geminiResponse.functionCalls)) {
+      console.log("Parsed function calls from Gemini:", geminiResponse.functionCalls)
+
       // Format the function calls to match the expected structure
       const formattedFunctionCalls: FunctionCall[] = geminiResponse.functionCalls.map((call, index) => {
         // Ensure we have valid arguments even if they're not provided
@@ -325,13 +365,9 @@ IMPORTANT INSTRUCTION: When calling functions like get_token_balance, send_token
     // Fallback response to ensure the conversation continues
     return { text: "I understand your request, but I'm not sure how to process it. Could you please rephrase?" }
   } catch (error) {
+    console.error("Error calling AI model for function calling:", error)
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred while calling the AI model"
-    
-    // Only log significant errors
-    if (!(error instanceof Error && error.message.includes("AbortError"))) {
-      console.error("[AiService] Function calling error:", errorMessage.substring(0, 100))
-    }
 
     // Only show toast for significant errors
     if (!(error instanceof Error && error.message.includes("AbortError"))) {
@@ -453,10 +489,13 @@ export function createFunctionCall(name: string, args: Record<string, any>): Fun
 // Check if a function is read-only (can be auto-executed)
 export function isReadOnlyFunction(name: string): boolean {
   const readOnlyFunctions = [
-    // MNEE Functions - read-only operations
-    "get_mnee_balance",
-    "get_mnee_utxos",
-    "get_mnee_history",
+    // Thirdweb Read Functions
+    "get_token_balance",
+    "get_token_price",
+    "get_gas_price",
+    "explain_transaction",
+    "estimate_gas",
+    "get_transaction_history",
   ]
 
   return readOnlyFunctions.includes(name)
@@ -464,16 +503,29 @@ export function isReadOnlyFunction(name: string): boolean {
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const createDefaultWeb3Tools = (): string => {
-  // MNEE-ONLY TOOLS - Thirdweb tools removed for MNEE integration
+  // Thirdweb-based Web3 Tools
   const tools = [
     {
       type: "function",
       function: {
-        name: "get_mnee_balance",
-        description: "Get the MNEE token balance for the user's wallet. Use this when the user asks about their balance, funds, or how much MNEE they have.",
+        name: "get_token_balance",
+        description: "Get the token balance for a wallet address. Use this when the user asks about their balance, funds, or how much crypto they have. Supports native tokens (ETH, MATIC, BNB, etc.) and ERC20 tokens.",
         parameters: {
           type: "object",
-          properties: {},
+          properties: {
+            wallet_address: {
+              type: "string",
+              description: "The wallet address to check balance for. Leave empty to use the connected wallet.",
+            },
+            token_address: {
+              type: "string",
+              description: "The token contract address, or 'native' for native tokens like ETH, MATIC, BNB. Default is 'native'.",
+            },
+            chain_id: {
+              type: "number",
+              description: "The chain ID (1=Ethereum, 137=Polygon, 56=BSC, 42161=Arbitrum, 10=Optimism, 8453=Base, 43114=Avalanche, 11155111=Sepolia). Default is 1.",
+            },
+          },
           required: [],
         },
       },
@@ -481,18 +533,56 @@ export const createDefaultWeb3Tools = (): string => {
     {
       type: "function",
       function: {
-        name: "send_mnee",
-        description: "Send MNEE tokens to a recipient address. Use this when the user wants to transfer, send, or pay MNEE to someone.",
+        name: "get_token_price",
+        description: "Get the current price of a cryptocurrency token in USD. Use this when the user asks about token prices, crypto prices, or market data.",
+        parameters: {
+          type: "object",
+          properties: {
+            token_symbol: {
+              type: "string",
+              description: "The token symbol (e.g., BTC, ETH, BNB, SOL, MATIC, AVAX, DOT, ADA, XRP, DOGE, SHIB, LINK, UNI, AAVE).",
+            },
+          },
+          required: ["token_symbol"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_gas_price",
+        description: "Get the current gas price on a specific blockchain network. Use this when the user asks about gas fees, transaction costs, or network congestion.",
+        parameters: {
+          type: "object",
+          properties: {
+            chain: {
+              type: "string",
+              description: "The blockchain network name (ethereum, polygon, binance, bsc, arbitrum, optimism, base, avalanche). Default is ethereum.",
+            },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "send_token",
+        description: "Send native tokens (ETH, MATIC, BNB, etc.) to a recipient address. Use this when the user wants to transfer or send cryptocurrency. Requires wallet approval.",
         parameters: {
           type: "object",
           properties: {
             to_address: {
               type: "string",
-              description: "The recipient's MNEE wallet address (starts with 1)",
+              description: "The recipient's wallet address (0x...)",
             },
             amount: {
+              type: "string",
+              description: "The amount of tokens to send (in human-readable format, e.g., '0.1')",
+            },
+            chain_id: {
               type: "number",
-              description: "The amount of MNEE to send",
+              description: "The chain ID for the transaction. Default is 1 (Ethereum).",
             },
           },
           required: ["to_address", "amount"],
@@ -502,102 +592,129 @@ export const createDefaultWeb3Tools = (): string => {
     {
       type: "function",
       function: {
-        name: "get_mnee_history",
-        description: "Get the recent transaction history for the user's MNEE wallet.",
+        name: "explain_transaction",
+        description: "Get details and explanation of a blockchain transaction by its hash. Use this when the user asks about a specific transaction.",
         parameters: {
           type: "object",
           properties: {
+            tx_hash: {
+              type: "string",
+              description: "The transaction hash to look up (0x...)",
+            },
+            chain_id: {
+              type: "number",
+              description: "The chain ID where the transaction occurred. Default is 1 (Ethereum).",
+            },
+          },
+          required: ["tx_hash"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "estimate_gas",
+        description: "Estimate the gas cost for a transaction before executing it. Use this when the user wants to know how much a transaction will cost.",
+        parameters: {
+          type: "object",
+          properties: {
+            from_address: {
+              type: "string",
+              description: "The sender's wallet address. Leave empty to use the connected wallet.",
+            },
+            to_address: {
+              type: "string",
+              description: "The recipient's wallet address (0x...)",
+            },
+            value: {
+              type: "string",
+              description: "The amount to send in wei. Default is '0'.",
+            },
+            chain_id: {
+              type: "number",
+              description: "The chain ID. Default is 1 (Ethereum).",
+            },
+          },
+          required: ["to_address"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "swap_tokens",
+        description: "Swap one token for another using a DEX. This feature is coming soon and not yet available.",
+        parameters: {
+          type: "object",
+          properties: {
+            token_in: {
+              type: "string",
+              description: "The input token symbol or address",
+            },
+            token_out: {
+              type: "string",
+              description: "The output token symbol or address",
+            },
+            amount_in: {
+              type: "string",
+              description: "The amount of input tokens to swap",
+            },
+          },
+          required: ["token_in", "token_out", "amount_in"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "add_liquidity",
+        description: "Add liquidity to a DEX pool. This feature is coming soon and not yet available.",
+        parameters: {
+          type: "object",
+          properties: {
+            token_a: {
+              type: "string",
+              description: "The first token symbol or address",
+            },
+            token_b: {
+              type: "string",
+              description: "The second token symbol or address",
+            },
+            amount_a: {
+              type: "string",
+              description: "The amount of first token to add",
+            },
+            amount_b: {
+              type: "string",
+              description: "The amount of second token to add",
+            },
+          },
+          required: ["token_a", "token_b", "amount_a", "amount_b"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_transaction_history",
+        description: "Get the transaction history for a wallet address. Use this when the user asks about their transactions, transaction history, recent transactions, past transfers, transaction list, or wants to see what transactions they've made. Also use when they ask to 'explain transactions' or 'show my transactions'.",
+        parameters: {
+          type: "object",
+          properties: {
+            wallet_address: {
+              type: "string",
+              description: "The wallet address to get history for. Leave empty to use the connected wallet.",
+            },
+            chain_id: {
+              type: "number",
+              description: "The chain ID to fetch history from (1=Ethereum, 137=Polygon, 56=BSC, etc.). Uses current network if not specified.",
+            },
             limit: {
               type: "number",
-              description: "Number of transactions to retrieve (default 10)",
+              description: "Maximum number of transactions to return. Default is 10.",
             },
           },
           required: [],
-        },
-      },
-    },
-    {
-      type: "function",
-      function: {
-        name: "get_mnee_utxos",
-        description: "Get UTXOs (Unspent Transaction Outputs) for the user's wallet. Use this when the user wants to see their available UTXOs or check spendable outputs.",
-        parameters: {
-          type: "object",
-          properties: {
-            page: {
-              type: "number",
-              description: "Page number (default 1)",
-            },
-            size: {
-              type: "number",
-              description: "Number of UTXOs per page (default 10)",
-            },
-            order: {
-              type: "string",
-              enum: ["asc", "desc"],
-              description: "Sort order: 'asc' for oldest first, 'desc' for newest first (default 'desc')",
-            },
-          },
-          required: [],
-        },
-      },
-    },
-    {
-      type: "function",
-      function: {
-        name: "transfer_mnee_multi",
-        description: "Transfer MNEE from multiple UTXOs to one or more recipients. Use this for advanced transfers requiring multiple inputs or UTXO consolidation.",
-        parameters: {
-          type: "object",
-          properties: {
-            inputs: {
-              type: "array",
-              description: "Array of UTXO inputs, each with txid, vout, and wif",
-              items: {
-                type: "object",
-                properties: {
-                  txid: { type: "string", description: "Transaction ID of the UTXO" },
-                  vout: { type: "number", description: "Output index within the transaction" },
-                  wif: { type: "string", description: "Private key (WIF format) for this UTXO" },
-                },
-                required: ["txid", "vout", "wif"],
-              },
-            },
-            recipients: {
-              type: "array",
-              description: "Array of recipients, each with address and amount",
-              items: {
-                type: "object",
-                properties: {
-                  address: { type: "string", description: "Recipient MNEE address" },
-                  amount: { type: "number", description: "Amount in MNEE" },
-                },
-                required: ["address", "amount"],
-              },
-            },
-            change_address: {
-              type: "string",
-              description: "Address to send change to (optional)",
-            },
-          },
-          required: ["inputs", "recipients"],
-        },
-      },
-    },
-    {
-      type: "function",
-      function: {
-        name: "submit_mnee_raw_tx",
-        description: "Submit a raw transaction hex to the MNEE network. Use this when you have a pre-signed transaction hex that needs to be broadcast.",
-        parameters: {
-          type: "object",
-          properties: {
-            raw_tx_hex: {
-              type: "string",
-              description: "The raw transaction hex string to submit",
-            },
-          },
-          required: ["raw_tx_hex"],
         },
       },
     },
@@ -606,41 +723,55 @@ export const createDefaultWeb3Tools = (): string => {
   return JSON.stringify(tools)
 }
 
-// Execute a function call using MNEE blockchain
-// MNEE-only implementation - Thirdweb removed
+// Execute a function call using Thirdweb blockchain services
 export const executeFunctionCall = async (functionCall: FunctionCall, walletAddress?: string, chainId?: number): Promise<any> => {
-  // Import MNEE service
-  const mneeService = await import("./mneeService")
+  // Import Thirdweb service
+  const thirdwebService = await import("./thirdwebService")
 
   console.log(`[AiService] Executing function: ${functionCall.name}`, functionCall.arguments)
-  
-  const connectedAddress = mneeService.getMneeAddress()
-  console.log(`[AiService] MNEE wallet address: ${connectedAddress}`)
-
-  if (!connectedAddress) {
-    return {
-      error: "No wallet connected. Please connect your MNEE wallet first by entering your wallet address.",
-      timestamp: Date.now(),
-    }
-  }
+  console.log(`[AiService] Connected wallet: ${walletAddress || 'Not connected'}`)
+  console.log(`[AiService] Chain ID: ${chainId || 'Default (1)'}`)
 
   let result
 
   try {
     switch (functionCall.name) {
-      case "get_mnee_balance":
-        // Always use the connected MNEE address
-        const balanceResult = await mneeService.getMneeBalance(connectedAddress)
-        result = {
-          address: balanceResult.address,
-          balance: balanceResult.decimalAmount,
-          rawAmount: balanceResult.amount,
-          formatted: `${mneeService.formatBalance(balanceResult.decimalAmount)} MNEE`,
-          timestamp: Date.now(),
+      case "get_token_balance":
+        // Use connected wallet if no address specified
+        const balanceAddress = functionCall.arguments.wallet_address || walletAddress
+        if (!balanceAddress) {
+          result = {
+            error: "No wallet address provided. Please connect your wallet first.",
+            timestamp: Date.now(),
+          }
+          break
         }
+        
+        result = await thirdwebService.getTokenBalance(
+          balanceAddress,
+          functionCall.arguments.token_address || "native",
+          functionCall.arguments.chain_id || chainId || 1
+        )
         break
 
-      case "send_mnee":
+      case "get_token_price":
+        if (!functionCall.arguments.token_symbol) {
+          result = {
+            error: "Token symbol is required.",
+            timestamp: Date.now(),
+          }
+          break
+        }
+        result = await thirdwebService.getTokenPrice(functionCall.arguments.token_symbol)
+        break
+
+      case "get_gas_price":
+        result = await thirdwebService.getGasPrice(
+          functionCall.arguments.chain || "ethereum"
+        )
+        break
+
+      case "send_token":
         if (!functionCall.arguments.to_address || !functionCall.arguments.amount) {
           result = {
             error: "Recipient address and amount are required.",
@@ -649,168 +780,154 @@ export const executeFunctionCall = async (functionCall: FunctionCall, walletAddr
           break
         }
 
-        // Validate recipient address
-        if (!mneeService.isValidMneeAddress(functionCall.arguments.to_address)) {
-          result = {
-            error: `Invalid recipient address: ${functionCall.arguments.to_address}. MNEE addresses should start with "1".`,
-            timestamp: Date.now(),
-          }
-          break
-        }
-
-        const amount = parseFloat(functionCall.arguments.amount)
-        if (isNaN(amount) || amount <= 0) {
-          result = {
-            error: "Invalid amount. Please provide a positive number.",
-            timestamp: Date.now(),
-          }
-          break
-        }
-
-        // Check sufficient balance first
-        const balanceCheck = await mneeService.hasSufficientBalance(amount)
-        if (!balanceCheck.sufficient) {
-          result = {
-            error: `Insufficient balance. You have ${balanceCheck.balance.toFixed(5)} MNEE but need ${balanceCheck.required.toFixed(5)} MNEE (including fee). Shortfall: ${balanceCheck.shortfall.toFixed(5)} MNEE.`,
-            balance: balanceCheck.balance,
-            required: balanceCheck.required,
-            timestamp: Date.now(),
-          }
-          break
-        }
-
-        // Execute the transfer using MNEE SDK
-        result = await mneeService.executeMneeTransfer(
+        // Use the transaction bridge to request the transaction
+        // The TransactionExecutor component will handle the actual execution
+        const { transactionBridge } = await import("./transactionBridge")
+        
+        const txChainId = functionCall.arguments.chain_id || chainId || 1
+        
+        // Request the transaction through the bridge
+        // This will trigger the wallet popup for signing
+        console.log(`[AiService] Requesting transaction via bridge: ${functionCall.arguments.amount} to ${functionCall.arguments.to_address} on chain ${txChainId}`)
+        
+        const txResult = await transactionBridge.requestTransaction(
           functionCall.arguments.to_address,
-          amount
+          functionCall.arguments.amount,
+          txChainId,
+          "native"
         )
-        result.timestamp = Date.now()
+        
+        if (txResult.success) {
+          result = {
+            status: "confirmed",
+            txHash: txResult.txHash,
+            message: `Transaction successful! Sent ${functionCall.arguments.amount} to ${functionCall.arguments.to_address}`,
+            to: functionCall.arguments.to_address,
+            amount: functionCall.arguments.amount,
+            chainId: txChainId,
+            timestamp: Date.now(),
+          }
+        } else {
+          result = {
+            status: "failed",
+            error: txResult.error || "Transaction failed or was rejected",
+            to: functionCall.arguments.to_address,
+            amount: functionCall.arguments.amount,
+            chainId: txChainId,
+            timestamp: Date.now(),
+          }
+        }
         break
 
-      case "get_mnee_utxos":
-        const page = functionCall.arguments.page || 1
-        const size = functionCall.arguments.size || 10
-        const order = functionCall.arguments.order || 'desc'
-        
-        const utxos = await mneeService.getMneeUtxos(connectedAddress, page, size, order)
-        
-        // Format UTXOs for display
-        const formattedUtxos = utxos.map(utxo => ({
-          outpoint: utxo.outpoint,
-          txid: utxo.txid,
-          vout: utxo.vout,
-          amount: mneeService.fromAtomicAmount(utxo.data.bsv21.amt),
-          amountAtomic: utxo.data.bsv21.amt,
-          height: utxo.height,
-          owners: utxo.owners,
-        }))
+      case "explain_transaction":
+        if (!functionCall.arguments.tx_hash) {
+          result = {
+            error: "Transaction hash is required.",
+            timestamp: Date.now(),
+          }
+          break
+        }
+        result = await thirdwebService.explainTransaction(
+          functionCall.arguments.tx_hash,
+          functionCall.arguments.chain_id || chainId || 1
+        )
+        break
 
+      case "estimate_gas":
+        const fromAddr = functionCall.arguments.from_address || walletAddress
+        if (!fromAddr) {
+          result = {
+            error: "No wallet address provided. Please connect your wallet first.",
+            timestamp: Date.now(),
+          }
+          break
+        }
+        if (!functionCall.arguments.to_address) {
+          result = {
+            error: "Recipient address is required.",
+            timestamp: Date.now(),
+          }
+          break
+        }
+        result = await thirdwebService.estimateGas(
+          fromAddr,
+          functionCall.arguments.to_address,
+          functionCall.arguments.value || "0",
+          "0x",
+          functionCall.arguments.chain_id || chainId || 1
+        )
+        break
+
+      case "swap_tokens":
         result = {
-          address: connectedAddress,
-          utxos: formattedUtxos,
-          count: formattedUtxos.length,
-          page,
-          size,
-          order,
+          status: "coming_soon",
+          message: "Token swap functionality is coming soon! This feature will allow you to swap tokens directly through the chat interface using decentralized exchanges.",
+          feature: "DEX Token Swaps",
           timestamp: Date.now(),
         }
         break
 
-      case "transfer_mnee_multi":
-        if (!functionCall.arguments.inputs || !Array.isArray(functionCall.arguments.inputs) || functionCall.arguments.inputs.length === 0) {
-          result = {
-            error: "Inputs array is required and must contain at least one UTXO input.",
-            timestamp: Date.now(),
-          }
-          break
-        }
-
-        if (!functionCall.arguments.recipients || !Array.isArray(functionCall.arguments.recipients) || functionCall.arguments.recipients.length === 0) {
-          result = {
-            error: "Recipients array is required and must contain at least one recipient.",
-            timestamp: Date.now(),
-          }
-          break
-        }
-
-        // Validate and format inputs
-        const inputs = functionCall.arguments.inputs.map((input: any) => ({
-          txid: input.txid,
-          vout: parseInt(input.vout),
-          wif: input.wif,
-        }))
-
-        // Validate and format recipients
-        const recipients = functionCall.arguments.recipients.map((recipient: any) => ({
-          address: recipient.address,
-          amount: parseFloat(recipient.amount),
-        }))
-
-        // Validate addresses
-        let validationError: string | null = null
-        for (const recipient of recipients) {
-          if (!mneeService.isValidMneeAddress(recipient.address)) {
-            validationError = `Invalid recipient address: ${recipient.address}`
-            break
-          }
-        }
-
-        if (validationError) {
-          result = {
-            error: validationError,
-            timestamp: Date.now(),
-          }
-          break
-        }
-
-        // Execute transfer multi
-        result = await mneeService.transferMneeMulti({
-          inputs,
-          recipients,
-          changeAddress: functionCall.arguments.change_address,
-        })
-        result.timestamp = Date.now()
-        break
-
-      case "submit_mnee_raw_tx":
-        if (!functionCall.arguments.raw_tx_hex) {
-          result = {
-            error: "Raw transaction hex is required.",
-            timestamp: Date.now(),
-          }
-          break
-        }
-
-        // Submit raw transaction
-        const submitResult = await mneeService.submitRawTransaction(functionCall.arguments.raw_tx_hex)
-        
+      case "add_liquidity":
         result = {
-          success: submitResult.success,
-          ticketId: submitResult.ticketId,
-          message: submitResult.message || submitResult.error,
-          error: submitResult.error,
+          status: "coming_soon",
+          message: "Liquidity provision functionality is coming soon! This feature will allow you to add liquidity to DEX pools directly through the chat interface.",
+          feature: "DEX Liquidity Pools",
           timestamp: Date.now(),
         }
         break
 
-      case "get_mnee_history":
+      case "get_transaction_history":
+        const historyAddress = functionCall.arguments.wallet_address || walletAddress
+        if (!historyAddress) {
+          result = {
+            error: "No wallet address provided. Please connect your wallet first.",
+            timestamp: Date.now(),
+          }
+          break
+        }
+
+        const historyChainId = functionCall.arguments.chain_id || chainId || 1
         const limit = functionCall.arguments.limit || 10
-        const history = await mneeService.getMneeTransactionHistory(limit, connectedAddress)
-        
-        // Format history for display
-        const formattedHistory = history.map(tx => ({
-          txid: tx.txid,
-          txidShort: `${tx.txid.slice(0, 8)}...${tx.txid.slice(-8)}`,
-          height: tx.height,
-          time: tx.blkTime ? new Date(tx.blkTime * 1000).toLocaleString() : 'Pending',
-          type: tx.senders.includes(connectedAddress) ? 'sent' : 'received',
-          counterparties: tx.senders.includes(connectedAddress) ? tx.receivers : tx.senders,
-        }))
+
+        // Fetch from explorer APIs
+        const explorerHistory = await thirdwebService.getTransactionHistory(
+          historyAddress,
+          historyChainId,
+          limit
+        )
+
+        // Also get local transaction history
+        const localHistory = thirdwebService.getLocalTransactionHistory()
+
+        // Merge and deduplicate by hash
+        const allTxHashes = new Set<string>()
+        const mergedTransactions = []
+
+        // Add explorer transactions first (most recent from blockchain)
+        for (const tx of explorerHistory.transactions) {
+          if (!allTxHashes.has(tx.hash)) {
+            allTxHashes.add(tx.hash)
+            mergedTransactions.push(tx)
+          }
+        }
+
+        // Add local transactions that aren't already included
+        for (const tx of localHistory) {
+          if (!allTxHashes.has(tx.hash)) {
+            allTxHashes.add(tx.hash)
+            mergedTransactions.push(tx)
+          }
+        }
+
+        // Sort by timestamp descending
+        mergedTransactions.sort((a, b) => b.timestamp - a.timestamp)
 
         result = {
-          address: connectedAddress,
-          transactions: formattedHistory,
-          count: formattedHistory.length,
+          transactions: mergedTransactions.slice(0, limit),
+          total: mergedTransactions.length,
+          chain: explorerHistory.chain,
+          chainId: historyChainId,
+          address: historyAddress,
           timestamp: Date.now(),
         }
         break
@@ -824,7 +941,7 @@ export const executeFunctionCall = async (functionCall: FunctionCall, walletAddr
   } catch (error) {
     console.error(`Error executing function ${functionCall.name}:`, error)
     result = {
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      error: error instanceof Error ? error.message : "Unknown error",
       timestamp: Date.now(),
     }
   }
@@ -837,6 +954,7 @@ export const executeFunctionCall = async (functionCall: FunctionCall, walletAddr
 /* COMMENTED OUT - Previous mock implementation
 export const executeFunctionCall_MOCK = async (functionCall: FunctionCall): Promise<any> => {
   // This was a mock implementation - in a real app, you would connect to actual blockchain services
+  console.log(`Executing function: ${functionCall.name}`, functionCall.arguments)
 
   // Simulate a delay
   await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -975,6 +1093,7 @@ export const executeFunctionCall_MOCK = async (functionCall: FunctionCall): Prom
       }
   }
 
+  console.log(`Function ${functionCall.name} executed with result:`, result)
   return result
 }
 END MOCK IMPLEMENTATION */

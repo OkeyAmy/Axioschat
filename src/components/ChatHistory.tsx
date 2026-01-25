@@ -18,6 +18,31 @@ interface ChatHistoryProps {
   defaultCollapsed?: boolean;
 }
 
+// Chat history storage key
+const CHAT_HISTORY_KEY = "axioschat_history";
+
+// Helper function to load chat history from localStorage
+const loadChatHistory = (): any[] => {
+  try {
+    const stored = localStorage.getItem(CHAT_HISTORY_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error("Error loading chat history:", error);
+  }
+  return [];
+};
+
+// Helper function to save chat history to localStorage
+const saveChatHistory = (history: any[]) => {
+  try {
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(history));
+  } catch (error) {
+    console.error("Error saving chat history:", error);
+  }
+};
+
 const ChatHistory: React.FC<ChatHistoryProps> = ({ 
   onSelectChat, 
   onNewChat, 
@@ -33,69 +58,11 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const { web3, address, isReady } = useWeb3();
-  
-  // Mock conversations for demo
-  const mockHistory = [
-    {
-      id: 1,
-      title: "Smart Contract Creation",
-      last_message: "How do I create an ERC-20 token?",
-      timestamp: "2023-12-01T10:00:00Z",
-      chain_id: 1,
-      messages: [
-        { role: "user", content: "How do I create an ERC-20 token?" },
-        { role: "assistant", content: "To create an ERC-20 token, you need to implement the standard ERC-20 interface..." }
-      ]
-    },
-    {
-      id: 2,
-      title: "Gas Optimization",
-      last_message: "What are the best practices for optimizing gas usage in Solidity?",
-      timestamp: "2023-12-02T14:30:00Z",
-      chain_id: 1,
-      messages: [
-        { role: "user", content: "What are the best practices for optimizing gas usage in Solidity?" },
-        { role: "assistant", content: "There are several approaches to optimize gas usage in Solidity contracts..." }
-      ]
-    },
-    {
-      id: 3,
-      title: "DeFi Integration",
-      last_message: "How can I integrate my dApp with Uniswap?",
-      timestamp: "2023-12-03T09:15:00Z",
-      chain_id: 1,
-      messages: [
-        { role: "user", content: "How can I integrate my dApp with Uniswap?" },
-        { role: "assistant", content: "To integrate with Uniswap, you can use their SDK or interact directly with their contracts..." }
-      ]
-    },
-    {
-      id: 4,
-      title: "NFT Marketplace",
-      last_message: "How do I build an NFT marketplace?",
-      timestamp: "2023-12-04T11:45:00Z",
-      chain_id: 1,
-      messages: [
-        { role: "user", content: "How do I build an NFT marketplace?" },
-        { role: "assistant", content: "Building an NFT marketplace involves several components..." }
-      ]
-    },
-    {
-      id: 5,
-      title: "Wallet Connect",
-      last_message: "What's the best way to integrate web3 wallets?",
-      timestamp: "2023-12-05T16:20:00Z",
-      chain_id: 1,
-      messages: [
-        { role: "user", content: "What's the best way to integrate web3 wallets?" },
-        { role: "assistant", content: "For integrating web3 wallets, you can use libraries like..." }
-      ]
-    }
-  ];
 
   useEffect(() => {
-    // Set initial history
-    setHistory(mockHistory);
+    // Load chat history from localStorage
+    const savedHistory = loadChatHistory();
+    setHistory(savedHistory);
   }, []);
   
   useEffect(() => {
@@ -243,7 +210,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
           size="icon"
           className="shrink-0 h-9 w-9"
           title="Refresh conversations"
-          onClick={() => setHistory([...mockHistory])}
+          onClick={() => setHistory(loadChatHistory())}
         >
           <RotateCcw className="h-4 w-4" />
         </Button>

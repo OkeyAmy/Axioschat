@@ -23,46 +23,12 @@ interface ChatMessagesProps {
   isTyping?: boolean
 }
 
-// Safe wrapper for ReactMarkdown to prevent crashes
-const SafeReactMarkdown: React.FC<{ content: string; components: any }> = ({ content, components }) => {
-  try {
-    if (!content) {
-      console.warn('SafeReactMarkdown: Empty content provided');
-      return null;
-    }
-
-    // Validate components object
-    if (!components || typeof components !== 'object') {
-      console.warn('SafeReactMarkdown: Invalid components prop, using default');
-      return (
-        <ReactMarkdown skipHtml={true}>
-          {content}
-        </ReactMarkdown>
-      );
-    }
-
-    return (
-      <ReactMarkdown
-        components={components}
-        skipHtml={true}
-      >
-        {content}
-      </ReactMarkdown>
-    );
-  } catch (error) {
-    console.error('Error rendering markdown:', error);
-    console.log('Content that failed to render:', content?.substring(0, 100));
-    // Fallback to plain text if markdown fails
-    return <div className="whitespace-pre-wrap break-words">{content || ''}</div>;
-  }
-};
-
 const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false }) => {
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
   const [hasError, setHasError] = useState(false);
-
+  
   // Dynamically loaded component state
-  const [MotionDiv, setMotionDiv] = useState<any>(motion.div);
+  const [MotionDiv, setMotionDiv] = useState<any>(() => motion.div);
   const [AnimatePresenceComp, setAnimatePresenceComp] = useState<any>(() => AnimatePresence);
   const [SyntaxHighlighterComp, setSyntaxHighlighterComp] = useState<any>(() => SyntaxHighlighterFallback);
   const [syntaxStyle, setSyntaxStyle] = useState<any>(vscDarkPlus);
@@ -74,7 +40,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
     const loadLibraries = async () => {
       try {
         const framerMotion = await import('framer-motion');
-        setMotionDiv(() => framerMotion.motion.div);
+        setMotionDiv(framerMotion.motion.div);
         setAnimatePresenceComp(() => framerMotion.AnimatePresence);
       } catch (e) {
         console.warn('Framer Motion failed to load, using fallbacks');
@@ -89,10 +55,10 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
         console.warn('Syntax Highlighter failed to load, using fallbacks');
       }
     };
-
+    
     loadLibraries();
   }, []);
-
+  
   // Scroll to bottom when messages change
   useEffect(() => {
     try {
@@ -119,8 +85,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
 
   // Custom components for markdown rendering
   const markdownComponents = {
-    code(props: any = {}) {
-      const { node, inline, className = '', children = null, ...restProps } = props || {};
+    code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
       return !inline && match ? (
         <SyntaxHighlighterComp
@@ -129,59 +94,50 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
           PreTag="div"
           className="rounded-md border my-4 bg-gray-950 dark:bg-gray-950"
           showLineNumbers={true}
-          {...restProps}
+          {...props}
         >
-          {String(children || '').replace(/\n$/, '')}
+          {String(children).replace(/\n$/, '')}
         </SyntaxHighlighterComp>
       ) : (
-        <code className="bg-muted px-1 py-0.5 rounded-sm font-mono text-sm" {...restProps}>
+        <code className="bg-muted px-1 py-0.5 rounded-sm font-mono text-sm" {...props}>
           {children}
         </code>
       );
     },
-    p(props: any = {}) {
-      const { children = null } = props || {};
+    p({ children }: any) {
       return <p className="mb-4 last:mb-0">{children}</p>;
     },
-    ul(props: any = {}) {
-      const { children = null } = props || {};
+    ul({ children }: any) {
       return <ul className="list-disc pl-6 mb-4">{children}</ul>;
     },
-    ol(props: any = {}) {
-      const { children = null } = props || {};
+    ol({ children }: any) {
       return <ol className="list-decimal pl-6 mb-4">{children}</ol>;
     },
-    li(props: any = {}) {
-      const { children = null } = props || {};
+    li({ children }: any) {
       return <li className="mb-1">{children}</li>;
     },
-    h1(props: any = {}) {
-      const { children = null } = props || {};
+    h1({ children }: any) {
       return <h1 className="text-2xl font-bold mb-4">{children}</h1>;
     },
-    h2(props: any = {}) {
-      const { children = null } = props || {};
+    h2({ children }: any) {
       return <h2 className="text-xl font-bold mb-3">{children}</h2>;
     },
-    h3(props: any = {}) {
-      const { children = null } = props || {};
+    h3({ children }: any) {
       return <h3 className="text-lg font-bold mb-2">{children}</h3>;
     },
-    blockquote(props: any = {}) {
-      const { children = null } = props || {};
+    blockquote({ children }: any) {
       return (
         <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic mb-4">
           {children}
         </blockquote>
       );
     },
-    a(props: any = {}) {
-      const { children = null, href = '#' } = props || {};
+    a({ children, href }: any) {
       return (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
+        <a 
+          href={href} 
+          target="_blank" 
+          rel="noopener noreferrer" 
           className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 underline"
         >
           {children}
@@ -192,70 +148,48 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
 
   // Simple message rendering without animations
   const renderSimpleMessages = () => {
-    if (!messages || !Array.isArray(messages)) {
-      console.warn('ChatMessages: messages prop is not a valid array', messages);
-      return (
-        <div className="flex flex-col items-center justify-center h-full text-center p-8">
-          <p className="text-muted-foreground">No messages to display</p>
-        </div>
-      );
-    }
-
     return (
       <div className="flex flex-col space-y-6 p-4 w-full">
-        {messages.map((message, index) => {
-          // Validate message structure
-          if (!message || typeof message !== 'object') {
-            console.warn(`ChatMessages: Invalid message at index ${index}`, message);
-            return null;
-          }
-
-          const messageContent = message.content || '';
-          const messageRole = message.role || 'assistant';
-          const isUser = messageRole === "user";
-
-          return (
-            <div
-              key={index}
-              className={cn(
-                "group flex items-start gap-3 max-w-[94%] md:max-w-[80%]",
-                isUser ? "ml-auto" : "",
-              )}
-            >
-              {!isUser && (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                  <Bot size={16} className="text-white" />
-                </div>
-              )}
-
-              <div className={cn(
-                "rounded-2xl px-5 py-3 shadow-md",
-                isUser
-                  ? "bg-indigo-500 text-white font-medium rounded-tr-sm"
-                  : "bg-gray-100 dark:bg-gray-800 rounded-tl-sm",
-              )}>
-                <div className={cn("break-words", isUser ? "whitespace-pre-wrap" : "markdown-content")}>
-                  {isUser ? (
-                    messageContent
-                  ) : (
-                    <SafeReactMarkdown
-                      content={messageContent}
-                      components={markdownComponents}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {isUser && (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
-                  <User size={16} className="text-white" />
-                </div>
-              )}
+      {messages.map((message, index) => (
+        <div
+          key={index}
+          className={cn(
+              "group flex items-start gap-3 max-w-[94%] md:max-w-[80%]",
+              message.role === "user" ? "ml-auto" : "",
+            )}
+          >
+            {message.role !== "user" && (
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                <Bot size={16} className="text-white" />
             </div>
-          );
-        })}
+          )}
+            
+            <div className={cn(
+              "rounded-2xl px-5 py-3 shadow-md",
+              message.role === "user"
+                ? "bg-indigo-500 text-white font-medium rounded-tr-sm"
+                : "bg-gray-100 dark:bg-gray-800 rounded-tl-sm",
+            )}>
+              <div className={cn("break-words", message.role === "user" ? "whitespace-pre-wrap" : "markdown-content")}>
+                {message.role === "user" ? (
+                  message.content
+                ) : (
+                  <ReactMarkdown components={markdownComponents}>
+                    {message.content}
+                  </ReactMarkdown>
+                )}
+              </div>
+            </div>
+            
+            {message.role === "user" && (
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
+                <User size={16} className="text-white" />
+              </div>
+            )}
+          </div>
+        ))}
         {isTyping && (
-          <div className={cn("group flex items-start gap-3 max-w-[94%] md:max-w-[80%]")}>
+          <div className={cn("group flex items-start gap-3 max-w-[94%] md:max-w-[80%]")}> 
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
               <Bot size={16} className="text-white" />
             </div>
@@ -281,25 +215,25 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping = false 
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <div
+        <div 
           className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-lg relative overflow-hidden"
         >
           <div className="absolute inset-0 bg-white opacity-20"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30"></div>
           <Sparkles className="h-10 w-10 text-white relative z-10" />
         </div>
-        <h3
+        <h3 
           className="text-xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent"
         >
           Start a conversation
         </h3>
-        <p
+        <p 
           className="text-muted-foreground mt-2 max-w-md"
         >
           Ask me anything about blockchain, crypto, web3, or NFTs. I'm here to help you explore the decentralized world.
         </p>
-      </div>
-    )
+    </div>
+  )
   }
 
   const copyToClipboard = (text: string, index: number) => {

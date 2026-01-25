@@ -67,17 +67,7 @@ export default defineConfig(({ mode }) => {
         '/mnee-api': {
           target: 'https://sandbox-proxy-api.mnee.net',
           changeOrigin: true,
-          rewrite: (path) => {
-            // Remove /mnee-api prefix
-            const newPath = path.replace(/^\/mnee-api/, '');
-            // Append auth_token query parameter
-            const apiKey = env.VITE_MNEE_API_KEY || env.MNEE_API_KEY;
-            if (apiKey) {
-              const separator = newPath.includes('?') ? '&' : '?';
-              return `${newPath}${separator}auth_token=${apiKey}`;
-            }
-            return newPath;
-          },
+          rewrite: (path) => path.replace(/^\/mnee-api/, ''),
           configure: (proxy, options) => {
             proxy.on('proxyReq', (proxyReq, req, res) => {
               // Remove any existing origin headers to avoid CORS conflicts
@@ -98,12 +88,5 @@ export default defineConfig(({ mode }) => {
     },
   }
 })
-
-
-
-
-
-
-
 
 

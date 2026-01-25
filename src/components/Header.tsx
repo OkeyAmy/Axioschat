@@ -1,10 +1,9 @@
 "use client"
 import { Switch } from "@/components/ui/switch"
-import { Moon, Sun, Rocket, MessageSquare, Lightbulb, Sparkles, Menu } from "lucide-react"
+import { Moon, Sun, Rocket, MessageSquare, Zap, Lightbulb, Sparkles, Menu } from "lucide-react"
 import { useTheme } from "@/components/ThemeProvider"
-// MNEE Wallet - No Thirdweb needed
-// import { ConnectButton, useActiveAccount } from "thirdweb/react"
-// import { thirdwebClient } from "@/components/ThirdwebProviderWrapper"
+import { ConnectButton, useActiveAccount } from "thirdweb/react"
+import { thirdwebClient } from "@/components/ThirdwebProviderWrapper"
 import { Link, useLocation } from "react-router-dom"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -23,6 +22,10 @@ import { useState } from "react"
 
 const Header = () => {
   const { theme, setTheme } = useTheme()
+  // Thirdweb wallet connection
+  const account = useActiveAccount()
+  const isConnected = !!account
+  const address = account?.address
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -42,46 +45,59 @@ const Header = () => {
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  className={cn(
-                    navigationMenuTriggerStyle(),
-                    location.pathname === "/" && "bg-accent text-accent-foreground font-medium",
-                    "rounded-full px-4"
-                  )}
-                >
-                  <Link to="/">Home</Link>
-                </NavigationMenuLink>
+                <Link to="/">
+                  <NavigationMenuLink
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      location.pathname === "/" && "bg-accent text-accent-foreground font-medium",
+                      "rounded-full px-4"
+                    )}
+                  >
+                    Home
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  className={cn(
-                    navigationMenuTriggerStyle(),
-                    location.pathname === "/chat" && "bg-accent text-accent-foreground font-medium",
-                    "flex items-center gap-1 rounded-full px-4"
-                  )}
-                >
-                  <Link to="/chat">
+                <Link to="/chat">
+                  <NavigationMenuLink
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      location.pathname === "/chat" && "bg-accent text-accent-foreground font-medium",
+                      "flex items-center gap-1 rounded-full px-4"
+                    )}
+                  >
                     <MessageSquare className="w-4 h-4 mr-1" />
                     Chat
-                  </Link>
-                </NavigationMenuLink>
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  className={cn(
-                    navigationMenuTriggerStyle(),
-                    location.pathname === "/web3-intro" && "bg-accent text-accent-foreground font-medium",
-                    "flex items-center gap-1 rounded-full px-4"
-                  )}
-                >
-                  <Link to="/web3-intro">
+                <Link to="/functions">
+                  <NavigationMenuLink
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      location.pathname === "/functions" && "bg-accent text-accent-foreground font-medium",
+                      "flex items-center gap-1 rounded-full px-4"
+                    )}
+                  >
+                    <Zap className="w-4 h-4 mr-1" />
+                    Functions
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link to="/web3-intro">
+                  <NavigationMenuLink
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      location.pathname === "/web3-intro" && "bg-accent text-accent-foreground font-medium",
+                      "flex items-center gap-1 rounded-full px-4"
+                    )}
+                  >
                     <Rocket className="w-4 h-4 mr-1" />
                     Learn
-                  </Link>
-                </NavigationMenuLink>
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -96,6 +112,18 @@ const Header = () => {
               className="data-[state=checked]:bg-indigo-500"
             />
           </div>
+
+          {/* Thirdweb Wallet Connect Button */}
+          <ConnectButton
+            client={thirdwebClient}
+            connectButton={{
+              label: "Connect Wallet",
+              className: "!bg-gradient-to-r !from-indigo-500 !to-purple-500 !text-white !rounded-full !px-4 !py-2 !text-sm !font-medium hover:!opacity-90 !transition-opacity !shadow-md",
+            }}
+            detailsButton={{
+              className: "!bg-gradient-to-r !from-indigo-500/10 !to-purple-500/10 !rounded-full !px-3 !py-2",
+            }}
+          />
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
@@ -124,6 +152,12 @@ const Header = () => {
                     <Button variant={location.pathname === "/chat" ? "default" : "ghost"} className="w-full justify-start text-left">
                       <MessageSquare className="w-4 h-4 mr-2" />
                       Chat
+                    </Button>
+                  </Link>
+                  <Link to="/functions" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant={location.pathname === "/functions" ? "default" : "ghost"} className="w-full justify-start text-left">
+                      <Zap className="w-4 h-4 mr-2" />
+                      Functions
                     </Button>
                   </Link>
                   <Link to="/web3-intro" onClick={() => setMobileMenuOpen(false)}>

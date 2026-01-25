@@ -66,6 +66,28 @@ export interface TransactionResult {
     timestamp: number
 }
 
+export interface TransactionHistoryItem {
+    hash: string
+    from: string
+    to: string
+    value: string
+    timestamp: number
+    status: string
+    type: string
+    gasUsed?: string
+    gasPrice?: string
+    blockNumber?: number
+}
+
+export interface TransactionHistoryResult {
+    transactions: TransactionHistoryItem[]
+    total: number
+    chain: string
+    chainId: number
+    address: string
+    timestamp: number
+}
+
 /**
  * Get token price from CoinGecko API
  */
@@ -393,5 +415,231 @@ export async function estimateGas(
             gasPrice: 25,
             totalCost: "0.000525 ETH",
         }
+    }
+}
+
+/**
+ * Get transaction history for a wallet address from block explorer APIs
+ * Uses Etherscan V2 API (https://docs.etherscan.io/supported-chains) which supports all chains
+ */
+export async function getTransactionHistory(
+    walletAddress: string,
+    chainId: number = 1,
+    limit: number = 10
+): Promise<TransactionHistoryResult> {
+    // Chain name and native symbol mapping
+    const chainConfigs: Record<number, { name: string; nativeSymbol: string }> = {
+        1: { name: "Ethereum", nativeSymbol: "ETH" },
+        137: { name: "Polygon", nativeSymbol: "MATIC" },
+        56: { name: "BNB Smart Chain", nativeSymbol: "BNB" },
+        42161: { name: "Arbitrum One", nativeSymbol: "ETH" },
+        10: { name: "Optimism", nativeSymbol: "ETH" },
+        8453: { name: "Base", nativeSymbol: "ETH" },
+        43114: { name: "Avalanche", nativeSymbol: "AVAX" },
+        11155111: { name: "Sepolia", nativeSymbol: "ETH" },
+    }
+
+    const config = chainConfigs[chainId] || { name: `Chain ${chainId}`, nativeSymbol: "ETH" }
+
+    // Get API key from environment (optional - works without it but may have rate limits)
+    const apiKey = import.meta.env?.VITE_ETHERSCAN_API_KEY || ""
+    const apiKeyParam = apiKey ? `&apikey=${apiKey}` : ""
+
+    try {
+        // Use Etherscan V2 API which supports all chains via chainid parameter
+        // Docs: https://docs.etherscan.io/supported-chains
+        const baseUrl = "https://api.etherscan.io/v2/api"
+        
+        console.log(`[ThirdwebService] Fetching transaction history for ${walletAddress} on ${config.name} (Chain ID: ${chainId})`)
+
+        // Helper function to fetch transactions from Etherscan V2 API
+        const fetchTransactions = async (action: string): Promise<any[]> => {
+            try {
+                const url = `${baseUrl}?chainid=${chainId}&module=account&action=${action}&address=${walletAddress}&startblock=0&endblock=99999999&page=1&offset=${limit}&sort=desc${apiKeyParam}`
+                
+                const response = await fetch(url)
+                
+                if (!response.ok) {
+                    console.warn(`[ThirdwebService] API request failed with status ${response.status} for ${action}`)
+                    return []
+                }
+
+                const data = await response.json()
+
+                // Handle different response formats
+                if (data.status === "0") {
+                    // Check if it's "No transactions found" vs an actual error
+                    if (data.message && data.message.includes("No transactions found")) {
+                        return []
+                    }
+                    console.warn(`[ThirdwebService] API returned status 0 for ${action}:`, data.message)
+                    return []
+                }
+
+                if (data.status === "1" && Array.isArray(data.result)) {
+                    return data.result
+                }
+
+                // Try alternative response format (some APIs return data directly)
+                if (Array.isArray(data.result)) {
+                    return data.result
+                }
+
+                return []
+            } catch (error) {
+                console.error(`[ThirdwebService] Error fetching ${action}:`, error)
+                return []
+            }
+        }
+
+        // Fetch normal transactions, internal transactions, and ERC20 transfers in parallel
+        const [normalTx, internalTx, erc20Tx] = await Promise.all([
+            fetchTransactions("txlist"),
+            fetchTransactions("txlistinternal"),
+            fetchTransactions("tokentx")
+        ])
+
+        console.log(`[ThirdwebService] Found ${normalTx.length} normal, ${internalTx.length} internal, ${erc20Tx.length} ERC20 transactions`)
+
+        // Combine and deduplicate transactions
+        const allTxs: TransactionHistoryItem[] = []
+        const seenHashes = new Set<string>()
+
+        // Process normal transactions
+        for (const tx of normalTx) {
+            if (seenHashes.has(tx.hash)) continue
+            
+            const valueWei = BigInt(tx.value || "0")
+            const valueEth = Number(valueWei) / 1e18
+
+            allTxs.push({
+                hash: tx.hash,
+                from: tx.from,
+                to: tx.to || "Contract Creation",
+                value: `${valueEth.toFixed(6)} ${config.nativeSymbol}`,
+                timestamp: parseInt(tx.timeStamp) * 1000,
+                status: tx.txreceipt_status === "1" ? "Success" : tx.txreceipt_status === "0" ? "Failed" : "Pending",
+                type: tx.input === "0x" ? "Transfer" : "Contract Interaction",
+                gasUsed: tx.gasUsed,
+                gasPrice: tx.gasPrice,
+                blockNumber: parseInt(tx.blockNumber),
+            })
+            seenHashes.add(tx.hash)
+        }
+
+        // Process ERC20 token transfers
+        for (const tx of erc20Tx) {
+            if (seenHashes.has(tx.hash)) {
+                // Update existing transaction with token info
+                const existing = allTxs.find(t => t.hash === tx.hash)
+                if (existing) {
+                    const decimals = parseInt(tx.tokenDecimal || "18")
+                    const value = Number(tx.value) / Math.pow(10, decimals)
+                    const symbol = tx.tokenSymbol || "Token"
+                    existing.type = `Transfer ${symbol}`
+                    existing.value = `${value.toFixed(4)} ${symbol}`
+                    // Update recipient if this is a token transfer
+                    if (tx.from.toLowerCase() === walletAddress.toLowerCase()) {
+                        existing.to = tx.to
+                    }
+                }
+                continue
+            }
+
+            // Add as new transaction
+            const decimals = parseInt(tx.tokenDecimal || "18")
+            const value = Number(tx.value) / Math.pow(10, decimals)
+            const symbol = tx.tokenSymbol || "Token"
+
+            allTxs.push({
+                hash: tx.hash,
+                from: tx.from,
+                to: tx.to,
+                value: `${value.toFixed(4)} ${symbol}`,
+                timestamp: parseInt(tx.timeStamp) * 1000,
+                status: "Success", // Token transfers in this list are successful
+                type: `Transfer ${symbol}`,
+                gasUsed: tx.gasUsed,
+                gasPrice: tx.gasPrice,
+                blockNumber: parseInt(tx.blockNumber),
+            })
+            seenHashes.add(tx.hash)
+        }
+
+        // Process internal transactions (value transfers via contract calls)
+        for (const tx of internalTx) {
+            if (seenHashes.has(tx.hash)) continue
+
+            const valueWei = BigInt(tx.value || "0")
+            const valueEth = Number(valueWei) / 1e18
+
+            allTxs.push({
+                hash: tx.hash,
+                from: tx.from,
+                to: tx.to || "Contract",
+                value: `${valueEth.toFixed(6)} ${config.nativeSymbol}`,
+                timestamp: parseInt(tx.timeStamp) * 1000,
+                status: tx.txreceipt_status === "1" ? "Success" : "Failed",
+                type: "Internal Transfer",
+                gasUsed: tx.gasUsed,
+                gasPrice: tx.gasPrice,
+                blockNumber: parseInt(tx.blockNumber),
+            })
+            seenHashes.add(tx.hash)
+        }
+
+        // Sort by timestamp descending and apply limit
+        allTxs.sort((a, b) => b.timestamp - a.timestamp)
+        const limitedTxs = allTxs.slice(0, limit)
+
+        return {
+            transactions: limitedTxs,
+            total: allTxs.length,
+            chain: config.name,
+            chainId,
+            address: walletAddress,
+            timestamp: Date.now(),
+        }
+    } catch (error) {
+        console.error("[ThirdwebService] Error fetching transaction history:", error)
+        return {
+            transactions: [],
+            total: 0,
+            chain: config.name,
+            chainId,
+            address: walletAddress,
+            timestamp: Date.now(),
+        }
+    }
+}
+
+/**
+ * Get local transaction history stored in the app
+ * This includes transactions initiated through the chat
+ */
+export function getLocalTransactionHistory(): TransactionHistoryItem[] {
+    try {
+        const stored = localStorage.getItem("axioschat_transactions")
+        if (stored) {
+            return JSON.parse(stored)
+        }
+    } catch (error) {
+        console.error("Error reading local transaction history:", error)
+    }
+    return []
+}
+
+/**
+ * Save a transaction to local history
+ */
+export function saveLocalTransaction(tx: TransactionHistoryItem): void {
+    try {
+        const history = getLocalTransactionHistory()
+        history.unshift(tx) // Add to beginning
+        // Keep only last 50 transactions
+        const trimmed = history.slice(0, 50)
+        localStorage.setItem("axioschat_transactions", JSON.stringify(trimmed))
+    } catch (error) {
+        console.error("Error saving local transaction:", error)
     }
 }

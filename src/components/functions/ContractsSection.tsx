@@ -3,47 +3,88 @@
 /**
  * Contracts Section Component
  * 
- * TEMPORARILY DISABLED - Requires web3.js functionality that is not available
+ * Shows "Coming Soon" status for smart contract operations
+ * with Thirdweb integration.
  * 
- * This component previously provided:
- * - Smart contract deployment
+ * Planned features:
+ * - Smart contract deployment with templates
  * - Contract interaction (read/write functions)
- * - Gas estimation for contract calls
- * 
- * The functionality has been commented out because:
- * 1. The useWeb3 hook now returns web3: null (migrated to Thirdweb)
- * 2. Contract deployment requires web3.eth.Contract which is not available
- * 3. Contract interaction requires direct web3.js calls
- * 
- * TODO: Re-implement using Thirdweb's contract interaction patterns:
- * - useContract hook for reading contracts
- * - useSendTransaction for write operations
+ * - Contract verification on block explorers
  */
 
 import type React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileCode, Wrench } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { FileCode, Clock, Sparkles, Upload, Eye, CheckCircle } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+
+const upcomingFeatures = [
+  {
+    icon: Upload,
+    title: "Contract Deployment",
+    description: "Deploy smart contracts with pre-built templates (ERC-20, ERC-721, ERC-1155)",
+  },
+  {
+    icon: Eye,
+    title: "Contract Interaction",
+    description: "Read and write to any verified smart contract directly from the chat",
+  },
+  {
+    icon: CheckCircle,
+    title: "Contract Verification",
+    description: "Verify your contracts on block explorers for transparency",
+  },
+]
 
 const ContractsSection: React.FC = () => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileCode className="h-5 w-5 text-primary" />
-          Smart Contracts
-        </CardTitle>
-        <CardDescription>Deploy smart contracts and interact with existing contracts</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FileCode className="h-5 w-5 text-primary" />
+              Smart Contracts
+            </CardTitle>
+            <CardDescription>Deploy and interact with smart contracts</CardDescription>
+          </div>
+          <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+            <Clock className="h-3 w-3 mr-1" />
+            Coming Soon
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
-        <Alert>
-          <Wrench className="h-4 w-4" />
-          <AlertTitle>Feature Under Development</AlertTitle>
-          <AlertDescription>
-            Contract deployment and interaction functionality is currently being updated
-            to work with our new wallet integration. This feature will be available in a future update.
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 border border-purple-200 dark:border-purple-800/50">
+            <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/50">
+              <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <p className="font-medium text-purple-900 dark:text-purple-100">Smart Contract Tools Coming Soon</p>
+              <p className="text-sm text-purple-700 dark:text-purple-300">
+                We're building powerful tools for deploying and interacting with smart contracts using Thirdweb.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            <p className="text-sm font-medium text-muted-foreground">Upcoming Features</p>
+            {upcomingFeatures.map((feature, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-3 p-3 rounded-lg border bg-card/50 hover:bg-card/80 transition-colors"
+              >
+                <div className="p-1.5 rounded-md bg-primary/10">
+                  <feature.icon className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">{feature.title}</p>
+                  <p className="text-xs text-muted-foreground">{feature.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

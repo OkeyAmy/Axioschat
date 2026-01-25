@@ -91,72 +91,71 @@ const Web3Intro: React.FC = () => {
 
   const defiSections: DeFiSection[] = [
     {
-      id: "mnee",
-      name: "MNEE Stablecoin",
+      id: "thirdweb",
+      name: "Thirdweb SDK",
       icon: Coins,
-      description: "MNEE is a USD-backed stablecoin built on the 1Sat Ordinals protocol, offering fast transactions, low fees, and instant finality for Web3 applications.",
+      description: "Thirdweb is a complete Web3 development platform that provides tools for building decentralized applications across all EVM-compatible blockchains.",
       concepts: [
         {
-          title: "What is MNEE?",
-          description: "MNEE is a USD-backed stablecoin that provides a stable value for transactions on the blockchain. It's built on the 1Sat Ordinals protocol, enabling fast and efficient transfers with minimal fees.",
+          title: "What is Thirdweb?",
+          description: "Thirdweb is a Web3 development platform that provides SDKs, smart contracts, and infrastructure for building decentralized applications. It supports all EVM-compatible chains including Ethereum, Polygon, Arbitrum, Base, and more.",
           resources: [
-            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Complete developer documentation and API reference." },
-            { name: "MNEE Developer Portal", url: "https://developer.mnee.net", description: "Get API keys and access developer tools." },
-            { name: "MNEE GitHub", url: "https://github.com/mnee-io", description: "SDK source code and examples." }
+            { name: "Thirdweb Documentation", url: "https://portal.thirdweb.com", description: "Complete developer documentation and API reference." },
+            { name: "Thirdweb Dashboard", url: "https://thirdweb.com/dashboard", description: "Manage your projects and get API keys." },
+            { name: "Thirdweb GitHub", url: "https://github.com/thirdweb-dev", description: "SDK source code and examples." }
           ]
         },
         {
           title: "Key Features",
-          description: "MNEE offers instant finality, low transaction fees, and seamless integration with Web3 applications. It's designed for in-app payments, microtransactions, P2P transfers, gaming, remittances, and A2A payments.",
+          description: "Thirdweb offers wallet connection, token transfers, smart contract deployment, NFT minting, and seamless multi-chain support. It's designed for building production-ready dApps with minimal code.",
           resources: [
-            { name: "MNEE SDK", url: "https://www.npmjs.com/package/@mnee/ts-sdk", description: "TypeScript SDK for integrating MNEE into your applications." },
-            { name: "MNEE CLI", url: "https://docs.mnee.io/cli", description: "Command-line interface for managing MNEE wallets and transactions." }
+            { name: "React SDK", url: "https://www.npmjs.com/package/thirdweb", description: "TypeScript SDK for integrating Thirdweb into your applications." },
+            { name: "Connect Wallet", url: "https://portal.thirdweb.com/connect", description: "Universal wallet connection for any wallet." }
           ]
         },
         {
-          title: "Use Cases",
-          description: "MNEE is ideal for various applications including in-app payments, microtransactions, peer-to-peer transfers, gaming economies, remittances, and account-to-account payments. Its stable value makes it perfect for financial applications.",
+          title: "Supported Chains",
+          description: "Thirdweb supports all major EVM chains: Ethereum, Polygon, Arbitrum, Optimism, Base, Avalanche, BNB Chain, and hundreds more. Switch between chains seamlessly with the same codebase.",
           resources: []
         },
         {
           title: "Getting Started",
-          description: "To start using MNEE, you'll need to get an API key from the developer portal, install the SDK, and set up your wallet. The SDK provides methods for transfers, balance checks, transaction history, and UTXO management.",
+          description: "To start using Thirdweb, create a project on the dashboard, get your client ID, and install the SDK. The SDK provides hooks for wallet connection, balance queries, transactions, and contract interaction.",
           resources: [
-            { name: "Quick Start Guide", url: "https://docs.mnee.io/quickstart", description: "Step-by-step guide to integrating MNEE." },
-            { name: "API Reference", url: "https://docs.mnee.io/api", description: "Complete API endpoint documentation." }
+            { name: "Quick Start Guide", url: "https://portal.thirdweb.com/typescript/v5", description: "Step-by-step guide to integrating Thirdweb." },
+            { name: "API Reference", url: "https://portal.thirdweb.com/references", description: "Complete API endpoint documentation." }
           ]
         }
       ],
       suggestedQuestions: [
-        "What is MNEE and how does it work?",
-        "How do I integrate MNEE into my application?",
-        "What are the benefits of using MNEE over other stablecoins?",
-        "How do I get started with the MNEE SDK?",
-        "What are the transaction fees for MNEE?",
-        "How do I check my MNEE balance?",
-        "Can I use MNEE for microtransactions?",
-        "What is the difference between MNEE and other stablecoins?"
+        "What is Thirdweb and how does it work?",
+        "How do I connect a wallet using Thirdweb?",
+        "What chains does Thirdweb support?",
+        "How do I get started with the Thirdweb SDK?",
+        "How do I send tokens using Thirdweb?",
+        "How do I check my wallet balance?",
+        "What is the difference between Thirdweb and other Web3 SDKs?",
+        "How do I deploy a smart contract with Thirdweb?"
       ],
-      systemPrompt: `You are a helpful Web3 educator specializing in MNEE (a USD-backed stablecoin built on the 1Sat Ordinals protocol).
+      systemPrompt: `You are a helpful Web3 educator specializing in Thirdweb (a complete Web3 development platform).
 
-MNEE Key Information:
-- USD-backed stablecoin for stable value transactions
-- Built on 1Sat Ordinals protocol
-- Fast transactions with instant finality
-- Low transaction fees
-- Ideal for in-app payments, microtransactions, P2P transfers, gaming, remittances, and A2A payments
-- SDK available: @mnee/ts-sdk (npm package)
-- Documentation: https://docs.mnee.io
-- Developer Portal: https://developer.mnee.net (for API keys)
-- CLI tool available for wallet management
+Thirdweb Key Information:
+- Full-stack Web3 development platform
+- Supports all EVM-compatible blockchains
+- Universal wallet connection with account abstraction
+- Smart contract deployment and interaction
+- Built-in support for tokens, NFTs, and DeFi
+- SDK available: thirdweb (npm package)
+- Documentation: https://portal.thirdweb.com
+- Dashboard: https://thirdweb.com/dashboard
 
-When explaining MNEE:
-- Emphasize its stability as a USD-backed token
-- Highlight the speed and low fees compared to other networks
-- Explain practical use cases and integration methods
+When explaining Thirdweb:
+- Emphasize multi-chain support
+- Highlight the developer experience and ease of use
+- Explain wallet connection options
 - Provide guidance on getting started with the SDK
-- Discuss the benefits for developers and end users
-- Explain how it works on the 1Sat Ordinals protocol
+- Discuss the benefits for developers building dApps
+- Explain how to interact with smart contracts
 
 If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`
     },
@@ -168,10 +167,10 @@ If the user asks about blockchain data or operations that require Web3 functions
       concepts: [
         {
           title: "Stablecoin Payments",
-          description: "Stablecoins like MNEE provide stable value for payments, making them ideal for everyday transactions, remittances, and cross-border payments without volatility concerns.",
+          description: "Stablecoins like USDC and USDT provide stable value for payments, making them ideal for everyday transactions, remittances, and cross-border payments without volatility concerns.",
           resources: [
-            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Learn about MNEE stablecoin payments." },
-            { name: "MNEE SDK", url: "https://www.npmjs.com/package/@mnee/ts-sdk", description: "Integrate payments into your app." }
+            { name: "Thirdweb Payments", url: "https://portal.thirdweb.com/payments", description: "Learn about Web3 payments integration." },
+            { name: "Thirdweb SDK", url: "https://www.npmjs.com/package/thirdweb", description: "Integrate payments into your app." }
           ]
         },
         {
@@ -183,8 +182,8 @@ If the user asks about blockchain data or operations that require Web3 functions
           title: "Payment Integration",
           description: "Integrating blockchain payments into applications requires understanding wallets, transaction fees, confirmation times, and user experience considerations.",
           resources: [
-            { name: "MNEE Quick Start", url: "https://docs.mnee.io/quickstart", description: "Get started with MNEE payments." },
-            { name: "MNEE API Reference", url: "https://docs.mnee.io/api", description: "Complete payment API documentation." }
+            { name: "Thirdweb Quick Start", url: "https://portal.thirdweb.com/typescript/v5", description: "Get started with Thirdweb payments." },
+            { name: "Thirdweb API Reference", url: "https://portal.thirdweb.com/references", description: "Complete payment API documentation." }
           ]
         }
       ],
@@ -198,7 +197,7 @@ If the user asks about blockchain data or operations that require Web3 functions
       ],
       systemPrompt: `You are a helpful Web3 educator teaching about blockchain payments and microtransactions.
       
-      Focus on explaining how blockchain enables fast, low-cost payments, the role of stablecoins like MNEE, and how to integrate payment functionality into applications.
+      Focus on explaining how blockchain enables fast, low-cost payments, the role of stablecoins like USDC, and how to integrate payment functionality into applications.
       
       When explaining:
       - Emphasize the benefits of blockchain payments (speed, low fees, no intermediaries)
@@ -214,45 +213,45 @@ If the user asks about blockchain data or operations that require Web3 functions
       id: "ordinals",
       name: "Ordinals & BSV21 Tokens",
       icon: Code,
-      description: "Ordinals enable data inscription on Bitcoin SV, while BSV21 is a token standard for creating fungible tokens like MNEE on the 1Sat Ordinals protocol.",
+      description: "Ordinals enable data inscription on Bitcoin SV, while BSV21 is a token standard for creating fungible tokens on EVM blockchains.",
       concepts: [
         {
           title: "What are Ordinals?",
           description: "Ordinals allow data to be inscribed directly onto satoshis (the smallest unit of Bitcoin), creating unique digital artifacts and enabling token standards like BSV21.",
           resources: [
-            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Learn about MNEE on 1Sat Ordinals." },
-            { name: "BSV21 Standard", url: "https://docs.mnee.io/bsv21", description: "Understanding the BSV21 token standard." }
+            { name: "ERC-20 Token Standard", url: "https://ethereum.org/en/developers/docs/standards/tokens/erc-20/", description: "Learn about ERC-20 token standard." },
+            { name: "ERC-721 Standard", url: "https://ethereum.org/en/developers/docs/standards/tokens/erc-721/", description: "Understanding the NFT token standard." }
           ]
         },
         {
           title: "BSV21 Token Standard",
-          description: "BSV21 is a token standard built on 1Sat Ordinals that enables the creation of fungible tokens like stablecoins. MNEE uses this standard for its USD-backed stablecoin.",
+          description: "BSV21 is a token standard built on 1Sat Ordinals that enables the creation of fungible tokens like stablecoins. USDC uses ERC-20 standard for its USD-backed stablecoin.",
           resources: []
         },
         {
           title: "UTXOs and Token Management",
           description: "Understanding Unspent Transaction Outputs (UTXOs) is crucial for managing tokens on Ordinals-based systems. Each UTXO can contain token data and must be properly managed for transfers.",
           resources: [
-            { name: "MNEE UTXO Guide", url: "https://docs.mnee.io/utxos", description: "Learn about UTXO management with MNEE." }
+            { name: "Token Management", url: "https://portal.thirdweb.com/typescript/v5/extensions/erc20", description: "Learn about ERC-20 token management." }
           ]
         }
       ],
       suggestedQuestions: [
         "What are Ordinals and how do they work?",
         "What is the BSV21 token standard?",
-        "How does MNEE use Ordinals?",
+        "How do ERC-20 tokens work?",
         "What are UTXOs and why are they important?",
         "How do token transfers work on Ordinals?",
         "What's the difference between Ordinals and other token standards?"
       ],
       systemPrompt: `You are a helpful Web3 educator teaching about Ordinals and the BSV21 token standard.
       
-      Focus on explaining how Ordinals enable data inscription on Bitcoin SV, the BSV21 token standard for fungible tokens, and how systems like MNEE leverage this technology.
+      Focus on explaining how Ordinals enable data inscription on Bitcoin SV, the BSV21 token standard for fungible tokens, and how token standards enable fungible and non-fungible tokens.
       
       When explaining:
       - Explain Ordinals in simple terms (data inscribed on satoshis)
       - Describe the BSV21 standard and its benefits
-      - Explain how MNEE uses 1Sat Ordinals protocol
+      - Explain how tokens use ERC-20/ERC-721 standards
       - Discuss UTXO management and why it matters
       - Compare Ordinals-based tokens to other token standards
       - Explain transaction mechanics on Ordinals-based systems
@@ -297,7 +296,7 @@ If the user asks about blockchain data or operations that require Web3 functions
       ],
       systemPrompt: `You are a helpful Web3 educator introducing the basics of DeFi (Decentralized Finance) to a newcomer.
       
-      Explain concepts in simple terms, avoiding jargon when possible. Focus on helping the user understand the fundamental principles, benefits, and risks of DeFi. Include information about stablecoins like MNEE as they play a crucial role in DeFi ecosystems.
+      Explain concepts in simple terms, avoiding jargon when possible. Focus on helping the user understand the fundamental principles, benefits, and risks of DeFi. Include information about stablecoins like USDC as they play a crucial role in DeFi ecosystems.
       
       When explaining:
       - Use analogies to traditional finance when helpful
@@ -305,7 +304,7 @@ If the user asks about blockchain data or operations that require Web3 functions
       - Explain the importance of stablecoins for reducing volatility in DeFi
       - Be balanced in discussing both benefits and risks
       - Provide examples of popular DeFi protocols and stablecoins when relevant
-      - Mention MNEE as an example of a USD-backed stablecoin built on Ordinals
+      - Mention USDC as an example of a USD-backed stablecoin on Ethereum
       
       If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`,
     },
@@ -355,17 +354,17 @@ If the user asks about blockchain data or operations that require Web3 functions
       name: "Token Trading & Swaps",
       icon: Shuffle,
       description:
-        "Decentralized exchanges (DEXs) and token swaps allow users to trade cryptocurrencies directly from their wallets. Stablecoins like MNEE are commonly used for trading pairs and as a stable store of value.",
+        "Decentralized exchanges (DEXs) and token swaps allow users to trade cryptocurrencies directly from their wallets. Stablecoins like Web3 are commonly used for trading pairs and as a stable store of value.",
       concepts: [
         {
           title: "Stablecoin Trading",
           description:
-            "Stablecoins like MNEE provide a stable trading pair, reducing volatility risk. They're ideal for entering and exiting positions, remittances, and maintaining value during market fluctuations.",
+            "Stablecoins like USDC provide a stable trading pair, reducing volatility risk. They're ideal for entering and exiting positions, remittances, and maintaining value during market fluctuations.",
           resources: [
             {
-              name: "MNEE Documentation",
-              url: "https://docs.mnee.io",
-              description: "Learn about MNEE stablecoin",
+              name: "Web3 Documentation",
+              url: "https://portal.thirdweb.com",
+              description: "Learn about Web3 stablecoin",
             },
           ],
         },
@@ -388,7 +387,7 @@ If the user asks about blockchain data or operations that require Web3 functions
         "What is impermanent loss?",
         "Why use stablecoins for trading pairs?",
       ],
-      systemPrompt: `You are a helpful Web3 educator teaching about token trading, decentralized exchanges, and the role of stablecoins like MNEE in trading.
+      systemPrompt: `You are a helpful Web3 educator teaching about token trading, decentralized exchanges, and the role of stablecoins like USDC in trading.
       
       Focus on explaining how users can swap tokens without intermediaries, how AMMs work, the benefits of stablecoins in trading, and concepts like liquidity pools, slippage, and impermanent loss.
       
@@ -396,7 +395,7 @@ If the user asks about blockchain data or operations that require Web3 functions
       - Explain the role of stablecoins in trading (reducing volatility, providing stable pairs)
       - Compare to centralized exchanges when helpful
       - Explain how liquidity pools enable trading
-      - Discuss the benefits of using stablecoins like MNEE for trading
+      - Discuss the benefits of using stablecoins like USDC for trading
       - Explain how to minimize slippage when trading
       - Discuss the risks of impermanent loss for liquidity providers
       
@@ -451,8 +450,8 @@ If the user asks about blockchain data or operations that require Web3 functions
           description: "NFTs and Ordinals prove ownership of digital assets on the blockchain. Ordinals allow data to be inscribed directly onto satoshis, creating unique digital artifacts.",
           resources: [
             {
-              name: "MNEE Documentation",
-              url: "https://docs.mnee.io",
+              name: "Web3 Documentation",
+              url: "https://portal.thirdweb.com",
               description: "Learn about Ordinals and BSV21 tokens",
             },
           ],
@@ -530,32 +529,32 @@ If the user asks about blockchain data or operations that require Web3 functions
       name: "Wallets & Security",
       icon: Wallet,
       description:
-        "Cryptocurrency wallets store private keys needed to access and manage your digital assets. For MNEE and Ordinals-based tokens, wallet management includes handling UTXOs and WIF (Wallet Import Format) keys securely.",
+        "Cryptocurrency wallets store private keys needed to access and manage your digital assets. For Web3 and Ordinals-based tokens, wallet management includes handling UTXOs and WIF (Wallet Import Format) keys securely.",
       concepts: [
         {
           title: "Types of Wallets",
-          description: "Hot wallets (online) vs. cold wallets (offline) and their security implications. For MNEE, you can use the MNEE CLI or integrate wallet functionality using the SDK.",
+          description: "Hot wallets (online) vs. cold wallets (offline) and their security implications. For Web3, you can use the Web3 CLI or integrate wallet functionality using the SDK.",
           resources: [
             {
-              name: "MNEE CLI",
-              url: "https://docs.mnee.io/cli",
-              description: "Command-line wallet management for MNEE",
+              name: "Web3 CLI",
+              url: "https://portal.thirdweb.com/cli",
+              description: "Command-line wallet management for Web3",
             },
             {
-              name: "MNEE SDK",
-              url: "https://www.npmjs.com/package/@mnee/ts-sdk",
+              name: "Web3 SDK",
+              url: "https://www.npmjs.com/package/thirdweb",
               description: "Integrate wallet functionality into your app",
             },
           ],
         },
         {
           title: "WIF Keys & Security",
-          description: "WIF (Wallet Import Format) keys are used to sign transactions for MNEE and Ordinals-based tokens. These must be stored securely and never shared. The MNEE CLI helps manage WIF keys safely.",
+          description: "WIF (Wallet Import Format) keys are used to sign transactions for Web3 and Ordinals-based tokens. These must be stored securely and never shared. The Web3 CLI helps manage WIF keys safely.",
           resources: [
             {
-              name: "MNEE Wallet Guide",
-              url: "https://docs.mnee.io/wallet",
-              description: "Learn about MNEE wallet management",
+              name: "Web3 Wallet Guide",
+              url: "https://portal.thirdweb.com/wallet",
+              description: "Learn about Web3 wallet management",
             }
           ]
         },
@@ -567,20 +566,20 @@ If the user asks about blockchain data or operations that require Web3 functions
       ],
       suggestedQuestions: [
         "What is a seed phrase and how do I protect it?",
-        "How do I manage MNEE wallets securely?",
+        "How do I manage Web3 wallets securely?",
         "What is a WIF key and why is it important?",
         "How do I recognize and avoid scams?",
         "What happens if I lose access to my wallet?",
-        "How do UTXOs work with MNEE tokens?",
+        "How do UTXOs work with Web3 tokens?",
       ],
-      systemPrompt: `You are a helpful Web3 educator teaching about cryptocurrency wallets and security best practices, with a focus on MNEE and Ordinals-based tokens.
+      systemPrompt: `You are a helpful Web3 educator teaching about cryptocurrency wallets and security best practices, with a focus on Web3 and Ordinals-based tokens.
       
       Focus on explaining how wallets work, the different types available, WIF key management, UTXO handling, and how users can secure their assets and protect themselves from scams.
       
       When explaining:
       - Explain the difference between custodial and non-custodial wallets
       - Emphasize the importance of seed phrase and WIF key security
-      - Discuss MNEE-specific wallet management using CLI and SDK
+      - Discuss Web3-specific wallet management using CLI and SDK
       - Explain UTXO management for Ordinals-based tokens
       - Discuss common scams and how to avoid them
       - Provide guidance on wallet selection based on user needs
@@ -625,66 +624,66 @@ If the user asks about blockchain data or operations that require Web3 functions
       If the user asks about blockchain data or operations that require Web3 functions, inform them that you'll use functions to help answer their question.`,
     },
     {
-      id: "mnee",
-      name: "MNEE Stablecoin",
+      id: "stablecoins",
+      name: "Web3 Stablecoin",
       icon: Coins,
-      description: "MNEE is a USD-backed stablecoin built on the 1Sat Ordinals protocol, offering fast transactions, low fees, and instant finality for Web3 applications.",
+      description: "Web3 is a USD-backed stablecoin built on the 1Sat Ordinals protocol, offering fast transactions, low fees, and instant finality for Web3 applications.",
       concepts: [
         {
-          title: "What is MNEE?",
-          description: "MNEE is a USD-backed stablecoin that provides a stable value for transactions on the blockchain. It's built on the 1Sat Ordinals protocol, enabling fast and efficient transfers with minimal fees.",
+          title: "What is Web3?",
+          description: "Web3 is a USD-backed stablecoin that provides a stable value for transactions on the blockchain. It's built on the 1Sat Ordinals protocol, enabling fast and efficient transfers with minimal fees.",
           resources: [
-            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Complete developer documentation and API reference." },
-            { name: "MNEE Developer Portal", url: "https://developer.mnee.net", description: "Get API keys and access developer tools." },
-            { name: "MNEE GitHub", url: "https://github.com/mnee-io", description: "SDK source code and examples." }
+            { name: "Web3 Documentation", url: "https://portal.thirdweb.com", description: "Complete developer documentation and API reference." },
+            { name: "Web3 Developer Portal", url: "https://thirdweb.com/dashboard", description: "Get API keys and access developer tools." },
+            { name: "Web3 GitHub", url: "https://github.com/thirdweb-dev", description: "SDK source code and examples." }
           ]
         },
         {
           title: "Key Features",
-          description: "MNEE offers instant finality, low transaction fees, and seamless integration with Web3 applications. It's designed for in-app payments, microtransactions, P2P transfers, gaming, remittances, and A2A payments.",
+          description: "Web3 offers instant finality, low transaction fees, and seamless integration with Web3 applications. It's designed for in-app payments, microtransactions, P2P transfers, gaming, remittances, and A2A payments.",
           resources: [
-            { name: "MNEE SDK", url: "https://www.npmjs.com/package/@mnee/ts-sdk", description: "TypeScript SDK for integrating MNEE into your applications." },
-            { name: "MNEE CLI", url: "https://docs.mnee.io/cli", description: "Command-line interface for managing MNEE wallets and transactions." }
+            { name: "Web3 SDK", url: "https://www.npmjs.com/package/thirdweb", description: "TypeScript SDK for integrating Web3 into your applications." },
+            { name: "Web3 CLI", url: "https://portal.thirdweb.com/cli", description: "Command-line interface for managing Web3 wallets and transactions." }
           ]
         },
         {
           title: "Use Cases",
-          description: "MNEE is ideal for various applications including in-app payments, microtransactions, peer-to-peer transfers, gaming economies, remittances, and account-to-account payments. Its stable value makes it perfect for financial applications.",
+          description: "Web3 is ideal for various applications including in-app payments, microtransactions, peer-to-peer transfers, gaming economies, remittances, and account-to-account payments. Its stable value makes it perfect for financial applications.",
           resources: []
         },
         {
           title: "Getting Started",
-          description: "To start using MNEE, you'll need to get an API key from the developer portal, install the SDK, and set up your wallet. The SDK provides methods for transfers, balance checks, transaction history, and UTXO management.",
+          description: "To start using Web3, you'll need to get an API key from the developer portal, install the SDK, and set up your wallet. The SDK provides methods for transfers, balance checks, transaction history, and UTXO management.",
           resources: [
-            { name: "Quick Start Guide", url: "https://docs.mnee.io/quickstart", description: "Step-by-step guide to integrating MNEE." },
-            { name: "API Reference", url: "https://docs.mnee.io/api", description: "Complete API endpoint documentation." }
+            { name: "Quick Start Guide", url: "https://portal.thirdweb.com/quickstart", description: "Step-by-step guide to integrating Web3." },
+            { name: "API Reference", url: "https://portal.thirdweb.com/api", description: "Complete API endpoint documentation." }
           ]
         }
       ],
       suggestedQuestions: [
-        "What is MNEE and how does it work?",
-        "How do I integrate MNEE into my application?",
-        "What are the benefits of using MNEE over other stablecoins?",
-        "How do I get started with the MNEE SDK?",
-        "What are the transaction fees for MNEE?",
-        "How do I check my MNEE balance?",
-        "Can I use MNEE for microtransactions?",
-        "What is the difference between MNEE and other stablecoins?"
+        "What is Web3 and how does it work?",
+        "How do I integrate Web3 into my application?",
+        "What are the benefits of using Web3 over other stablecoins?",
+        "How do I get started with the Web3 SDK?",
+        "What are the transaction fees for Web3?",
+        "How do I check my Web3 balance?",
+        "Can I use Web3 for microtransactions?",
+        "What is the difference between Web3 and other stablecoins?"
       ],
-      systemPrompt: `You are a helpful Web3 educator specializing in MNEE (a USD-backed stablecoin built on the 1Sat Ordinals protocol).
+      systemPrompt: `You are a helpful Web3 educator specializing in Web3 (a USD-backed stablecoin built on the 1Sat Ordinals protocol).
 
-MNEE Key Information:
+Web3 Key Information:
 - USD-backed stablecoin for stable value transactions
 - Built on 1Sat Ordinals protocol
 - Fast transactions with instant finality
 - Low transaction fees
 - Ideal for in-app payments, microtransactions, P2P transfers, gaming, remittances, and A2A payments
-- SDK available: @mnee/ts-sdk (npm package)
-- Documentation: https://docs.mnee.io
-- Developer Portal: https://developer.mnee.net (for API keys)
+- SDK available: thirdweb (npm package)
+- Documentation: https://portal.thirdweb.com
+- Developer Portal: https://thirdweb.com/dashboard (for API keys)
 - CLI tool available for wallet management
 
-When explaining MNEE:
+When explaining Web3:
 - Emphasize its stability as a USD-backed token
 - Highlight the speed and low fees compared to other networks
 - Explain practical use cases and integration methods
@@ -702,10 +701,10 @@ If the user asks about blockchain data or operations that require Web3 functions
       concepts: [
         {
           title: "Stablecoin Payments",
-          description: "Stablecoins like MNEE provide stable value for payments, making them ideal for everyday transactions, remittances, and cross-border payments without volatility concerns.",
+          description: "Stablecoins like USDC and USDT provide stable value for payments, making them ideal for everyday transactions, remittances, and cross-border payments without volatility concerns.",
           resources: [
-            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Learn about MNEE stablecoin payments." },
-            { name: "MNEE SDK", url: "https://www.npmjs.com/package/@mnee/ts-sdk", description: "Integrate payments into your app." }
+            { name: "Thirdweb Payments", url: "https://portal.thirdweb.com/payments", description: "Learn about Web3 payments integration." },
+            { name: "Thirdweb SDK", url: "https://www.npmjs.com/package/thirdweb", description: "Integrate payments into your app." }
           ]
         },
         {
@@ -717,8 +716,8 @@ If the user asks about blockchain data or operations that require Web3 functions
           title: "Payment Integration",
           description: "Integrating blockchain payments into applications requires understanding wallets, transaction fees, confirmation times, and user experience considerations.",
           resources: [
-            { name: "MNEE Quick Start", url: "https://docs.mnee.io/quickstart", description: "Get started with MNEE payments." },
-            { name: "MNEE API Reference", url: "https://docs.mnee.io/api", description: "Complete payment API documentation." }
+            { name: "Thirdweb Quick Start", url: "https://portal.thirdweb.com/typescript/v5", description: "Get started with Thirdweb payments." },
+            { name: "Thirdweb API Reference", url: "https://portal.thirdweb.com/references", description: "Complete payment API documentation." }
           ]
         }
       ],
@@ -732,7 +731,7 @@ If the user asks about blockchain data or operations that require Web3 functions
       ],
       systemPrompt: `You are a helpful Web3 educator teaching about blockchain payments and microtransactions.
       
-      Focus on explaining how blockchain enables fast, low-cost payments, the role of stablecoins like MNEE, and how to integrate payment functionality into applications.
+      Focus on explaining how blockchain enables fast, low-cost payments, the role of stablecoins like USDC, and how to integrate payment functionality into applications.
       
       When explaining:
       - Emphasize the benefits of blockchain payments (speed, low fees, no intermediaries)
@@ -748,45 +747,45 @@ If the user asks about blockchain data or operations that require Web3 functions
       id: "ordinals",
       name: "Ordinals & BSV21 Tokens",
       icon: Code,
-      description: "Ordinals enable data inscription on Bitcoin SV, while BSV21 is a token standard for creating fungible tokens like MNEE on the 1Sat Ordinals protocol.",
+      description: "Ordinals enable data inscription on Bitcoin SV, while BSV21 is a token standard for creating fungible tokens on EVM blockchains.",
       concepts: [
         {
           title: "What are Ordinals?",
           description: "Ordinals allow data to be inscribed directly onto satoshis (the smallest unit of Bitcoin), creating unique digital artifacts and enabling token standards like BSV21.",
           resources: [
-            { name: "MNEE Documentation", url: "https://docs.mnee.io", description: "Learn about MNEE on 1Sat Ordinals." },
-            { name: "BSV21 Standard", url: "https://docs.mnee.io/bsv21", description: "Understanding the BSV21 token standard." }
+            { name: "ERC-20 Token Standard", url: "https://ethereum.org/en/developers/docs/standards/tokens/erc-20/", description: "Learn about ERC-20 token standard." },
+            { name: "ERC-721 Standard", url: "https://ethereum.org/en/developers/docs/standards/tokens/erc-721/", description: "Understanding the NFT token standard." }
           ]
         },
         {
           title: "BSV21 Token Standard",
-          description: "BSV21 is a token standard built on 1Sat Ordinals that enables the creation of fungible tokens like stablecoins. MNEE uses this standard for its USD-backed stablecoin.",
+          description: "BSV21 is a token standard built on 1Sat Ordinals that enables the creation of fungible tokens like stablecoins. USDC uses ERC-20 standard for its USD-backed stablecoin.",
           resources: []
         },
         {
           title: "UTXOs and Token Management",
           description: "Understanding Unspent Transaction Outputs (UTXOs) is crucial for managing tokens on Ordinals-based systems. Each UTXO can contain token data and must be properly managed for transfers.",
           resources: [
-            { name: "MNEE UTXO Guide", url: "https://docs.mnee.io/utxos", description: "Learn about UTXO management with MNEE." }
+            { name: "Token Management", url: "https://portal.thirdweb.com/typescript/v5/extensions/erc20", description: "Learn about ERC-20 token management." }
           ]
         }
       ],
       suggestedQuestions: [
         "What are Ordinals and how do they work?",
         "What is the BSV21 token standard?",
-        "How does MNEE use Ordinals?",
+        "How do ERC-20 tokens work?",
         "What are UTXOs and why are they important?",
         "How do token transfers work on Ordinals?",
         "What's the difference between Ordinals and other token standards?"
       ],
       systemPrompt: `You are a helpful Web3 educator teaching about Ordinals and the BSV21 token standard.
       
-      Focus on explaining how Ordinals enable data inscription on Bitcoin SV, the BSV21 token standard for fungible tokens, and how systems like MNEE leverage this technology.
+      Focus on explaining how Ordinals enable data inscription on Bitcoin SV, the BSV21 token standard for fungible tokens, and how token standards enable fungible and non-fungible tokens.
       
       When explaining:
       - Explain Ordinals in simple terms (data inscribed on satoshis)
       - Describe the BSV21 standard and its benefits
-      - Explain how MNEE uses 1Sat Ordinals protocol
+      - Explain how tokens use ERC-20/ERC-721 standards
       - Discuss UTXO management and why it matters
       - Compare Ordinals-based tokens to other token standards
       - Explain transaction mechanics on Ordinals-based systems

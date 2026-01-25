@@ -6,14 +6,17 @@ import { v4 as uuidv4 } from "uuid"
 import Header from "@/components/Header"
 import ChatHistory from "@/components/ChatHistory"
 import ChatMessages from "@/components/ChatMessages"
-import TransactionHistoryPanel from "@/components/TransactionHistoryPanel"
+import SuggestedPromptsPanel from "@/components/SuggestedPromptsPanel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
 import { cn, useAB } from "@/lib/utils"
+// import { useAccount } from "wagmi" // COMMENTED OUT - Replaced by Thirdweb
+import { useActiveAccount, useActiveWalletChain } from "thirdweb/react"
 import WalletRequired from "@/components/WalletRequired"
-import { MessageSquare, RotateCcw, Sparkles, Send, Command, CircleHelp } from "lucide-react"
+import { ArrowRight, Bot, MessageSquare, RotateCcw, Sparkles, Send, Command, CircleHelp } from "lucide-react"
 import TransactionQueue from "@/components/TransactionQueue"
+import TransactionExecutor from "@/components/TransactionExecutor"
 import useApiKeys from "@/hooks/useApiKeys"
 import { useLocation } from "react-router-dom"
 import {
@@ -39,39 +42,12 @@ type Message = {
 
 const Chat = () => {
   const variant = useAB('/chat')
-  // MNEE WALLET - Using mneeService for wallet management
-  // const account = useActiveAccount()
-  // const activeChain = useActiveWalletChain()
-  const [mneeAddress, setMneeAddressState] = useState<string>('')
-  const isConnected = !!mneeAddress
-  const address = mneeAddress
-  const chainId = 0 // MNEE doesn't use Ethereum chain IDs
-  
-  // Load MNEE address from storage on mount
-  useEffect(() => {
-    const loadAddress = async () => {
-      const { getMneeAddress } = await import("@/services/mneeService")
-      const storedAddress = getMneeAddress()
-      if (storedAddress) {
-        setMneeAddressState(storedAddress)
-      }
-    }
-    loadAddress()
-    
-    // Listen for wallet changes
-    const handleStorageChange = () => {
-      loadAddress()
-    }
-    window.addEventListener('storage', handleStorageChange)
-    
-    // Poll for changes (for same-tab updates)
-    const interval = setInterval(loadAddress, 1000)
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      clearInterval(interval)
-    }
-  }, [])
+  // Thirdweb wallet connection
+  const account = useActiveAccount()
+  const activeChain = useActiveWalletChain()
+  const isConnected = !!account
+  const address = account?.address
+  const chainId = activeChain?.id || 1 // Default to Ethereum mainnet
   const [loading, setLoading] = useState(false)
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<Message[]>([])
@@ -193,6 +169,7 @@ Available functions:
 - get_token_balance - For checking token balances
 - get_token_price - For checking token prices
 - get_gas_price - For checking gas prices
+- get_transaction_history - For checking transaction history, recent transactions, past transfers
 - send_token - For sending tokens
 - swap_tokens - For swapping tokens
 - add_liquidity - For adding liquidity
@@ -200,6 +177,9 @@ Available functions:
 Example:
 User: "What's my BNB balance?"
 You: "Let me check your BNB balance for you. [FUNCTION_NEEDED]"
+
+User: "What are my transactions?" or "Show my transaction history"
+You: "Let me fetch your transaction history for you. [FUNCTION_NEEDED]"
 
 User: "Tell me about Ethereum"
 You: "Ethereum is a decentralized blockchain platform that enables the creation of smart contracts and decentralized applications (dApps)..."
@@ -341,6 +321,7 @@ DO NOT make up any blockchain data. ONLY identify if a function call is needed.`
                 temperature: 0.5,
                 top_p: 0.3,
                 max_new_tokens: 2000,
+                chainId: chainId, // Pass current chain for network-aware function calls
                 // Include message history for better context
                 messages: messages.map(msg => ({
                   role: msg.role,
@@ -417,7 +398,7 @@ Be concise and direct. Don't just repeat the raw data - explain its significance
                       },
                     ];
 
-                    console.log("Sending function result to AI for interpretation");
+                    console.log("Sending function result to Llama for interpretation");
 
                     // Call the Llama model again to interpret the result
                     let interpretationResponse: string;
@@ -670,7 +651,7 @@ Please explain what this result means for the user in a concise and helpful way.
           },
         ];
 
-        console.log("Sending function result to AI for interpretation")
+        console.log("Sending function result to Llama for interpretation")
 
         // Call the Llama model again to interpret the result
         let interpretationResponse: string
@@ -807,11 +788,8 @@ Please explain what this result means for the user in a concise and helpful way.
     }
   }
 
-  // Refresh wallet address when wallet panel updates
-  const handleWalletUpdate = async () => {
-    const { getMneeAddress } = await import("@/services/mneeService")
-    const storedAddress = getMneeAddress()
-    setMneeAddressState(storedAddress)
+  const handleSuggestedQuestion = (question: string) => {
+    setInput(question)
   }
 
   const clearChat = () => {
@@ -1005,18 +983,16 @@ Please explain what this result means for the user in a concise and helpful way.
                 </div>
               </div>
 
-              {/* Transaction History Panel */}
+              {/* Suggested Prompts Panel */}
               <div
                 className={cn(
                   "transition-all duration-300 h-full max-h-full overflow-hidden",
                   isPromptsPanelCollapsed ? "w-10" : "w-[260px] lg:w-[300px]",
                 )}
               >
-                <TransactionHistoryPanel
-                  onCollapseChange={(collapsed) => {
-                    setIsPromptsPanelCollapsed(collapsed)
-                    handleWalletUpdate()
-                  }}
+                <SuggestedPromptsPanel
+                  onSelectQuestion={handleSuggestedQuestion}
+                  onCollapseChange={setIsPromptsPanelCollapsed}
                   defaultCollapsed={isPromptsPanelCollapsed}
                 />
               </div>
@@ -1031,6 +1007,19 @@ Please explain what this result means for the user in a concise and helpful way.
           onFunctionStatusChange={handleFunctionStatusChange}
         />
       )}
+      
+      {/* Transaction Executor - handles wallet signing for AI-initiated transactions */}
+      <TransactionExecutor
+        onTransactionComplete={(result) => {
+          console.log("[Chat] Transaction completed:", result)
+          if (result.success) {
+            toast({
+              title: "Transaction Confirmed",
+              description: `Transaction ${result.txHash?.slice(0, 10)}... completed successfully.`,
+            })
+          }
+        }}
+      />
     </div>
   )
 }

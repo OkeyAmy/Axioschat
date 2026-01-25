@@ -31,7 +31,7 @@ const Landing = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-background/95">
       <Header />
       <div className="flex-1 flex flex-col">
-        {/* Hero Section - Updated for MNEE Agentic Wallet */}
+        {/* Hero Section - Updated for Thirdweb Agentic Wallet */}
         <section className="relative flex flex-col items-center justify-center py-16 md:py-24 px-4 text-center overflow-hidden">
           {/* Decorative animated blobs */}
           <motion.div
@@ -53,7 +53,7 @@ const Landing = () => {
             transition={{ duration: 1 }}
             className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent"
           >
-            AI That Pays: The First Agentic Wallet
+            AI That Pays: Your Web3 Agentic Wallet
           </motion.h1>
           <motion.p
             initial={{ y: 20, opacity: 0 }}
@@ -61,7 +61,7 @@ const Landing = () => {
             transition={{ duration: 1, delay: 0.3 }}
             className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl"
           >
-            Transform conversations into transactions. Your AI agent doesn't just talk about crypto—it manages MNEE assets autonomously.
+            Transform conversations into transactions. Your AI agent doesn't just talk about crypto—it manages your assets across all EVM chains.
           </motion.p>
           <div className="flex gap-4 mb-8">
             <Button onClick={handleGetStarted} className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl shadow-md hover:opacity-90">
@@ -82,7 +82,7 @@ const Landing = () => {
                   <Textarea
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
-                    placeholder='Try: "Send 5 MNEE to @Alice for coffee"'
+                    placeholder='Try: "Send 0.1 ETH to 0x..." or "Check my balance"'
                     className="resize-none min-h-[60px] flex-1 rounded-xl border-muted-foreground/20 focus-visible:ring-indigo-500"
                   />
                   <Button 
@@ -99,7 +99,7 @@ const Landing = () => {
 
           {/* Trust badges */}
           <div className="flex flex-wrap justify-center gap-3 mb-12">
-            <Badge icon={Zap} text="MNEE Powered" />
+            <Badge icon={Zap} text="Thirdweb Powered" />
             <Badge icon={Brain} text="Autonomous Agents" />
             <Badge icon={BadgeCheck} text="Secure HDWallet" />
           </div>
@@ -144,16 +144,16 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Solution Showcase - MNEE Agentic Wallet */}
+        {/* Solution Showcase - Thirdweb Agentic Wallet */}
         <section className="py-20 bg-gradient-to-b from-background to-indigo-500/5 relative overflow-hidden">
            <div className="container mx-auto px-4 relative z-10">
             <div className="text-center mb-16">
               <div className="inline-block p-2 rounded-2xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 mb-4 backdrop-blur-sm">
                 <Wallet className="h-7 w-7 text-indigo-500" />
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">The Solution: MNEE Agentic Wallet</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">The Solution: Thirdweb Agentic Wallet</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                A native MNEE wallet integrated directly into the AI persona, enabling "Text-to-Pay" and autonomous asset management.
+                A multi-chain wallet integrated directly into the AI persona, enabling "Text-to-Pay" across all EVM chains.
               </p>
             </div>
 
@@ -162,46 +162,46 @@ const Landing = () => {
                   <SolutionStep 
                     number="1"
                     title="Natural Language Transfers"
-                    description='Simply say "Send 5 MNEE to @Alice". The agent resolves the address and prepares the transaction.'
+                    description='Simply say "Send 0.1 ETH to 0x...". The agent validates the address and prepares the transaction.'
                     icon={Share2}
                   />
                   <SolutionStep 
                     number="2"
-                    title="Smart Tipping"
-                    description="Tip content creators or service providers instantly based on context, without leaving the chat."
+                    title="Multi-Chain Support"
+                    description="Seamlessly switch between Ethereum, Polygon, Arbitrum, Base, and more supported chains."
                     icon={Coins}
                   />
                   <SolutionStep 
                     number="3"
-                    title="Automated Management"
-                    description="Agent proactively monitors your MNEE balance and UTXOs, alerting you to low funds or incoming payments."
+                    title="Real-Time Monitoring"
+                    description="Agent monitors your balances across chains, fetches gas prices, and tracks transaction status."
                     icon={Database}
                   />
                </div>
                <div className="relative">
-                  {/* Mock Chat Interface showing Transaction */}
+                  {/* Chat Interface showing Transaction */}
                   <div className="bg-background border rounded-2xl shadow-2xl p-4 max-w-md mx-auto">
                     <div className="space-y-4">
                       <div className="flex justify-end">
                          <div className="bg-indigo-500 text-white rounded-2xl rounded-tr-sm px-4 py-2 max-w-[80%]">
-                           Send 5 MNEE to Alice for the coffee.
+                           Send 0.1 ETH to Alice's wallet.
                          </div>
                       </div>
                       <div className="flex justify-start">
                          <div className="bg-muted text-foreground rounded-2xl rounded-tl-sm px-4 py-3 max-w-[90%] shadow-sm border">
-                           <p className="mb-2 text-sm">I've prepared a transaction of <strong>5 MNEE</strong> to Alice (1FQ6...).</p>
+                           <p className="mb-2 text-sm">I've prepared a transaction of <strong>0.1 ETH</strong> to Alice (0x7a25...).</p>
                            <div className="bg-background border rounded-xl p-3 mb-2">
                               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                                 <span>Amount</span>
-                                <span>5.00 MNEE</span>
+                                <span>0.1 ETH</span>
                               </div>
                               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                                <span>Fee</span>
-                                <span>0.0001 ETH</span>
+                                <span>Gas Fee</span>
+                                <span>~0.002 ETH</span>
                               </div>
                               <div className="flex justify-between text-xs font-medium">
                                 <span>Total</span>
-                                <span>5.00 MNEE</span>
+                                <span>~0.102 ETH</span>
                               </div>
                            </div>
                            <Button size="sm" className="w-full bg-indigo-500 hover:bg-indigo-600 text-white h-8">
@@ -227,32 +227,32 @@ const Landing = () => {
               <div className="inline-block p-2 rounded-2xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 mb-4 backdrop-blur-sm">
                 <Code className="h-7 w-7 text-purple-400" />
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Built on MNEE SDK</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Built on Thirdweb SDK</h2>
               <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-                Leveraging the full power of MNEE's TypeScript SDK for secure, efficient blockchain interactions.
+                Leveraging the full power of Thirdweb's TypeScript SDK for secure, multi-chain blockchain interactions.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                <TechCard 
-                 title="HDWallet Integration"
-                 code="Mnee.HDWallet.derive(path)"
-                 description="Derives specific 'Agent Sub-Accounts' to keep funds segregated but accessible."
+                 title="Wallet Connection"
+                 code="useActiveAccount()"
+                 description="Connect any wallet with Thirdweb's universal wallet adapter and account abstraction."
                />
                <TechCard 
-                 title="Zero-Friction Transfers"
-                 code="mnee.transfer({ ... })"
-                 description="Constructs raw transactions locally for user signature, ensuring non-custodial security."
+                 title="Token Transfers"
+                 code="prepareTransaction({ ... })"
+                 description="Constructs transactions for user signature, ensuring non-custodial security."
                />
                <TechCard 
-                 title="UTXO Management"
-                 code="mnee.getUtxos(address)"
-                 description="Intelligent UTXO selection for optimizing fees and transaction reliability."
+                 title="Balance Queries"
+                 code="getWalletBalance({ ... })"
+                 description="Real-time balance checks for native tokens and ERC20 across all chains."
                />
                <TechCard 
-                 title="Multi-Party Tx"
-                 code="mnee.transferMulti(...)"
-                 description="Enables complex split payments and batched transactions in a single atomic action."
+                 title="Multi-Chain Support"
+                 code="ethereum, polygon, base..."
+                 description="Seamlessly switch between supported EVM chains with one codebase."
                />
             </div>
           </div>
@@ -270,7 +270,7 @@ const Landing = () => {
                <UseCaseCard 
                  icon={CreditCard}
                  title="Micro-Payments"
-                 description="Pay-per-use AI services or content without subscriptions, powered by MNEE's low fees."
+                 description="Pay-per-use AI services or content without subscriptions, powered by low-cost L2 transactions."
                />
                <UseCaseCard 
                  icon={Share2}
@@ -290,7 +290,7 @@ const Landing = () => {
         <section className="py-16 px-4 text-center bg-gradient-to-b from-background to-muted/20">
           <div className="max-w-3xl mx-auto">
             <div className="inline-block px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-500 font-medium text-sm mb-6 border border-indigo-500/20">
-              Built for MNEE Hackathon 2025
+              Powered by Thirdweb & Sensay
             </div>
             <h2 className="text-3xl md:text-5xl font-bold mb-6">Experience the Future of Payments</h2>
             <p className="text-muted-foreground mb-8 text-lg">

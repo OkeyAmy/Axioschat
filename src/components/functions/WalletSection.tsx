@@ -128,30 +128,90 @@ const WalletSection: React.FC<WalletSectionProps> = ({ currentChain, setCurrentC
         if (account && address) {
             try {
                 setBalanceLoading(true)
+                const chain = availableChains.find(c => c.id === currentChain) || ethereum
 
-                if (selectedToken === "native" || selectedToken === "custom") {
+                if (selectedToken === "native") {
                     // Native token balance using Thirdweb
-                    if (selectedToken === "native") {
-                        try {
-                            const chain = availableChains.find(c => c.id === currentChain) || ethereum
-                            const balanceResult = await getWalletBalance({
-                                client: thirdwebClient,
-                                chain,
-                                address,
-                            })
-                            setBalance(balanceResult.displayValue)
-                        } catch (error) {
-                            console.error("Error fetching native balance:", error)
+                    try {
+                        const balanceResult = await getWalletBalance({
+                            client: thirdwebClient,
+                            chain,
+                            address,
+                        })
+                        setBalance(balanceResult.displayValue)
+                    } catch (error) {
+                        console.error("Error fetching native balance:", error)
+                        setBalance("0")
+                    }
+                } else if (selectedToken === "custom" && customTokenAddress) {
+                    // Custom token balance using RPC call
+                    try {
+                        const rpcUrl = `https://${chain.id}.rpc.thirdweb.com`
+                        // ERC20 balanceOf call data
+                        const data = `0x70a08231000000000000000000000000${address.slice(2)}`
+                        
+                        const response = await fetch(rpcUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                jsonrpc: "2.0",
+                                method: "eth_call",
+                                params: [{ to: customTokenAddress, data }, "latest"],
+                                id: 1,
+                            }),
+                        })
+                        
+                        if (response.ok) {
+                            const result = await response.json()
+                            const balanceWei = BigInt(result.result || "0")
+                            const balanceEth = Number(balanceWei) / 1e18 // Assuming 18 decimals
+                            setBalance(balanceEth.toFixed(6))
+                        } else {
                             setBalance("0")
                         }
-                    } else {
-                        // Custom token - show placeholder for now
+                    } catch (error) {
+                        console.error("Error fetching custom token balance:", error)
                         setBalance("0")
                     }
                 } else {
-                    // Known ERC20 token - show placeholder for now
-                    // TODO: Implement ERC20 balance fetching with Thirdweb
-                    setBalance("0")
+                    // Known ERC20 token - fetch using RPC
+                    const tokens = tokensForChain
+                    const token = tokens.find(t => t.symbol === selectedToken)
+                    
+                    if (token && token.address !== "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
+                        try {
+                            const rpcUrl = `https://${chain.id}.rpc.thirdweb.com`
+                            // ERC20 balanceOf call data
+                            const data = `0x70a08231000000000000000000000000${address.slice(2)}`
+                            
+                            const response = await fetch(rpcUrl, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    jsonrpc: "2.0",
+                                    method: "eth_call",
+                                    params: [{ to: token.address, data }, "latest"],
+                                    id: 1,
+                                }),
+                            })
+                            
+                            if (response.ok) {
+                                const result = await response.json()
+                                const balanceWei = BigInt(result.result || "0")
+                                // Most stablecoins use 6 decimals, others use 18
+                                const decimals = ["USDT", "USDC"].includes(token.symbol) ? 6 : 18
+                                const balanceFormatted = Number(balanceWei) / Math.pow(10, decimals)
+                                setBalance(balanceFormatted.toFixed(decimals === 6 ? 2 : 6))
+                            } else {
+                                setBalance("0")
+                            }
+                        } catch (error) {
+                            console.error("Error fetching ERC20 balance:", error)
+                            setBalance("0")
+                        }
+                    } else {
+                        setBalance("0")
+                    }
                 }
 
                 setBalanceLoading(false)

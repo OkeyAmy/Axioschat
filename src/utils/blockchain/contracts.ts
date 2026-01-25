@@ -123,43 +123,46 @@ export const readContractFunction = async (
   }
 }
 
-// Function to get contract ABI from Etherscan-like APIs
+// Etherscan API URLs for different chains
+const explorerApiUrls: Record<number, string> = {
+  1: "https://api.etherscan.io/api",
+  137: "https://api.polygonscan.com/api",
+  56: "https://api.bscscan.com/api",
+  42161: "https://api.arbiscan.io/api",
+  10: "https://api-optimistic.etherscan.io/api",
+  8453: "https://api.basescan.org/api",
+  43114: "https://api.snowtrace.io/api",
+}
+
+// Function to get contract ABI from block explorer APIs
 export const getContractABI = async (contractAddress: string, chainId: number): Promise<any[]> => {
   try {
-    // In a real app, you would fetch this from Etherscan or similar API
-    // For now, return a mock ABI for common contracts
-    if (contractAddress.toLowerCase() === "0x7a250d5630b4cf539739df2c5dacb4c659f2488d") {
-      // Uniswap V2 Router
-      return [
-        {
-          inputs: [
-            { internalType: "uint256", name: "amountIn", type: "uint256" },
-            { internalType: "uint256", name: "amountOutMin", type: "uint256" },
-            { internalType: "address[]", name: "path", type: "address[]" },
-            { internalType: "address", name: "to", type: "address" },
-            { internalType: "uint256", name: "deadline", type: "uint256" },
-          ],
-          name: "swapExactTokensForTokens",
-          outputs: [{ internalType: "uint256[]", name: "amounts", type: "uint256[]" }],
-          stateMutability: "nonpayable",
-          type: "function",
-        },
-        {
-          inputs: [
-            { internalType: "uint256", name: "amountOutMin", type: "uint256" },
-            { internalType: "address[]", name: "path", type: "address[]" },
-            { internalType: "address", name: "to", type: "address" },
-            { internalType: "uint256", name: "deadline", type: "uint256" },
-          ],
-          name: "swapExactETHForTokens",
-          outputs: [{ internalType: "uint256[]", name: "amounts", type: "uint256[]" }],
-          stateMutability: "payable",
-          type: "function",
-        },
-      ]
+    const baseUrl = explorerApiUrls[chainId]
+    
+    if (!baseUrl) {
+      console.warn(`No explorer API available for chain ${chainId}. ABI fetching coming soon.`)
+      return []
     }
 
-    // Return empty array if no match
+    // Try to fetch ABI from the block explorer
+    // Note: This requires an API key for production use
+    const response = await fetch(
+      `${baseUrl}?module=contract&action=getabi&address=${contractAddress}`
+    )
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data.status === "1" && data.result) {
+        try {
+          return JSON.parse(data.result)
+        } catch {
+          console.warn("Failed to parse ABI from explorer")
+        }
+      }
+    }
+
+    // Return empty array if fetch fails or no ABI found
+    console.log(`ABI not found for ${contractAddress} on chain ${chainId}`)
     return []
   } catch (error) {
     console.error("Error fetching contract ABI:", error)
@@ -167,21 +170,48 @@ export const getContractABI = async (contractAddress: string, chainId: number): 
   }
 }
 
-// Function to verify a contract on Etherscan
+// Contract verification status type
+export type ContractVerificationResult = {
+  success: boolean
+  message: string
+  status: "verified" | "pending" | "failed" | "coming_soon"
+}
+
+// Function to verify a contract on block explorer
+// Note: Full contract verification requires API keys and is coming soon
 export const verifyContract = async (
   contractAddress: string,
   sourceCode: string,
   abi: any[],
   constructorArgs: any[],
   chainId: number,
-): Promise<boolean> => {
+): Promise<ContractVerificationResult> => {
   try {
-    // In a real app, you would call Etherscan API to verify
-    console.log(`Verifying contract ${contractAddress} on chain ${chainId}...`)
-    // Mock successful verification
-    return true
+    const baseUrl = explorerApiUrls[chainId]
+    
+    if (!baseUrl) {
+      return {
+        success: false,
+        message: `Contract verification on chain ${chainId} is coming soon. We're working on adding support for more networks.`,
+        status: "coming_soon",
+      }
+    }
+
+    // Contract verification requires an API key
+    // This is a placeholder for future implementation
+    console.log(`Contract verification for ${contractAddress} on chain ${chainId} - Feature coming soon`)
+    
+    return {
+      success: false,
+      message: "Contract verification via AxiosChat is coming soon. For now, please verify your contract directly on the block explorer.",
+      status: "coming_soon",
+    }
   } catch (error) {
     console.error("Error verifying contract:", error)
-    return false
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error during verification",
+      status: "failed",
+    }
   }
 }

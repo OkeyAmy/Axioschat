@@ -3,7 +3,6 @@
       { "source": "/api/gemini_functions", "destination": "https://axioschat-sensay.onrender.com/api/gemini_functions" },
       { "source": "/api/proxy-gemini", "destination": "/api/proxy-gemini" },
       { "source": "/api/gemini-proxy", "destination": "/api/gemini-proxy" },
-      { "source": "/mnee-api/:path*", "destination": "/api/mnee-proxy" },
       { "source": "/api/(.*)", "destination": "/api/$1" }
     ],
     "headers": [

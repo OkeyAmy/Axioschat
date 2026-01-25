@@ -66,9 +66,9 @@ const TransactionQueue: React.FC<TransactionQueueProps> = ({
         {hasFunctions && (
           <ScrollArea className="max-h-[120px]">
             <div className="space-y-1 pr-3">
-              {functionCalls.map((func, index) => (
+              {functionCalls.map((func) => (
                 <div
-                  key={`${func.id}-${index}-${func.status}`}
+                  key={func.id}
                   className={cn(
                     "text-xs p-1.5 rounded border flex items-center justify-between",
                     func.status === "executed" && "border-emerald-500/20 bg-emerald-500/5",
@@ -191,8 +191,8 @@ const TransactionQueue: React.FC<TransactionQueueProps> = ({
                   <div className="text-xs text-muted-foreground">Approve to continue</div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {functionCalls.filter(fc => fc.status === 'pending').map((fc, index) => (
-                    <div key={`${fc.id}-${index}-pending`} className="text-xs p-2 rounded border bg-card/90 flex items-center gap-2">
+                  {functionCalls.filter(fc => fc.status === 'pending').map(fc => (
+                    <div key={fc.id} className="text-xs p-2 rounded border bg-card/90 flex items-center gap-2">
                       <span className="font-medium truncate max-w-[160px]">{fc.name}</span>
                       <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => onFunctionStatusChange && onFunctionStatusChange(fc.id, 'approved')}>
                         Approve

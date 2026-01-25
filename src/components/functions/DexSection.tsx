@@ -3,46 +3,88 @@
 /**
  * DEX Section Component
  * 
- * TEMPORARILY DISABLED - Requires web3.js functionality that is not available
+ * Shows "Coming Soon" status for DEX operations that are not yet supported
+ * by Thirdweb integration.
  * 
- * This component previously provided:
- * - Token swap functionality via Uniswap
+ * Planned features:
+ * - Token swap functionality via DEX aggregators (1inch, 0x Protocol)
  * - Liquidity pool management
- * - Token pair info fetching
- * 
- * The functionality has been commented out because:
- * 1. The useWeb3 hook now returns web3: null (migrated to Thirdweb)
- * 2. Thirdweb SDK doesn't provide direct equivalents for DEX operations
- * 3. DEX operations require direct contract interaction via web3.eth.Contract
- * 
- * TODO: Re-implement using Thirdweb's contract interaction patterns or
- * integrate with a third-party DEX aggregator API
+ * - Price impact and slippage calculations
  */
 
 import type React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRightLeft, Wrench } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ArrowRightLeft, Clock, Sparkles, Zap, TrendingUp, Droplets } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+
+const upcomingFeatures = [
+  {
+    icon: Zap,
+    title: "Token Swaps",
+    description: "Swap between any ERC-20 tokens using DEX aggregators for best rates",
+  },
+  {
+    icon: Droplets,
+    title: "Liquidity Pools",
+    description: "Add and remove liquidity from popular DEX pools",
+  },
+  {
+    icon: TrendingUp,
+    title: "Price Charts",
+    description: "View real-time token price charts and market data",
+  },
+]
 
 const DexSection: React.FC = () => {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ArrowRightLeft className="h-5 w-5 text-primary" />
-          Decentralized Exchange
-        </CardTitle>
-        <CardDescription>Swap tokens and provide liquidity to pools</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5 text-primary" />
+              Decentralized Exchange
+            </CardTitle>
+            <CardDescription>Swap tokens and provide liquidity to pools</CardDescription>
+          </div>
+          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            <Clock className="h-3 w-3 mr-1" />
+            Coming Soon
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
-        <Alert>
-          <Wrench className="h-4 w-4" />
-          <AlertTitle>Feature Under Development</AlertTitle>
-          <AlertDescription>
-            DEX functionality (token swaps and liquidity management) is currently being updated
-            to work with our new wallet integration. This feature will be available in a future update.
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800/50">
+            <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/50">
+              <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="font-medium text-amber-900 dark:text-amber-100">DEX Integration Coming Soon</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                We're working on integrating DEX aggregators for seamless token swaps with best rates.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            <p className="text-sm font-medium text-muted-foreground">Upcoming Features</p>
+            {upcomingFeatures.map((feature, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-3 p-3 rounded-lg border bg-card/50 hover:bg-card/80 transition-colors"
+              >
+                <div className="p-1.5 rounded-md bg-primary/10">
+                  <feature.icon className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">{feature.title}</p>
+                  <p className="text-xs text-muted-foreground">{feature.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
