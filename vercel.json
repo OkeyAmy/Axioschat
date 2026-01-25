@@ -2,6 +2,11 @@
     "buildCommand": "pnpm run build",
     "outputDirectory": "dist",
     "framework": null,
+    "functions": {
+      "api/**": {
+        "excludeFiles": "{venv,*.cache,node_modules,dist,docs,scripts,public,src,.next,*.py,*.pyc,__pycache__}/**"
+      }
+    },
     "rewrites": [
       { "source": "/api/gemini_functions", "destination": "https://axioschat-sensay.onrender.com/api/gemini_functions" },
       { "source": "/api/proxy-gemini", "destination": "/api/proxy-gemini" },
