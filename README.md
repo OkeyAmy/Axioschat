@@ -92,7 +92,7 @@ git clone https://github.com/your-username/axioschat-sensay.git
 cd axioschat-sensay
 
 # Install frontend dependencies
-pnpm install
+npm install
 
 # Install backend dependencies
 python3 -m venv venv
@@ -156,7 +156,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 **Terminal 2 - Frontend Development Server:**
 ```bash
-pnpm dev
+npm run dev
 ```
 
 > **Both servers must be running!** The frontend (port 8080) communicates with the backend (port 3000) for AI function calling.
